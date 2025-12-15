@@ -58,7 +58,7 @@
         "promptpress.model": {
           "type": "string",
           "default": "grok-beta",
-          "description": "AI Model to use"
+          "description": "AI Model to use (e.g., grok-beta, grok-2-1212, grok-vision-beta, grok-code-fast-1)"
         },
         "promptpress.autoMonitor": {
           "type": "boolean",

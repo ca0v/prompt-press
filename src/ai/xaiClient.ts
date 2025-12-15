@@ -58,14 +58,21 @@ export class XAIClient {
         temperature?: number;
         maxTokens?: number;
     }): Promise<string> {
+        const request: ChatCompletionRequest = {
+            model: this.model,
+            messages,
+            temperature: options?.temperature ?? 0.7,
+            max_tokens: options?.maxTokens ?? 4000,
+            stream: false
+        };
+
         try {
-            const request: ChatCompletionRequest = {
-                model: this.model,
-                messages,
-                temperature: options?.temperature ?? 0.7,
-                max_tokens: options?.maxTokens ?? 4000,
-                stream: false
-            };
+            console.log('[XAI] Sending chat completion request:', {
+                model: request.model,
+                messageCount: messages.length,
+                temperature: request.temperature,
+                maxTokens: request.max_tokens
+            });
 
             const response = await this.client.post<ChatCompletionResponse>(
                 '/chat/completions',
@@ -73,15 +80,32 @@ export class XAIClient {
             );
 
             if (response.data.choices && response.data.choices.length > 0) {
+                console.log('[XAI] Received response:', {
+                    finishReason: response.data.choices[0].finish_reason,
+                    promptTokens: response.data.usage?.prompt_tokens,
+                    completionTokens: response.data.usage?.completion_tokens
+                });
                 return response.data.choices[0].message.content;
             }
 
             throw new Error('No response from AI');
         } catch (error) {
             if (axios.isAxiosError(error)) {
+                console.error('[XAI] API Request Failed:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                    headers: error.response?.headers,
+                    requestUrl: error.config?.url,
+                    requestMethod: error.config?.method
+                });
+                console.error('[XAI] Request payload:', JSON.stringify(request, null, 2));
+                
                 const message = error.response?.data?.error?.message || error.message;
-                throw new Error(`xAI API Error: ${message}`);
+                const status = error.response?.status || 'unknown';
+                throw new Error(`xAI API Error: ${message} (Status: ${status})`);
             }
+            console.error('[XAI] Unexpected error:', error);
             throw error;
         }
     }

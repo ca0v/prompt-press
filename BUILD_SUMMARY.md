@@ -104,7 +104,7 @@ Available settings in VS Code:
   "promptpress.maxContextTokens": 8000
 }
 ```
-
+**Supported models**: `grok-beta`, `grok-2-1212`, `grok-vision-beta`, `grok-code-fast-1`
 ### Documentation
 
 - ✅ `README.md` - Complete project requirements and architecture

@@ -74,14 +74,19 @@ export class ScaffoldService {
             try {
                 // Generate requirement spec
                 progress.report({ message: 'Generating requirements...', increment: 25 });
+                console.log(`[Scaffold] Generating requirement spec for: ${artifactName}`);
                 const requirementSpec = await this.generateRequirement(artifactName, contextDescription);
+                console.log(`[Scaffold] Requirement spec generated (${requirementSpec.length} chars)`);
 
                 // Generate design spec
                 progress.report({ message: 'Generating design...', increment: 25 });
+                console.log(`[Scaffold] Generating design spec for: ${artifactName}`);
                 const designSpec = await this.generateDesign(artifactName, contextDescription, requirementSpec);
+                console.log(`[Scaffold] Design spec generated (${designSpec.length} chars)`);
 
                 // Create files
                 progress.report({ message: 'Creating files...', increment: 25 });
+                console.log(`[Scaffold] Creating spec files in workspace`);
                 await this.createSpecFiles(workspaceRoot, artifactName, requirementSpec, designSpec);
 
                 progress.report({ message: 'Complete!', increment: 25 });
@@ -96,7 +101,14 @@ export class ScaffoldService {
                 );
 
             } catch (error: any) {
-                vscode.window.showErrorMessage(`Failed to scaffold: ${error.message}`);
+                console.error('[Scaffold] Failed to scaffold artifact:', {
+                    artifactName,
+                    error: error.message,
+                    stack: error.stack
+                });
+                vscode.window.showErrorMessage(
+                    `Failed to scaffold: ${error.message}\n\nCheck Output panel (View → Output → PromptPress) for details.`
+                );
             }
         });
     }
@@ -105,6 +117,9 @@ export class ScaffoldService {
      * Generate requirement specification using AI
      */
     private async generateRequirement(artifactName: string, description: string): Promise<string> {
+        console.log(`[Scaffold] Generating requirement for artifact: ${artifactName}`);
+        console.log(`[Scaffold] Description length: ${description.length} chars`);
+        
         const messages: ChatMessage[] = [
             {
                 role: 'system',
@@ -150,7 +165,16 @@ Generate a complete, well-structured requirement specification. Be specific and 
             }
         ];
 
-        return await this.aiClient.chat(messages);
+        console.log(`[Scaffold] Sending ${messages.length} messages to AI for requirement generation`);
+        
+        try {
+            const result = await this.aiClient.chat(messages);
+            console.log(`[Scaffold] Requirement generation successful`);
+            return result;
+        } catch (error) {
+            console.error(`[Scaffold] Requirement generation failed:`, error);
+            throw error;
+        }
     }
 
     /**
@@ -161,6 +185,9 @@ Generate a complete, well-structured requirement specification. Be specific and 
         description: string,
         requirementSpec: string
     ): Promise<string> {
+        console.log(`[Scaffold] Generating design for artifact: ${artifactName}`);
+        console.log(`[Scaffold] Requirement spec length: ${requirementSpec.length} chars`);
+        
         const messages: ChatMessage[] = [
             {
                 role: 'system',
@@ -212,7 +239,16 @@ Generate a complete, detailed design specification. Be precise about architectur
             }
         ];
 
-        return await this.aiClient.chat(messages);
+        console.log(`[Scaffold] Sending ${messages.length} messages to AI for design generation`);
+        
+        try {
+            const result = await this.aiClient.chat(messages);
+            console.log(`[Scaffold] Design generation successful`);
+            return result;
+        } catch (error) {
+            console.error(`[Scaffold] Design generation failed:`, error);
+            throw error;
+        }
     }
 
     /**

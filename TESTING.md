@@ -124,9 +124,63 @@ When you save this file and discuss with AI:
 
 ### Enable Debug Output
 
-1. Open Output panel: View → Output
+1. Open Output panel: View → Output (or `Ctrl+Shift+U`)
 2. Select "PromptPress" from dropdown
 3. Watch for debug messages
+
+**What gets logged**:
+- Extension activation
+- Configuration settings
+- File watcher events
+- Scaffold operations (start, progress, completion)
+- API requests (model, token count, message count)
+- API responses (success with token usage, or full error details)
+- Error stack traces
+
+### Example Output Panel Logs
+
+**Successful scaffold**:
+```
+PromptPress extension activated
+Timestamp: 2025-12-15T18:30:00.000Z
+[INFO] API key configured
+[Scaffold] Generating requirement for artifact: my-feature
+[Scaffold] Description length: 150 chars
+[Scaffold] Sending 2 messages to AI for requirement generation
+[XAI] Sending chat completion request: {
+  "model": "grok-beta",
+  "messageCount": 2,
+  "temperature": 0.7,
+  "maxTokens": 4000
+}
+[XAI] Received response: {
+  "finishReason": "stop",
+  "promptTokens": 450,
+  "completionTokens": 1200
+}
+[Scaffold] Requirement spec generated (5432 chars)
+```
+
+**Failed request**:
+```
+[XAI] API Request Failed: {
+  "status": 401,
+  "statusText": "Unauthorized",
+  "data": {
+    "error": {
+      "message": "Invalid API key"
+    }
+  },
+  "requestUrl": "/chat/completions",
+  "requestMethod": "post"
+}
+[XAI] Request payload: {
+  "model": "grok-beta",
+  "messages": [...],
+  "temperature": 0.7,
+  "max_tokens": 4000
+}
+```
 
 ### Common Issues
 

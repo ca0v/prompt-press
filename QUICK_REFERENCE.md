@@ -99,6 +99,8 @@ Set in VS Code settings or environment variable:
 }
 ```
 
+**Available models**: `grok-beta`, `grok-2-1212`, `grok-vision-beta`, `grok-code-fast-1`
+
 Or use environment variable:
 ```bash
 export PROMPT_PRESS_XAI_API_KEY="your-key"

@@ -9,14 +9,43 @@ import { ScaffoldService } from './services/scaffoldService';
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
 
+    // Create output channel for logging
+    const outputChannel = vscode.window.createOutputChannel('PromptPress');
+    context.subscriptions.push(outputChannel);
+    
+    // Redirect console.log to output channel
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    console.log = (...args: any[]) => {
+        outputChannel.appendLine(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
+        originalLog(...args);
+    };
+    
+    console.error = (...args: any[]) => {
+        outputChannel.appendLine('[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
+        originalError(...args);
+    };
+    
+    console.warn = (...args: any[]) => {
+        outputChannel.appendLine('[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
+        originalWarn(...args);
+    };
+
+    outputChannel.appendLine('PromptPress extension activated');
+    outputChannel.appendLine(`Timestamp: ${new Date().toISOString()}`);
+
     // Get configuration
     const config = vscode.workspace.getConfiguration('promptpress');
     const apiKey = config.get<string>('apiKey') || process.env.PROMPT_PRESS_XAI_API_KEY || '';
     
     if (!apiKey) {
-        vscode.window.showWarningMessage(
-            'PromptPress: No API key configured. Set PROMPT_PRESS_XAI_API_KEY or configure in settings.'
-        );
+        const message = 'PromptPress: No API key configured. Set PROMPT_PRESS_XAI_API_KEY or configure in settings.';
+        outputChannel.appendLine(`[WARN] ${message}`);
+        vscode.window.showWarningMessage(message);
+    } else {
+        outputChannel.appendLine('[INFO] API key configured');
     }
 
     // Initialize services
