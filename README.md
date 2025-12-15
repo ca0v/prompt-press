@@ -98,6 +98,14 @@ PromptPress shifts technical debt from source code to parsable markdown document
 - Extension SHALL display generation progress and results
 - Extension SHALL handle generation errors and present them to user
 
+### FR-12: Artifact Scaffolding
+- Extension SHALL provide command to scaffold new PromptPress projects
+- Extension SHALL provide command to scaffold individual artifacts
+- Extension SHALL use AI to generate initial requirement and design specifications
+- Extension SHALL accept high-level description or reference to project README
+- Extension SHALL create properly structured markdown files with correct metadata
+- Scaffolding SHALL follow the same formal markdown schema as manual specs
+
 ## Non-Functional Requirements
 
 ### NFR-1: Traceability
@@ -312,17 +320,19 @@ Validation result if checking spec completeness.
 ## Workflow
 
 ### Development Flow
-1. **Developer** creates `<artifact>.req.md` describing what needs to be built
-2. **Extension** detects new file, notifies user, optionally triggers AI review
-3. **Developer + AI** collaborate on `<artifact>.design.md` via chat interface
+1. **Developer** creates new project or runs `Scaffold New Project` command
+2. **Developer** runs `Scaffold New Artifact` command with high-level description
+3. **AI** generates initial `<artifact>.req.md` and `<artifact>.design.md` specifications
+4. **Extension** detects new files, notifies user, optionally triggers AI review
+5. **Developer + AI** refine requirements and design via chat interface
    - AI may request clarifications using `[QUESTION:]` markers
    - AI may request related documents using `REQUEST-DOC:` syntax
    - Extension automatically loads and submits requested context
-4. **AI** generates `<artifact>.impl.md` with precise, unambiguous specifications
-5. **Developer** reviews and approves implementation spec
-6. **Extension or tooling** generates code in `artifacts/<artifact>/` from implementation spec
-7. **Iterate**: If code doesn't meet requirements, refine the specs (not the code directly)
-8. **Regenerate**: To upgrade or change languages, rerun generation from existing specs
+6. **AI** generates `<artifact>.impl.md` with precise, unambiguous specifications
+7. **Developer** reviews and approves implementation spec
+8. **Extension or tooling** generates code in `artifacts/<artifact>/` from implementation spec
+9. **Iterate**: If code doesn't meet requirements, refine the specs (not the code directly)
+10. **Regenerate**: To upgrade or change languages, rerun generation from existing specs
 
 ### Extension Interaction Flow
 1. User edits markdown file in `specs/` directory

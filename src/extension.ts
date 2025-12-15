@@ -4,6 +4,7 @@ import { XAIClient } from './ai/xaiClient';
 import { ChatPanelProvider } from './ui/chatPanelProvider';
 import { ConversationManager } from './services/conversationManager';
 import { ContextBuilder } from './services/contextBuilder';
+import { ScaffoldService } from './services/scaffoldService';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -22,6 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
     const aiClient = new XAIClient(apiKey, config);
     const conversationManager = new ConversationManager(context);
     const contextBuilder = new ContextBuilder();
+    const scaffoldService = new ScaffoldService(aiClient);
     
     // Initialize UI
     const chatPanelProvider = new ChatPanelProvider(
@@ -82,6 +84,18 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.toggleMonitoring', () => {
             specWatcher.toggleMonitoring();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.scaffoldArtifact', async () => {
+            await scaffoldService.scaffoldArtifact();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.scaffoldProject', async () => {
+            await scaffoldService.scaffoldProject();
         })
     );
 

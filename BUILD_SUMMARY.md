@@ -74,9 +74,19 @@ src/
 - Stores in VS Code global storage
 - Can clear history per artifact
 
+### 7. Artifact Scaffolding (✅ FR-12)
+- Scaffold complete project structure with one command
+- AI-generate requirement and design specs from description
+- Supports referencing project README.md for context
+- Creates properly formatted markdown with metadata
+- Validates artifact naming (kebab-case)
+- Opens generated files for immediate review
+
 ### Commands
 
 Registered VS Code commands:
+- `promptpress.scaffoldProject` - Create complete project structure
+- `promptpress.scaffoldArtifact` - AI-generate req + design specs
 - `promptpress.openChat` - Open chat panel
 - `promptpress.generateCode` - Generate code (stub for future)
 - `promptpress.validateSpec` - Validate spec (stub for future)
@@ -154,30 +164,34 @@ Your API key is already configured:
 
 ## 📝 Example Workflow
 
-1. **Create requirement**:
-   ```bash
-   code specs/requirements/my-feature.req.md
+1. **Scaffold project**:
    ```
-   
-2. **Write what you need**, save, click "Yes" to discuss
-
-3. **AI helps refine** the requirements
-
-4. **Create design**:
-   ```bash
-   code specs/design/my-feature.design.md
+   Command: PromptPress: Scaffold New Project
    ```
-   
-5. **AI has context** from requirements, helps with architecture
 
-6. **Create implementation**:
-   ```bash
-   code specs/implementation/my-feature.impl.md
+2. **Scaffold first artifact**:
    ```
+   Command: PromptPress: Scaffold New Artifact
+   Name: user-authentication
+   Description: Secure login with email/password and OAuth2
    
-7. **AI has full context**, creates precise specs
+   AI generates:
+   ✓ specs/requirements/user-authentication.req.md
+   ✓ specs/design/user-authentication.design.md
+   ```
 
-8. **Generate code** from implementation spec (coming soon)
+3. **Review and refine** the generated specs
+
+4. **Discuss with AI** via chat panel to improve
+
+5. **Create implementation**:
+   ```bash
+   code specs/implementation/user-authentication.impl.md
+   ```
+
+6. **AI has full context** from requirements and design
+
+7. **Generate code** from implementation spec (coming soon)
 
 ## ✨ What Makes This Special
 
@@ -224,12 +238,13 @@ This creates `promptpress-0.1.0.vsix` that can be installed in any VS Code insta
 
 The PromptPress VS Code extension is complete and functional! 
 
-All functional requirements (FR-1 through FR-11) have been implemented. The extension:
+All functional requirements (FR-1 through FR-12) have been implemented. The extension:
 - Monitors spec files ✓
 - Integrates with xAI API ✓
 - Builds phase-aware context ✓
 - Provides chat interface ✓
 - Manages conversations ✓
 - Parses structured markdown ✓
+- **Scaffolds projects and artifacts with AI ✓**
 
 **Ready to revolutionize prompt-driven development!** 🚀

@@ -53,7 +53,13 @@ Available settings:
 
 ### 1. Create Project Structure
 
-The extension expects this folder structure (created automatically when you run the setup):
+**Option A - Scaffold Entire Project**:
+1. Open a workspace folder in VS Code
+2. Run command: `PromptPress: Scaffold New Project` (Ctrl+Shift+P)
+3. This creates the complete folder structure
+
+**Option B - Manual Setup**:
+Create directories manually:
 
 ```
 your-project/
@@ -65,7 +71,16 @@ your-project/
 └── templates/          # Spec templates
 ```
 
-### 2. Create a Spec File
+### 2. Create Your First Artifact
+
+**Option A - Use Scaffold (Recommended)**:
+1. Run command: `PromptPress: Scaffold New Artifact`
+2. Enter artifact name (e.g., `user-authentication`)
+3. Enter description or type "see README.md" to use project context
+4. AI generates both requirement and design specs automatically!
+5. Review and refine the generated specs
+
+**Option B - Create Manually**:
 
 Create a new file in the appropriate directory:
 
@@ -128,12 +143,40 @@ The AI has context of:
 
 Access via Command Palette (Ctrl+Shift+P):
 
+- **PromptPress: Scaffold New Project** - Create complete folder structure
+- **PromptPress: Scaffold New Artifact** - AI-generate requirement & design specs
 - **PromptPress: Open Chat** - Open chat panel
 - **PromptPress: Generate Code** - Generate code from implementation spec
 - **PromptPress: Validate Spec** - Check spec structure and completeness
 - **PromptPress: Toggle File Monitoring** - Enable/disable auto-detection
 
 ## Workflow Example
+
+### Quick Start with Scaffold
+
+```bash
+# 1. Open your project in VS Code
+code my-project/
+
+# 2. Scaffold the project structure
+# Command Palette → "PromptPress: Scaffold New Project"
+
+# 3. Scaffold your first artifact
+# Command Palette → "PromptPress: Scaffold New Artifact"
+# Enter: "user-authentication"
+# Enter: "Secure login system with email/password and OAuth2"
+# AI generates requirement and design specs!
+
+# 4. Review and refine
+# Edit the generated specs
+# Discuss with AI via chat panel
+
+# 5. Create implementation spec
+code specs/implementation/user-authentication.impl.md
+# AI has full context from req + design
+```
+
+### Traditional Workflow
 
 ### Step 1: Requirements
 ```bash
