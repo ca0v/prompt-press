@@ -1,0 +1,11 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "promptpress.autoMonitor": true,
+    "promptpress.maxContextTokens": 8000
+  }
+}

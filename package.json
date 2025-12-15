@@ -1,0 +1,113 @@
+{
+  "name": "promptpress",
+  "displayName": "PromptPress",
+  "description": "Prompt-Driven Development Tool - Track AI prompts as persistent, versioned specs",
+  "version": "0.1.0",
+  "publisher": "promptpress",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/specs/**/*.md"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "promptpress.openChat",
+        "title": "PromptPress: Open Chat"
+      },
+      {
+        "command": "promptpress.generateCode",
+        "title": "PromptPress: Generate Code from Implementation"
+      },
+      {
+        "command": "promptpress.validateSpec",
+        "title": "PromptPress: Validate Specification"
+      },
+      {
+        "command": "promptpress.toggleMonitoring",
+        "title": "PromptPress: Toggle File Monitoring"
+      }
+    ],
+    "configuration": {
+      "title": "PromptPress",
+      "properties": {
+        "promptpress.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "xAI API Key (or set PROMPT_PRESS_XAI_API_KEY env var)"
+        },
+        "promptpress.apiEndpoint": {
+          "type": "string",
+          "default": "https://api.x.ai/v1",
+          "description": "xAI API Base URL"
+        },
+        "promptpress.model": {
+          "type": "string",
+          "default": "grok-beta",
+          "description": "AI Model to use"
+        },
+        "promptpress.autoMonitor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically monitor specs directory for changes"
+        },
+        "promptpress.maxContextTokens": {
+          "type": "number",
+          "default": 8000,
+          "description": "Maximum tokens to send in context"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "promptpress",
+          "title": "PromptPress",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "promptpress": [
+        {
+          "id": "promptpressArtifacts",
+          "name": "Artifacts"
+        },
+        {
+          "id": "promptpressConversations",
+          "name": "Conversations"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "install-deps": "npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/test-electron": "^2.3.8",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "yaml": "^2.3.4"
+  }
+}
