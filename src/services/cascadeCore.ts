@@ -221,13 +221,46 @@ Refine this document by extracting structured content from the changes. Return t
             const { execSync } = require('child_process');
             const gitRoot = execSync('git rev-parse --show-toplevel', { cwd: this.workspaceRoot }).toString().trim();
             const relativePath = path.relative(gitRoot, filePath);
-            const oldContent = execSync(`git show HEAD:"${relativePath}"`, {
-                cwd: gitRoot,
-                encoding: 'utf-8'
-            });
-            return this.compareContent(oldContent, currentContent);
-        } catch {
-            this.logger.log('[Cascade] No baseline found, treating all content as changes');
+            
+            try {
+                // Try to get last committed version
+                const oldContent = execSync(`git show HEAD:"${relativePath}"`, {
+                    cwd: gitRoot,
+                    encoding: 'utf-8'
+                });
+                return this.compareContent(oldContent, currentContent);
+            } catch (gitError) {
+                // File not in git yet or other issue
+                // Check if file has been modified since last commit
+                const gitStatus = execSync(`git status --porcelain "${relativePath}"`, {
+                    cwd: gitRoot,
+                    encoding: 'utf-8'
+                }).trim();
+                
+                // If file appears modified in git status, treat all content as changes
+                if (gitStatus.length > 0) {
+                    this.logger.log('[Cascade] No git history found, but file has uncommitted changes; treating all content as modifications');
+                    return {
+                        hasChanges: true,
+                        modifiedSections: ['All sections'],
+                        summary: 'New or significantly modified file',
+                        oldContent: '',
+                        newContent: currentContent
+                    };
+                }
+                
+                // File not modified - no changes
+                return {
+                    hasChanges: false,
+                    modifiedSections: [],
+                    summary: 'No changes',
+                    oldContent: '',
+                    newContent: currentContent
+                };
+            }
+        } catch (error) {
+            this.logger.log('[Cascade] Git not available; treating all content as changes');
+            // Not a git repo - treat as new file with all content as changes
             return {
                 hasChanges: true,
                 modifiedSections: ['All sections'],

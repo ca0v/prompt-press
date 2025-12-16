@@ -69,6 +69,11 @@
           "default": true,
           "description": "Automatically monitor specs directory for changes"
         },
+        "promptpress.enableChat": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable chat interface (Apply Changes is the primary workflow)"
+        },
         "promptpress.maxContextTokens": {
           "type": "number",
           "default": 8000,

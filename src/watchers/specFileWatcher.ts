@@ -1,19 +1,22 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ChatPanelProvider } from '../ui/chatPanelProvider';
-import { ConversationManager } from '../services/conversationManager';
+import * as fs from 'fs/promises';
+import { MarkdownParser, SpecMetadata } from '../parsers/markdownParser';
 
 export class SpecFileWatcher implements vscode.Disposable {
     private watcher: vscode.FileSystemWatcher | undefined;
     private enabled: boolean;
     private disposables: vscode.Disposable[] = [];
+    private parser: MarkdownParser;
+    private workspaceRoot: string;
 
     constructor(
-        private chatPanel: ChatPanelProvider,
-        private conversationManager: ConversationManager,
-        enabled: boolean = true
+        enabled: boolean = true,
+        workspaceRoot: string = ''
     ) {
         this.enabled = enabled;
+        this.parser = new MarkdownParser();
+        this.workspaceRoot = workspaceRoot;
         if (enabled) {
             this.startWatching();
         }
@@ -24,6 +27,8 @@ export class SpecFileWatcher implements vscode.Disposable {
         if (!workspaceFolders) {
             return;
         }
+
+        this.workspaceRoot = workspaceFolders[0].uri.fsPath;
 
         // Watch for changes in specs directory
         const pattern = new vscode.RelativePattern(
@@ -67,22 +72,111 @@ export class SpecFileWatcher implements vscode.Disposable {
             return;
         }
 
-        // Show notification
-        const action = await vscode.window.showInformationMessage(
-            `PromptPress: ${fileName} was ${changeType}. Discuss with AI?`,
-            'Yes',
-            'No',
-            'Don\'t ask again'
-        );
+        // On modify: update last-updated and validate references
+        if (changeType === 'modified') {
+            await this.updateMetadata(filePath);
+            await this.validateReferences(filePath);
+        }
+    }
 
-        if (action === 'Yes') {
-            this.chatPanel.show();
-            this.chatPanel.notifyFileChange(uri, changeType, specType);
-        } else if (action === 'Don\'t ask again') {
-            this.enabled = false;
-            vscode.window.showInformationMessage(
-                'PromptPress: Auto-monitoring disabled. Use "PromptPress: Toggle File Monitoring" to re-enable.'
-            );
+    private async updateMetadata(filePath: string): Promise<void> {
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const parsed = this.parser.parse(content);
+            
+            if (parsed.metadata) {
+                const today = new Date().toISOString().split('T')[0];
+                parsed.metadata.lastUpdated = today;
+                
+                // Reconstruct frontmatter with updated lastUpdated
+                const updatedContent = this.updateFrontmatter(content, parsed.metadata);
+                
+                // Only write if changed
+                if (updatedContent !== content) {
+                    await fs.writeFile(filePath, updatedContent, 'utf-8');
+                    console.log(`PromptPress: Updated last-updated field in ${path.basename(filePath)}`);
+                }
+            }
+        } catch (error) {
+            console.warn(`PromptPress: Could not update metadata for ${path.basename(filePath)}: ${error}`);
+        }
+    }
+
+    private updateFrontmatter(content: string, metadata: SpecMetadata): string {
+        // Remove existing frontmatter
+        const withoutFrontmatter = content.replace(/^---\n[\s\S]*?\n---\n/, '');
+        
+        // Reconstruct frontmatter
+        const frontmatterLines = [
+            '---',
+            `artifact: ${metadata.artifact}`,
+            `phase: ${metadata.phase}`,
+        ];
+        
+        if (metadata.dependsOn && metadata.dependsOn.length > 0) {
+            frontmatterLines.push(`depends-on: [${metadata.dependsOn.join(', ')}]`);
+        }
+        if (metadata.references && metadata.references.length > 0) {
+            frontmatterLines.push(`references: [${metadata.references.join(', ')}]`);
+        }
+        if (metadata.version) {
+            frontmatterLines.push(`version: ${metadata.version}`);
+        }
+        if (metadata.lastUpdated) {
+            frontmatterLines.push(`last-updated: ${metadata.lastUpdated}`);
+        }
+        frontmatterLines.push('---');
+        
+        return frontmatterLines.join('\n') + '\n' + withoutFrontmatter;
+    }
+
+    private async validateReferences(filePath: string): Promise<void> {
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const parsed = this.parser.parse(content);
+            const warnings: string[] = [];
+            
+            // Validate depends-on
+            if (parsed.metadata.dependsOn) {
+                for (const dep of parsed.metadata.dependsOn) {
+                    if (!await this.fileExists(this.resolveSpecPath(dep))) {
+                        warnings.push(`depends-on: ${dep} not found`);
+                    }
+                }
+            }
+            
+            // Validate references
+            if (parsed.metadata.references) {
+                for (const ref of parsed.metadata.references) {
+                    const refPath = ref.startsWith('@ref:') ? ref.substring(5) : ref;
+                    if (!await this.fileExists(this.resolveSpecPath(refPath))) {
+                        warnings.push(`references: ${ref} not found`);
+                    }
+                }
+            }
+            
+            // Log warnings if any
+            if (warnings.length > 0) {
+                console.warn(`PromptPress: Warnings in ${path.basename(filePath)}: ${warnings.join('; ')}`);
+            }
+        } catch (error) {
+            console.warn(`PromptPress: Could not validate references in ${path.basename(filePath)}: ${error}`);
+        }
+    }
+
+    private resolveSpecPath(specRef: string): string {
+        // specRef format: "artifact-name.phase" or "@ref:artifact-name.phase"
+        const cleaned = specRef.startsWith('@ref:') ? specRef.substring(5) : specRef;
+        const [artifact, phase] = cleaned.split('.');
+        return path.join(this.workspaceRoot, 'specs', `${artifact}.${phase}.md`);
+    }
+
+    private async fileExists(filePath: string): Promise<boolean> {
+        try {
+            await fs.access(filePath);
+            return true;
+        } catch {
+            return false;
         }
     }
 

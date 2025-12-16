@@ -11,12 +11,24 @@ PromptPress shifts technical debt from source code to parsable markdown document
 ## Core Principles
 
 - Prompts are source of truth
-- One .md file per artifact
 - The prompt itself is iterated on until it precisely articulates the desired outcome
-- Follows a standard SDLC, with requirements, design and implementation level documentation. The "requirements" are written by the developer, the "design" is a collaborative space, and the "implementation" is markdown written by the AI.
+- Follows a standard SDLC with requirements, design, and implementation documentation. Both "requirements" and "design" are collaborative spaces (human + AI); "implementation" is AI-generated markdown specifications.
 - Code is generated from the "implementation" markdown, which is similar to "assembly", where the source code is analogous to "binary".
-- VS Code extension monitors markdown changes and facilitates AI collaboration through conversational interface
+- A single markdown file may describe one or many artifacts. Artifacts can be grouped logically within a file.
+- VS Code extension monitors markdown changes and prioritizes the Apply Changes workflow; the chat interface is optional and not auto-prompted.
 - Technical debt accumulates in markdown specs, not source code - when specs improve, code is regenerated
+
+## Development Phases
+
+PromptPress follows three iterative phases that operate as a continuous cycle (testing is implied throughout):
+
+- Requirements: Gather and document what the system must do (functional and non-functional needs).
+- Design: Plan system architecture, components, interfaces, and data models.
+- Implementation: Code and build the system based on design specifications.
+
+## Terminology
+
+- Artifact: A concise, clear description of a specific requirement, design, or implementation. Multiple artifacts may exist in a single markdown file.
 
 ## Functional Requirements
 
@@ -48,7 +60,9 @@ PromptPress shifts technical debt from source code to parsable markdown document
 - Extension SHALL monitor file system changes in `specs/` directory
 - Extension SHALL detect creation, modification, and deletion of `.req.md`, `.design.md`, and `.impl.md` files
 - Extension SHALL identify which specific sections or prompts have changed within a markdown file
-- Extension SHALL trigger AI interaction workflow when relevant changes are detected
+- Extension SHALL update the `last-updated` metadata field on save or during Apply Changes
+- Extension SHALL validate `depends-on` and `references` entries (targets exist, phases valid)
+- Extension SHALL surface non-blocking status/warnings; it SHALL NOT auto-prompt chat sessions
 - Extension SHALL provide user control to enable/disable auto-monitoring
 
 ### FR-6: AI API Integration
@@ -79,11 +93,12 @@ PromptPress shifts technical debt from source code to parsable markdown document
   - Structured output markers (e.g., `[RESPONSE]`, `[QUESTION]`, `[VALIDATION]`)
 
 ### FR-9: Conversational Workflow
-- Extension SHALL present a chat/conversation interface within VS Code
-- Extension SHALL show the AI's response in context of the current artifact
+- Extension SHALL provide an optional chat/conversation interface within VS Code (disabled by default)
+- Extension SHALL NOT automatically prompt users to start chat sessions; Apply Changes is the primary workflow
+- Extension SHALL show the AI's response in context of the current artifact when chat is used
 - Extension SHALL allow user to approve, reject, or iterate on AI responses
 - Extension SHALL update markdown files with AI-generated content upon user approval
-- Extension SHALL maintain conversation history per artifact
+- Extension SHALL maintain conversation history per artifact (when chat is used)
 
 ### FR-10: AI-Driven Spec Refinement
 - When AI identifies ambiguities, it SHALL request specific documents using formal syntax
@@ -217,6 +232,8 @@ prompt-press/
 #### specs/
 The heart of PromptPress. Contains all prompt-based specifications organized by SDLC phase.
 
+Note: A single markdown file may document multiple artifacts; separate files per artifact are also supported.
+
 - **requirements/** - Developer writes "what" in plain language. This is the initial request, the problem statement, or the feature description. Think of this as the user story or product requirement.
 
 - **design/** - Collaborative space where developer and AI discuss "how". This includes architectural decisions, API contracts, data structures, algorithms, and trade-offs. May go through multiple iterations as clarity emerges.
@@ -246,6 +263,7 @@ Extension runtime data (should be in `.gitignore`). Contains conversation histor
 ## Naming Conventions
 
 ### Specification Files
+Files may contain one or many artifacts. When splitting artifacts into separate files, common names are:
 - Requirements: `<artifact-name>.req.md`
 - Design: `<artifact-name>.design.md`
 - Implementation: `<artifact-name>.impl.md`

@@ -67,11 +67,10 @@ export function activate(context: vscode.ExtensionContext) {
         contextBuilder
     );
 
-    // Initialize file watcher
-    const specWatcher = new SpecFileWatcher(
-        chatPanelProvider,
-        conversationManager,
-        config.get<boolean>('autoMonitor', true)
+    // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
+    const specsWatcher = new SpecFileWatcher(
+        config.get<boolean>('autoMonitor', true),
+        workspaceRoot
     );
 
     // Register commands
@@ -117,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.toggleMonitoring', () => {
-            specWatcher.toggleMonitoring();
+            specsWatcher.toggleMonitoring();
         })
     );
 
@@ -153,7 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     // Register disposables
-    context.subscriptions.push(specWatcher);
+    context.subscriptions.push(specsWatcher);
     context.subscriptions.push(chatPanelProvider);
 
     // Show status
