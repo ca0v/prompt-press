@@ -40,6 +40,10 @@
       {
         "command": "promptpress.toggleMonitoring",
         "title": "PromptPress: Toggle File Monitoring"
+      },
+      {
+        "command": "promptpress.applyChanges",
+        "title": "PromptPress: Apply Changes"
       }
     ],
     "configuration": {
@@ -103,6 +107,8 @@
     "test": "npm run compile && node ./out/test/runner.js",
     "test:unit": "node ./out/test/runner.js",
     "test:scaffold": "node ./out/test/runner.js scaffold",
+    "test:cascade": "node ./out/test/runner.js cascade",
+    "test:all": "node ./out/test/runner.js all",
     "package": "vsce package",
     "install-deps": "npm install"
   },

@@ -5,6 +5,7 @@ import { ChatPanelProvider } from './ui/chatPanelProvider';
 import { ConversationManager } from './services/conversationManager';
 import { ContextBuilder } from './services/contextBuilder';
 import { ScaffoldService } from './services/scaffoldService';
+import { CascadeServiceCommands } from './services/cascadeService';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -53,6 +54,10 @@ export function activate(context: vscode.ExtensionContext) {
     const conversationManager = new ConversationManager(context);
     const contextBuilder = new ContextBuilder();
     const scaffoldService = new ScaffoldService(aiClient, outputChannel);
+    
+    // Get workspace root for cascade service
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    const cascadeService = new CascadeServiceCommands(aiClient, outputChannel, workspaceRoot);
     
     // Initialize UI
     const chatPanelProvider = new ChatPanelProvider(
@@ -125,6 +130,25 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.scaffoldProject', async () => {
             await scaffoldService.scaffoldProject();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.applyChanges', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor. Please open a spec file.');
+                return;
+            }
+
+            const filePath = editor.document.uri.fsPath;
+            if (!filePath.match(/\.(req|design)\.md$/)) {
+                vscode.window.showErrorMessage('Please open a requirement or design spec file (.req.md or .design.md)');
+                return;
+            }
+
+            outputChannel.appendLine(`[Command] Apply Changes triggered for ${filePath}`);
+            await cascadeService.applyChanges(filePath);
         })
     );
 
