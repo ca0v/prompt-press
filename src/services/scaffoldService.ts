@@ -4,7 +4,10 @@ import * as path from 'path';
 import { XAIClient, ChatMessage } from '../ai/xaiClient';
 
 export class ScaffoldService {
-    constructor(private aiClient: XAIClient) {}
+    constructor(
+        private aiClient: XAIClient,
+        private outputChannel: vscode.OutputChannel
+    ) {}
 
     /**
      * Scaffold a new PromptPress artifact
@@ -74,19 +77,19 @@ export class ScaffoldService {
             try {
                 // Generate requirement spec
                 progress.report({ message: 'Generating requirements...', increment: 25 });
-                console.log(`[Scaffold] Generating requirement spec for: ${artifactName}`);
+                this.outputChannel.appendLine(`[Scaffold] Generating requirement spec for: ${artifactName}`);
                 const requirementSpec = await this.generateRequirement(artifactName, contextDescription);
-                console.log(`[Scaffold] Requirement spec generated (${requirementSpec.length} chars)`);
+                this.outputChannel.appendLine(`[Scaffold] Requirement spec generated (${requirementSpec.length} chars)`);
 
                 // Generate design spec
                 progress.report({ message: 'Generating design...', increment: 25 });
-                console.log(`[Scaffold] Generating design spec for: ${artifactName}`);
+                this.outputChannel.appendLine(`[Scaffold] Generating design spec for: ${artifactName}`);
                 const designSpec = await this.generateDesign(artifactName, contextDescription, requirementSpec);
-                console.log(`[Scaffold] Design spec generated (${designSpec.length} chars)`);
+                this.outputChannel.appendLine(`[Scaffold] Design spec generated (${designSpec.length} chars)`);
 
                 // Create files
                 progress.report({ message: 'Creating files...', increment: 25 });
-                console.log(`[Scaffold] Creating spec files in workspace`);
+                this.outputChannel.appendLine(`[Scaffold] Creating spec files in workspace`);
                 await this.createSpecFiles(workspaceRoot, artifactName, requirementSpec, designSpec);
 
                 progress.report({ message: 'Complete!', increment: 25 });
@@ -101,14 +104,19 @@ export class ScaffoldService {
                 );
 
             } catch (error: any) {
-                console.error('[Scaffold] Failed to scaffold artifact:', {
-                    artifactName,
-                    error: error.message,
-                    stack: error.stack
-                });
+                this.outputChannel.appendLine(`[ERROR] Failed to scaffold artifact: ${artifactName}`);
+                this.outputChannel.appendLine(`[ERROR] Error message: ${error.message}`);
+                this.outputChannel.appendLine(`[ERROR] Stack trace: ${error.stack}`);
+                this.outputChannel.show(); // Show the output panel
+                
                 vscode.window.showErrorMessage(
-                    `Failed to scaffold: ${error.message}\n\nCheck Output panel (View → Output → PromptPress) for details.`
-                );
+                    `Failed to scaffold: ${error.message}\n\nCheck Output panel (View → Output → PromptPress) for details.`,
+                    'Show Output'
+                ).then(selection => {
+                    if (selection === 'Show Output') {
+                        this.outputChannel.show();
+                    }
+                });
             }
         });
     }
@@ -117,8 +125,8 @@ export class ScaffoldService {
      * Generate requirement specification using AI
      */
     private async generateRequirement(artifactName: string, description: string): Promise<string> {
-        console.log(`[Scaffold] Generating requirement for artifact: ${artifactName}`);
-        console.log(`[Scaffold] Description length: ${description.length} chars`);
+        this.outputChannel.appendLine(`[Scaffold] Generating requirement for artifact: ${artifactName}`);
+        this.outputChannel.appendLine(`[Scaffold] Description length: ${description.length} chars`);
         
         const messages: ChatMessage[] = [
             {
@@ -165,14 +173,15 @@ Generate a complete, well-structured requirement specification. Be specific and 
             }
         ];
 
-        console.log(`[Scaffold] Sending ${messages.length} messages to AI for requirement generation`);
+        this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for requirement generation`);
         
         try {
             const result = await this.aiClient.chat(messages);
-            console.log(`[Scaffold] Requirement generation successful`);
+            this.outputChannel.appendLine(`[Scaffold] Requirement generation successful`);
             return result;
-        } catch (error) {
-            console.error(`[Scaffold] Requirement generation failed:`, error);
+        } catch (error: any) {
+            this.outputChannel.appendLine(`[ERROR] Requirement generation failed: ${error.message}`);
+            this.outputChannel.show();
             throw error;
         }
     }
@@ -185,8 +194,8 @@ Generate a complete, well-structured requirement specification. Be specific and 
         description: string,
         requirementSpec: string
     ): Promise<string> {
-        console.log(`[Scaffold] Generating design for artifact: ${artifactName}`);
-        console.log(`[Scaffold] Requirement spec length: ${requirementSpec.length} chars`);
+        this.outputChannel.appendLine(`[Scaffold] Generating design for artifact: ${artifactName}`);
+        this.outputChannel.appendLine(`[Scaffold] Requirement spec length: ${requirementSpec.length} chars`);
         
         const messages: ChatMessage[] = [
             {
@@ -239,14 +248,15 @@ Generate a complete, detailed design specification. Be precise about architectur
             }
         ];
 
-        console.log(`[Scaffold] Sending ${messages.length} messages to AI for design generation`);
+        this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for design generation`);
         
         try {
             const result = await this.aiClient.chat(messages);
-            console.log(`[Scaffold] Design generation successful`);
+            this.outputChannel.appendLine(`[Scaffold] Design generation successful`);
             return result;
-        } catch (error) {
-            console.error(`[Scaffold] Design generation failed:`, error);
+        } catch (error: any) {
+            this.outputChannel.appendLine(`[ERROR] Design generation failed: ${error.message}`);
+            this.outputChannel.show();
             throw error;
         }
     }

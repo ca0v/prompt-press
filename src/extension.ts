@@ -49,10 +49,10 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // Initialize services
-    const aiClient = new XAIClient(apiKey, config);
+    const aiClient = new XAIClient(apiKey, config, outputChannel);
     const conversationManager = new ConversationManager(context);
     const contextBuilder = new ContextBuilder();
-    const scaffoldService = new ScaffoldService(aiClient);
+    const scaffoldService = new ScaffoldService(aiClient, outputChannel);
     
     // Initialize UI
     const chatPanelProvider = new ChatPanelProvider(

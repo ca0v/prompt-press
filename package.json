@@ -57,8 +57,8 @@
         },
         "promptpress.model": {
           "type": "string",
-          "default": "grok-beta",
-          "description": "AI Model to use (e.g., grok-beta, grok-2-1212, grok-vision-beta, grok-code-fast-1)"
+          "default": "grok-code-fast-1",
+          "description": "AI Model to use (currently available: grok-code-fast-1; deprecated: grok-beta, grok-2-1212, grok-vision-beta)"
         },
         "promptpress.autoMonitor": {
           "type": "boolean",
@@ -100,7 +100,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
+    "test": "npm run compile && node ./out/test/runner.js",
+    "test:unit": "node ./out/test/runner.js",
     "package": "vsce package",
     "install-deps": "npm install"
   },

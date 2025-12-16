@@ -93,13 +93,13 @@ Set in VS Code settings or environment variable:
 {
   "promptpress.apiKey": "your-key",
   "promptpress.apiEndpoint": "https://api.x.ai/v1",
-  "promptpress.model": "grok-beta",
+  "promptpress.model": "grok-code-fast-1",
   "promptpress.autoMonitor": true,
   "promptpress.maxContextTokens": 8000
 }
 ```
 
-**Available models**: `grok-beta`, `grok-2-1212`, `grok-vision-beta`, `grok-code-fast-1`
+**Available models**: `grok-code-fast-1` (current); **deprecated**: `grok-beta`, `grok-2-1212`, `grok-vision-beta`
 
 Or use environment variable:
 ```bash

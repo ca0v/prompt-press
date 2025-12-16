@@ -35,11 +35,13 @@ export class XAIClient {
     private client: AxiosInstance;
     private model: string;
     private apiKey: string;
+    private outputChannel: vscode.OutputChannel | undefined;
 
-    constructor(apiKey: string, config: vscode.WorkspaceConfiguration) {
+    constructor(apiKey: string, config: vscode.WorkspaceConfiguration, outputChannel?: vscode.OutputChannel) {
         this.apiKey = apiKey;
+        this.outputChannel = outputChannel;
         const baseURL = config.get<string>('apiEndpoint', 'https://api.x.ai/v1');
-        this.model = config.get<string>('model', 'grok-beta');
+        this.model = config.get<string>('model', 'grok-code-fast-1');
 
         this.client = axios.create({
             baseURL,
@@ -67,12 +69,11 @@ export class XAIClient {
         };
 
         try {
-            console.log('[XAI] Sending chat completion request:', {
-                model: request.model,
-                messageCount: messages.length,
-                temperature: request.temperature,
-                maxTokens: request.max_tokens
-            });
+            const logMsg = `[XAI] Sending chat completion request: model=${request.model}, messages=${messages.length}, temp=${request.temperature}, maxTokens=${request.max_tokens}`;
+            if (this.outputChannel) {
+                this.outputChannel.appendLine(logMsg);
+            }
+            console.log(logMsg);
 
             const response = await this.client.post<ChatCompletionResponse>(
                 '/chat/completions',
@@ -80,32 +81,47 @@ export class XAIClient {
             );
 
             if (response.data.choices && response.data.choices.length > 0) {
-                console.log('[XAI] Received response:', {
-                    finishReason: response.data.choices[0].finish_reason,
-                    promptTokens: response.data.usage?.prompt_tokens,
-                    completionTokens: response.data.usage?.completion_tokens
-                });
+                const successMsg = `[XAI] Received response: finishReason=${response.data.choices[0].finish_reason}, promptTokens=${response.data.usage?.prompt_tokens}, completionTokens=${response.data.usage?.completion_tokens}`;
+                if (this.outputChannel) {
+                    this.outputChannel.appendLine(successMsg);
+                }
+                console.log(successMsg);
                 return response.data.choices[0].message.content;
             }
 
             throw new Error('No response from AI');
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                console.error('[XAI] API Request Failed:', {
+                const errorDetails = {
                     status: error.response?.status,
                     statusText: error.response?.statusText,
-                    data: error.response?.data,
-                    headers: error.response?.headers,
-                    requestUrl: error.config?.url,
-                    requestMethod: error.config?.method
-                });
-                console.error('[XAI] Request payload:', JSON.stringify(request, null, 2));
+                    errorMessage: error.response?.data?.error?.message || error.message,
+                    errorType: error.response?.data?.error?.type,
+                    url: error.config?.url,
+                    method: error.config?.method
+                };
+                
+                const errorLog = `[XAI] API Request Failed:\n${JSON.stringify(errorDetails, null, 2)}`;
+                const payloadLog = `[XAI] Request payload:\n${JSON.stringify(request, null, 2)}`;
+                
+                if (this.outputChannel) {
+                    this.outputChannel.appendLine(errorLog);
+                    this.outputChannel.appendLine(payloadLog);
+                    this.outputChannel.show(); // Show the output panel
+                }
+                console.error(errorLog);
+                console.error(payloadLog);
                 
                 const message = error.response?.data?.error?.message || error.message;
                 const status = error.response?.status || 'unknown';
                 throw new Error(`xAI API Error: ${message} (Status: ${status})`);
             }
-            console.error('[XAI] Unexpected error:', error);
+            const unexpectedError = `[XAI] Unexpected error: ${error}`;
+            if (this.outputChannel) {
+                this.outputChannel.appendLine(unexpectedError);
+                this.outputChannel.show();
+            }
+            console.error(unexpectedError);
             throw error;
         }
     }

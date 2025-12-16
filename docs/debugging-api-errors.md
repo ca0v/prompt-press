@@ -148,7 +148,7 @@ curl https://api.x.ai/v1/models \
   data: { error: { message: "model not found" } }
 }
 ```
-→ Check model name in settings. Valid models: `grok-beta`, `grok-2-1212`, `grok-vision-beta`, `grok-code-fast-1`
+→ Check model name in settings. Currently available: `grok-code-fast-1`. Deprecated (as of 2025-09-15): `grok-beta`, `grok-2-1212`, `grok-vision-beta`
 
 ### Failed Request - Rate Limit
 ```

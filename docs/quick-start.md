@@ -45,7 +45,7 @@ Option 2 - VS Code settings:
 Available settings:
 - `promptpress.apiKey`: xAI API key (if not using env var)
 - `promptpress.apiEndpoint`: API base URL (default: https://api.x.ai/v1)
-- `promptpress.model`: AI model to use (default: grok-beta, alternatives: grok-2-1212, grok-vision-beta, grok-code-fast-1)
+- `promptpress.model`: AI model to use (default: grok-code-fast-1; deprecated: grok-beta, grok-2-1212, grok-vision-beta)
 - `promptpress.autoMonitor`: Auto-detect file changes (default: true)
 - `promptpress.maxContextTokens`: Max tokens in context (default: 8000)
 

@@ -361,3 +361,41 @@ Validation result if checking spec completeness.
 - **Stateless AI, stateful extension** - API is stateless, but VS Code extension maintains conversation context and history, providing the best of both worlds.
 
 - **Formal markdown enables automation** - Structured metadata and markers allow the extension to intelligently determine context, detect ambiguities, and automate spec refinement.
+## Development & Testing
+
+### Running Tests
+
+PromptPress includes a bespoke test framework with comprehensive test coverage:
+
+```bash
+# Run all tests (compiles + lints + runs tests)
+npm test
+
+# Run tests only (no compile/lint)
+npm run test:unit
+
+# Compile TypeScript
+npm run compile
+
+# Watch mode
+npm run watch
+```
+
+### Test Coverage
+
+- **API Client Tests**: xAI API integration, error handling, model compatibility
+- **Configuration Tests**: Endpoint configuration, model selection
+- **Error Handling**: Output channel logging, request/response details
+- **Mock Objects**: VS Code API mocks for isolated testing
+
+See [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for detailed testing documentation.
+
+### Current Model Status
+
+**xAI API Models (as of December 2025):**
+- ✅ `grok-code-fast-1` - Currently available (default)
+- ❌ `grok-beta` - Deprecated 2025-09-15
+- ❌ `grok-2-1212` - Deprecated 2025-09-15
+- ❌ `grok-vision-beta` - Deprecated 2025-09-15
+
+See [docs/BUG_FIX_404.md](docs/BUG_FIX_404.md) for details on the model deprecation issue and fix.
