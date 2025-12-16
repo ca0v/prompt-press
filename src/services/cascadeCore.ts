@@ -173,7 +173,11 @@ For IMPLEMENTATION specs:
 - Organize into File Structure, Module Implementation sections
 - Add missing error handling or edge cases
 
-Return the refined document in full. Preserve the original metadata header exactly. Only make changes if meaningful extractions or clarifications are needed. If no refinement needed, return empty string.`;
+Return the refined document in full. Preserve the original metadata header exactly. Only make changes if meaningful extractions or clarifications are needed. If no refinement needed, return empty string.
+
+Cleanup:
+- If all questions/ambiguities are addressed, remove any remaining \`[AI-CLARIFY:]\` blocks from the document.
+- Do not add new \`[AI-CLARIFY:]\` markers unless unavoidable.`;
 
             const userPrompt = `Modified sections: ${changes.modifiedSections.join(', ')}
 

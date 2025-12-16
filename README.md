@@ -87,6 +87,10 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
   - Structured sections with clear delimiters
   - Explicit reference syntax for linking to other artifacts (e.g., `@ref:artifact-name.req`)
   - Question/clarification markers for AI to address (e.g., `[AI-CLARIFY: question]`)
+- Users SHALL provide clarification feedback by:
+  - Editing the markdown file directly below `[AI-CLARIFY:]` markers with their answers
+  - Using the optional chat interface to respond to AI questions interactively
+  - Running Apply Changes command after updating clarifications to cascade responses
 - AI responses SHALL be formatted with:
   - Document reference when requesting clarification (e.g., `REQUEST-DOC: artifact-name.design`)
   - Section identifiers when providing feedback
@@ -103,8 +107,10 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
 ### FR-10: AI-Driven Spec Refinement
 - When AI identifies ambiguities, it SHALL request specific documents using formal syntax
 - Extension SHALL recognize document request syntax and load requested files
-- Extension SHALL present clarification questions to the user in the UI
-- User responses SHALL be submitted back to AI with expanded context
+- Extension SHALL present clarification questions to the user in the UI (via chat interface or inline in markdown)
+- User responses SHALL be submitted back to AI with expanded context either:
+  - Directly via chat interface as conversational replies, OR
+  - By editing the markdown file (adding answers below `[AI-CLARIFY:]` markers) and running Apply Changes
 - Extension SHALL facilitate iterative refinement until spec is complete
 
 ### FR-11: Code Generation Trigger
