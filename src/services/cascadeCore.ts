@@ -8,6 +8,13 @@ import * as fs from 'fs/promises';
 import { XAIClient, ChatMessage } from '../ai/xaiClient';
 import { MarkdownParser } from '../parsers/markdownParser';
 
+// Prompt file paths
+const PROMPTS = {
+    refineDocument: path.join(__dirname, '../prompts/refineDocument.md'),
+    generateDesign: path.join(__dirname, '../prompts/generateDesign.md'),
+    generateImplementation: path.join(__dirname, '../prompts/generateImplementation.md')
+};
+
 export interface ChangeDetectionResult {
     hasChanges: boolean;
     modifiedSections: string[];
@@ -36,6 +43,7 @@ export interface Logger {
 export class CascadeCore {
     private parser: MarkdownParser;
     private cacheDir: string;
+    private promptCache: Map<string, { system: string; user: string }> = new Map();
 
     constructor(
         private xaiClient: XAIClient,
@@ -44,6 +52,35 @@ export class CascadeCore {
     ) {
         this.parser = new MarkdownParser();
         this.cacheDir = path.join(workspaceRoot, '.promptpress', 'cache');
+    }
+
+    private async loadPrompts(promptKey: string): Promise<{ system: string; user: string }> {
+        if (this.promptCache.has(promptKey)) {
+            return this.promptCache.get(promptKey)!;
+        }
+
+        const promptFile = PROMPTS[promptKey as keyof typeof PROMPTS];
+        if (!promptFile) {
+            throw new Error(`Unknown prompt key: ${promptKey}`);
+        }
+
+        try {
+            const content = await fs.readFile(promptFile, 'utf-8');
+            const parts = content.split('---\n\n# User Prompt:');
+            if (parts.length !== 2) {
+                throw new Error(`Invalid prompt file format: ${promptKey}`);
+            }
+
+            const system = parts[0].replace(/^# System Prompt: .*\n/, '').trim();
+            const user = parts[1].replace(/^.*\n/, '').trim();
+
+            const prompts = { system, user };
+            this.promptCache.set(promptKey, prompts);
+            return prompts;
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to load prompts for ${promptKey}: ${errorMsg}`);
+        }
     }
 
     async applyChanges(
@@ -156,37 +193,18 @@ export class CascadeCore {
 
             this.logger.log('[Cascade] Analyzing changes for extractable content...');
 
-            const systemPrompt = `You are an expert at refining technical specifications. Analyze the changes in this ${metadata.phase} specification and determine if any content should be extracted into formal sections.
+            const prompts = await this.loadPrompts('refineDocument');
+            
+            // Format system prompt with context
+            const systemPrompt = prompts.system
+                .replace('{modified_sections}', changes.modifiedSections.join(', '))
+                .replace('{change_summary}', changes.summary);
 
-For REQUIREMENT specs:
-- Extract functional/non-functional requirements from prose in Overview or other sections
-- Number them appropriately (FR-N, NFR-N)
-- Ensure requirements are atomic, testable, and unambiguous
-
-For DESIGN specs:
-- Extract component descriptions, API contracts, data structures from discussions
-- Organize into proper sections (Components, APIs, Data Models)
-- Clarify architectural decisions
-
-For IMPLEMENTATION specs:
-- Extract precise code generation instructions from notes
-- Organize into File Structure, Module Implementation sections
-- Add missing error handling or edge cases
-
-Return the refined document in full. Preserve the original metadata header exactly. Only make changes if meaningful extractions or clarifications are needed. If no refinement needed, return empty string.
-
-Cleanup:
-- If all questions/ambiguities are addressed, remove any remaining \`[AI-CLARIFY:]\` blocks from the document.
-- Do not add new \`[AI-CLARIFY:]\` markers unless unavoidable.`;
-
-            const userPrompt = `Modified sections: ${changes.modifiedSections.join(', ')}
-
-Changes summary: ${changes.summary}
-
-Current document:
-${currentContent}
-
-Refine this document by extracting structured content from the changes. Return the complete refined document or empty string if no refinement needed.`;
+            // Format user prompt with context
+            const userPrompt = prompts.user
+                .replace('{modified_sections}', changes.modifiedSections.join(', '))
+                .replace('{change_summary}', changes.summary)
+                .replace('{current_content}', currentContent);
 
             const messages: ChatMessage[] = [
                 { role: 'system', content: systemPrompt },
@@ -472,53 +490,23 @@ Refine this document by extracting structured content from the changes. Return t
         const parsed = this.parser.parse(requirement);
         const metadata = parsed.metadata;
         const artifactName = metadata?.artifact || 'artifact';
+        const artifactTitle = artifactName.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-        const systemPrompt = `You are an expert software architect. Generate an UPDATED PromptPress design specification based on the modified requirements.
+        const prompts = await this.loadPrompts('generateDesign');
+        
+        // Format system prompt with context
+        const systemPrompt = prompts.system
+            .replace('{change_summary}', changeSummary)
+            .replace('{modified_sections}', modifiedSections.join(', '))
+            .replace(/{artifact_name}/g, artifactName)
+            .replace('{last_updated}', new Date().toISOString().split('T')[0])
+            .replace('{artifact_title}', artifactTitle);
 
-IMPORTANT: The requirements have been updated. Changes: ${changeSummary}
-Modified sections: ${modifiedSections.join(', ')}
-
-Your design MUST address these changes and integrate them properly.
-
-Structure:
----
-artifact: ${artifactName}
-phase: design
-depends-on: [${artifactName}.req]
-references: []
-version: 1.0.0
-last-updated: ${new Date().toISOString().split('T')[0]}
----
-
-# ${artifactName.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} - Design
-
-## Architecture Overview
-[High-level architecture description - UPDATE for changes]
-
-## Component Design
-[Detailed component breakdown - INCLUDE new/modified components]
-
-## Data Structures
-[Key data structures - ADD structures for changes]
-
-## API Design
-[Interface definitions - INCLUDE new/modified APIs]
-
-## Performance Considerations
-[Optimization strategies - CONSIDER performance impacts]
-
-Be specific and technically detailed. ENSURE changes are properly integrated into the design.`;
-
-        const userPrompt = `The requirements have been updated. Key changes: ${changeSummary}
-
-Modified sections: ${modifiedSections.join(', ')}
-
-Generate an updated design specification that incorporates these changes:
-
-UPDATED REQUIREMENTS:
-${requirement.substring(0, 3000)}...
-
-Focus on how these changes integrate with or modify the existing architecture.`;
+        // Format user prompt with context
+        const userPrompt = prompts.user
+            .replace('{change_summary}', changeSummary)
+            .replace('{modified_sections}', modifiedSections.join(', '))
+            .replace('{requirement_excerpt}', requirement.substring(0, 3000) + '...');
 
         const messages: ChatMessage[] = [
             { role: 'system', content: systemPrompt },
@@ -539,50 +527,24 @@ Focus on how these changes integrate with or modify the existing architecture.`;
         const parsed = this.parser.parse(requirement);
         const metadata = parsed.metadata;
         const artifactName = metadata?.artifact || 'artifact';
+        const artifactTitle = artifactName.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-        const systemPrompt = `You are an expert at writing precise implementation specifications. Generate an UPDATED PromptPress implementation specification.
+        const prompts = await this.loadPrompts('generateImplementation');
+        
+        // Format system prompt with context
+        const systemPrompt = prompts.system
+            .replace('{change_summary}', changeSummary)
+            .replace('{modified_sections}', modifiedSections.join(', '))
+            .replace(/{artifact_name}/g, artifactName)
+            .replace('{last_updated}', new Date().toISOString().split('T')[0])
+            .replace('{artifact_title}', artifactTitle);
 
-IMPORTANT: The design has been updated. Changes: ${changeSummary}
-Modified sections: ${modifiedSections.join(', ')}
-
-Your implementation MUST include precise instructions for implementing these changes.
-
-Structure:
----
-artifact: ${artifactName}
-phase: implementation
-depends-on: [${artifactName}.req, ${artifactName}.design]
-references: []
-version: 1.0.0
-last-updated: ${new Date().toISOString().split('T')[0]}
----
-
-# ${artifactName.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} - Implementation
-
-## File Structure
-[Detailed file organization - INCLUDE files for changes]
-
-## Module Implementation
-[Precise implementation details - DETAIL changed/new modules]
-
-## Code Generation Instructions
-[Exact instructions for code generation - SPECIFY change implementation]
-
-Be extremely precise and unambiguous. ENSURE changes are fully specified for code generation.`;
-
-        const userPrompt = `Based on updated requirements and design that include these changes: ${changeSummary}
-
-Modified sections: ${modifiedSections.join(', ')}
-
-Generate complete implementation specification:
-
-REQUIREMENTS (excerpt):
-${requirement.substring(0, 1000)}...
-
-DESIGN (excerpt):
-${design.substring(0, 1500)}...
-
-Provide detailed implementation instructions for the changes along with preserving existing functionality.`;
+        // Format user prompt with context
+        const userPrompt = prompts.user
+            .replace('{change_summary}', changeSummary)
+            .replace('{modified_sections}', modifiedSections.join(', '))
+            .replace('{requirement_excerpt}', requirement.substring(0, 1000) + '...')
+            .replace('{design_excerpt}', design.substring(0, 1500) + '...');
 
         const messages: ChatMessage[] = [
             { role: 'system', content: systemPrompt },
