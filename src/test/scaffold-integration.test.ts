@@ -1,0 +1,464 @@
+/**
+ * Integration test for scaffolding a complete project with caching
+ * Tests the full flow: requirement → design → implementation
+ */
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { TestRunner, Assert, it } from './framework';
+
+// Simple cache implementation
+class ResponseCache {
+    private cachePath: string;
+    private cache: Map<string, string>;
+
+    constructor(cachePath: string) {
+        this.cachePath = cachePath;
+        this.cache = new Map();
+    }
+
+    async load(): Promise<void> {
+        try {
+            const data = await fs.readFile(this.cachePath, 'utf-8');
+            const parsed = JSON.parse(data);
+            this.cache = new Map(Object.entries(parsed));
+            console.log(`[Cache] Loaded ${this.cache.size} cached responses`);
+        } catch (error) {
+            console.log('[Cache] No existing cache found, starting fresh');
+            this.cache = new Map();
+        }
+    }
+
+    async save(): Promise<void> {
+        const obj = Object.fromEntries(this.cache);
+        await fs.writeFile(this.cachePath, JSON.stringify(obj, null, 2), 'utf-8');
+        console.log(`[Cache] Saved ${this.cache.size} responses to cache`);
+    }
+
+    get(key: string): string | undefined {
+        return this.cache.get(key);
+    }
+
+    set(key: string, value: string): void {
+        this.cache.set(key, value);
+    }
+
+    has(key: string): boolean {
+        return this.cache.has(key);
+    }
+
+    size(): number {
+        return this.cache.size;
+    }
+
+    generateKey(model: string, messages: any[]): string {
+        // Create a stable key from model and message content
+        const content = messages.map(m => `${m.role}:${m.content.substring(0, 100)}`).join('|');
+        return `${model}:${this.hashString(content)}`;
+    }
+
+    private hashString(str: string): string {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(36);
+    }
+}
+
+// Mock XAI Client with caching
+class CachedXAIClient {
+    private cache: ResponseCache;
+    private realClient: any;
+
+    constructor(apiKey: string, config: any, outputChannel: any, cache: ResponseCache) {
+        this.cache = cache;
+        // Only create real client if we have API key
+        if (apiKey) {
+            const { XAIClient } = require('../ai/xaiClient');
+            this.realClient = new XAIClient(apiKey, config, outputChannel);
+        }
+    }
+
+    async chat(messages: any[], options?: any): Promise<string> {
+        const model = 'grok-code-fast-1';
+        const key = this.cache.generateKey(model, messages);
+
+        // Check cache first
+        if (this.cache.has(key)) {
+            console.log('[Cache] ✅ Cache hit - returning cached response');
+            return this.cache.get(key)!;
+        }
+
+        console.log('[Cache] ❌ Cache miss - making real API call');
+
+        if (!this.realClient) {
+            throw new Error('No API key available and no cached response');
+        }
+
+        // Make real API call
+        const response = await this.realClient.chat(messages, options);
+
+        // Cache the response
+        this.cache.set(key, response);
+        await this.cache.save();
+
+        return response;
+    }
+
+    parseResponse(response: string): any {
+        if (this.realClient) {
+            return this.realClient.parseResponse(response);
+        }
+        // Simple fallback parser
+        return {
+            mainContent: response,
+            questions: [],
+            requestedDocs: [],
+            validationStatus: undefined
+        };
+    }
+}
+
+// Mock workspace configuration
+class MockWorkspaceConfiguration {
+    private config: Map<string, any> = new Map();
+
+    constructor(initialConfig?: Record<string, any>) {
+        if (initialConfig) {
+            Object.entries(initialConfig).forEach(([key, value]) => {
+                this.config.set(key, value);
+            });
+        }
+    }
+
+    get<T>(section: string, defaultValue?: T): T {
+        return this.config.get(section) ?? defaultValue as T;
+    }
+
+    has(section: string): boolean {
+        return this.config.has(section);
+    }
+
+    inspect<T>(section: string): { key: string } | undefined {
+        return undefined;
+    }
+
+    update(section: string, value: any): Thenable<void> {
+        this.config.set(section, value);
+        return Promise.resolve();
+    }
+}
+
+// Mock output channel
+class MockOutputChannel {
+    name: string = 'Test';
+    lines: string[] = [];
+
+    append(value: string): void {
+        this.lines.push(value);
+    }
+
+    appendLine(value: string): void {
+        this.lines.push(value + '\n');
+    }
+
+    clear(): void {
+        this.lines = [];
+    }
+
+    show(columnOrPreserveFocus?: any, preserveFocus?: boolean): void {
+        // Silent for tests
+    }
+
+    hide(): void { }
+    dispose(): void { }
+    replace(value: string): void { }
+}
+
+export async function runScaffoldIntegrationTest(): Promise<void> {
+    const runner = new TestRunner();
+
+    // Test Suite: Game of Life Scaffold with Caching
+    runner.describe('Game of Life Scaffold Integration Test', () => {
+        const cachePath = path.join(__dirname, '../../test-cache.json');
+        const testOutputDir = path.join(__dirname, '../../test-output');
+        let cache: ResponseCache;
+
+        it('should scaffold complete game-of-life project with caching', async () => {
+            console.log('\n[Test] Starting Game of Life scaffold test...');
+
+            // Setup cache
+            cache = new ResponseCache(cachePath);
+            await cache.load();
+
+            // Setup mocks
+            const config = new MockWorkspaceConfiguration({
+                apiEndpoint: 'https://api.x.ai/v1',
+                model: 'grok-code-fast-1'
+            });
+            const output = new MockOutputChannel();
+
+            // Get API key
+            const apiKey = process.env.PROMPT_PRESS_XAI_API_KEY;
+            if (!apiKey && cache.size() === 0) {
+                console.log('      ⏭️  Skipping - no API key and no cache');
+                return;
+            }
+
+            // Create client with caching
+            const client = new CachedXAIClient(apiKey || '', config, output, cache);
+
+            // Create test output directory
+            await fs.mkdir(testOutputDir, { recursive: true });
+
+            // Test 1: Generate Requirement Specification
+            console.log('\n[Test] Step 1: Generating requirement specification...');
+            const reqResponse = await generateRequirement(client, testOutputDir);
+            console.log('[Test] ✅ Requirement generated:', reqResponse.length, 'characters');
+
+            // Validate requirement structure
+            Assert.ok(reqResponse.includes('---'), 'Should have YAML frontmatter');
+            Assert.ok(reqResponse.includes('artifact:'), 'Should have artifact field');
+            Assert.ok(reqResponse.includes('phase: requirement'), 'Should have phase field');
+            Assert.ok(reqResponse.includes('## Functional Requirements'), 'Should have functional requirements section');
+
+            // Save requirement
+            const reqPath = path.join(testOutputDir, 'game-of-life.req.md');
+            await fs.writeFile(reqPath, reqResponse, 'utf-8');
+            console.log('[Test] Saved requirement to:', reqPath);
+
+            // Test 2: Generate Design Specification
+            console.log('\n[Test] Step 2: Generating design specification...');
+            const designResponse = await generateDesign(client, reqResponse, testOutputDir);
+            console.log('[Test] ✅ Design generated:', designResponse.length, 'characters');
+
+            // Validate design structure
+            Assert.ok(designResponse.includes('---'), 'Should have YAML frontmatter');
+            Assert.ok(designResponse.includes('phase: design'), 'Should have design phase');
+            Assert.ok(designResponse.includes('## Architecture') || designResponse.includes('## Design'), 'Should have architecture/design section');
+
+            // Save design
+            const designPath = path.join(testOutputDir, 'game-of-life.design.md');
+            await fs.writeFile(designPath, designResponse, 'utf-8');
+            console.log('[Test] Saved design to:', designPath);
+
+            // Test 3: Generate Implementation Specification
+            console.log('\n[Test] Step 3: Generating implementation specification...');
+            const implResponse = await generateImplementation(client, reqResponse, designResponse, testOutputDir);
+            console.log('[Test] ✅ Implementation generated:', implResponse.length, 'characters');
+
+            // Validate implementation structure
+            Assert.ok(implResponse.includes('---'), 'Should have YAML frontmatter');
+            Assert.ok(implResponse.includes('phase: implementation'), 'Should have implementation phase');
+
+            // Save implementation
+            const implPath = path.join(testOutputDir, 'game-of-life.impl.md');
+            await fs.writeFile(implPath, implResponse, 'utf-8');
+            console.log('[Test] Saved implementation to:', implPath);
+
+            // Verify all files exist
+            const reqExists = await fileExists(reqPath);
+            const designExists = await fileExists(designPath);
+            const implExists = await fileExists(implPath);
+
+            Assert.ok(reqExists, 'Requirement file should exist');
+            Assert.ok(designExists, 'Design file should exist');
+            Assert.ok(implExists, 'Implementation file should exist');
+
+            console.log('\n[Test] ✅ Complete scaffold generated successfully!');
+            console.log('[Test] Files created:');
+            console.log('      -', reqPath);
+            console.log('      -', designPath);
+            console.log('      -', implPath);
+        });
+
+        it('should use cached responses on second run', async () => {
+            console.log('\n[Test] Testing cache effectiveness...');
+
+            // Reload cache
+            cache = new ResponseCache(cachePath);
+            await cache.load();
+
+            const initialSize = cache.size();
+            console.log('[Test] Cache size before test:', initialSize);
+
+            if (initialSize === 0) {
+                console.log('      ⏭️  Skipping - no cache available yet');
+                return;
+            }
+
+            // Setup mocks (no API key needed - should use cache)
+            const config = new MockWorkspaceConfiguration({
+                apiEndpoint: 'https://api.x.ai/v1',
+                model: 'grok-code-fast-1'
+            });
+            const output = new MockOutputChannel();
+
+            // Create client WITHOUT API key - must use cache
+            const client = new CachedXAIClient('', config, output, cache);
+
+            // Try to generate requirement (should come from cache)
+            console.log('[Test] Generating requirement from cache...');
+            const reqResponse = await generateRequirement(client, testOutputDir);
+
+            Assert.ok(reqResponse.length > 0, 'Should get response from cache');
+            console.log('[Test] ✅ Successfully used cached response');
+
+            const finalSize = cache.size();
+            console.log('[Test] Cache size after test:', finalSize);
+            Assert.equal(finalSize, initialSize, 'Cache size should not change when using cached responses');
+        });
+    });
+
+    await runner.run();
+    runner.printSummary();
+}
+
+async function generateRequirement(client: CachedXAIClient, outputDir: string): Promise<string> {
+    const systemPrompt = `You are an expert at writing formal software requirements. Generate a PromptPress requirement specification following this exact structure:
+
+---
+artifact: game-of-life
+phase: requirement
+depends-on: []
+references: []
+version: 1.0.0
+last-updated: ${new Date().toISOString().split('T')[0]}
+---
+
+# Game of Life - Requirements
+
+## Overview
+[High-level description]
+
+## Functional Requirements
+- FR-1: [Requirement]
+- FR-2: [Requirement]
+...
+
+## Non-Functional Requirements
+- NFR-1: [Performance, security, scalability, etc.]
+...
+
+## Questions & Clarifications
+[AI-CLARIFY: Any ambiguities that need clarification?]
+
+## Cross-References
+[Any dependencies or related artifacts]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+Generate a complete, well-structured requirement specification. Be specific and thorough.`;
+
+    const userPrompt = `Generate a requirement specification for:
+
+Web-based Conway's Game of Life implementation with interactive controls, pattern library, and performance optimization for large grids.`;
+
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+    ];
+
+    return await client.chat(messages);
+}
+
+async function generateDesign(client: CachedXAIClient, requirement: string, outputDir: string): Promise<string> {
+    const systemPrompt = `You are an expert software architect. Generate a PromptPress design specification based on the provided requirements.
+
+Structure:
+---
+artifact: game-of-life
+phase: design
+depends-on: [game-of-life.req]
+references: []
+version: 1.0.0
+last-updated: ${new Date().toISOString().split('T')[0]}
+---
+
+# Game of Life - Design
+
+## Architecture Overview
+[High-level architecture description]
+
+## Component Design
+[Detailed component breakdown]
+
+## Data Structures
+[Key data structures]
+
+## API Design
+[Interface definitions]
+
+## Performance Considerations
+[Optimization strategies]
+
+Be specific and technically detailed.`;
+
+    const userPrompt = `Based on these requirements, generate a design specification:
+
+${requirement.substring(0, 2000)}...`;
+
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+    ];
+
+    return await client.chat(messages);
+}
+
+async function generateImplementation(client: CachedXAIClient, requirement: string, design: string, outputDir: string): Promise<string> {
+    const systemPrompt = `You are an expert at writing precise implementation specifications. Generate a PromptPress implementation specification.
+
+Structure:
+---
+artifact: game-of-life
+phase: implementation
+depends-on: [game-of-life.req, game-of-life.design]
+references: []
+version: 1.0.0
+last-updated: ${new Date().toISOString().split('T')[0]}
+---
+
+# Game of Life - Implementation
+
+## File Structure
+[Detailed file organization]
+
+## Module Implementation
+[Precise implementation details for each module]
+
+## Code Generation Instructions
+[Exact instructions for code generation]
+
+Be extremely precise and unambiguous - this will be used to generate code.`;
+
+    const userPrompt = `Based on requirements and design, generate implementation specification:
+
+REQUIREMENTS:
+${requirement.substring(0, 1000)}...
+
+DESIGN:
+${design.substring(0, 1000)}...`;
+
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+    ];
+
+    return await client.chat(messages);
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export { runScaffoldIntegrationTest as default };

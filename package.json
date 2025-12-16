@@ -102,6 +102,7 @@
     "lint": "eslint src --ext ts",
     "test": "npm run compile && node ./out/test/runner.js",
     "test:unit": "node ./out/test/runner.js",
+    "test:scaffold": "node ./out/test/runner.js scaffold",
     "package": "vsce package",
     "install-deps": "npm install"
   },
