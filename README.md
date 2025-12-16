@@ -106,6 +106,20 @@ PromptPress shifts technical debt from source code to parsable markdown document
 - Extension SHALL create properly structured markdown files with correct metadata
 - Scaffolding SHALL follow the same formal markdown schema as manual specs
 
+### FR-13: Change Detection and Cascading
+- Extension SHALL provide command to detect changes in requirement or design specs
+- Extension SHALL check git status and warn if uncommitted changes exist before proceeding
+- Extension SHALL allow user to commit changes before cascade operation
+- Extension SHALL compare current content with cached baseline or git history
+- Extension SHALL identify modified sections at markdown heading level
+- Extension SHALL generate human-readable change summaries
+- Extension SHALL update the source document itself if changes reveal extractable requirements, design elements, or implementation details
+- Extension SHALL cascade changes from requirement → design → implementation
+- Extension SHALL cascade changes from design → implementation
+- Extension SHALL use AI to regenerate affected specifications with change context
+- Extension SHALL update baseline cache after successful cascade operations
+- Extension SHALL handle missing dependent files gracefully
+
 ## Non-Functional Requirements
 
 ### NFR-1: Traceability
@@ -136,6 +150,8 @@ PromptPress shifts technical debt from source code to parsable markdown document
 - Extension SHALL implement a webview panel for chat interface
 - Extension SHALL store configuration in workspace settings
 - Extension SHALL register commands for manual triggering of AI interactions
+- Extension SHALL separate platform-agnostic logic (CascadeCore) from VS Code-specific UI (CascadeServiceCommands)
+- Extension SHALL support dependency injection for logging and UI interactions to enable testability
 
 ### TR-2: Markdown Parsing and Validation
 - Extension SHALL parse markdown files to extract structure and metadata
@@ -346,6 +362,94 @@ Validation result if checking spec completeness.
 9. Repeat steps 4-8 until spec is refined
 10. Extension updates markdown with final AI-generated content upon approval
 
+### Apply Changes Workflow (Cascade)
+
+The **Apply Changes** command automates propagation of specification changes through the SDLC phases, including refinement of the source document itself.
+
+**When to use:**
+- After modifying a requirement spec (`.req.md`) that has dependent design/implementation files
+- After modifying a design spec (`.design.md`) that has dependent implementation files
+- After making substantial edits to any spec that could benefit from AI refinement
+- When you want AI to regenerate downstream specs based on upstream changes
+
+**How it works:**
+
+1. **Git Status Check**
+   - Checks for uncommitted changes in the workspace
+   - If uncommitted changes exist:
+     - Warns user: "You have uncommitted changes. Commit before cascading?"
+     - Presents options: "Commit & Continue", "Continue Anyway", "Cancel"
+     - "Commit & Continue" opens source control view for user to commit
+   - This prevents loss of work if cascade produces unexpected results
+
+2. **Change Detection**
+   - Compares current file content with baseline (cached or git HEAD)
+   - Identifies modified sections at markdown heading level (`##`)
+   - Generates human-readable change summary (sections modified, lines added/removed)
+
+3. **Self-Document Refinement**
+   - AI analyzes modified content for extractable information
+   - Examples:
+     - Overview changes in `.req.md` may reveal new functional requirements
+     - Architecture discussions in `.design.md` may clarify component responsibilities
+     - Implementation notes may suggest better API contracts
+   - If refinements found, AI updates the source document with:
+     - Extracted requirements/design elements in appropriate sections
+     - Clarified ambiguities
+     - Improved structure and completeness
+
+4. **Cascade from Requirement** (`.req.md`)
+   - If `artifact-name.design.md` exists:
+     - AI regenerates design with change context
+     - Updates design file with new content
+   - If `artifact-name.impl.md` exists:
+     - AI regenerates implementation from updated design
+     - Updates implementation file with new content
+
+5. **Cascade from Design** (`.design.md`)
+   - If `artifact-name.impl.md` exists:
+     - AI regenerates implementation with change context
+     - Updates implementation file with new content
+   - Requires corresponding requirement file to exist
+
+6. **Baseline Update**
+   - After successful cascade, updates `.promptpress/cache/<filename>.baseline`
+   - Subsequent runs compare against this new baseline
+
+**Architecture:**
+- `CascadeCore` - Platform-agnostic change detection and cascade logic
+- `CascadeServiceCommands` - VS Code adapter with UI dialogs and output channel
+- Dependency injection enables testing without VS Code APIs
+
+**Example:**
+```bash
+# After editing game-of-life.req.md Overview to mention multiplayer
+1. Open game-of-life.req.md in VS Code
+2. Edit Overview: "...should support multiplayer mode with real-time sync..."
+3. Run: PromptPress: Apply Changes (Ctrl+Shift+P)
+4. Extension detects uncommitted changes
+   → "You have uncommitted changes. Commit before cascading?"
+   → Select "Commit & Continue", commit changes
+5. AI analyzes changes: "Modified 1 section(s), added 8 line(s)"
+6. AI refines game-of-life.req.md:
+   → Adds "FR-7: Multiplayer Support" extracted from Overview
+   → Adds "FR-8: Real-time Synchronization"
+   → Updates Overview to reference new requirements
+7. AI regenerates game-of-life.design.md with multiplayer architecture
+8. AI regenerates game-of-life.impl.md with multiplayer implementation
+9. Review all updated specs (source + cascaded)
+10. Commit refined specs as a logical unit
+```
+
+**Tips:**
+- Commit before cascading to enable easy rollback if needed
+- Write descriptive Overview/summary sections - AI extracts structure from prose
+- Make meaningful changes before cascading (avoid micro-iterations)
+- Review all AI-generated updates (source + cascaded docs) for accuracy
+- Commit refined specs together as a logical unit
+- Commit baseline cache to share change detection state with team
+- Use git history to track spec evolution and understand decision points
+
 ## Key Insights
 
 - **Code is ephemeral, specs are permanent** - The markdown specifications are the true source. Code can always be regenerated. Technical debt accumulates in markdown (which is parsable and refactorable), not in sprawling codebases.
@@ -386,7 +490,21 @@ npm run watch
 - **API Client Tests**: xAI API integration, error handling, model compatibility
 - **Configuration Tests**: Endpoint configuration, model selection
 - **Error Handling**: Output channel logging, request/response details
-- **Mock Objects**: VS Code API mocks for isolated testing
+- **Cascade Service Tests**: Change detection, baseline comparison, git fallback, cascade propagation
+- **Scaffold Integration Tests**: Complete artifact generation, caching, change propagation
+- **Mock Objects**: Platform-agnostic testing without VS Code dependencies
+
+**Running specific test suites:**
+```bash
+# Run cascade tests only
+npm run test:cascade
+
+# Run scaffold tests only
+npm run test:scaffold
+
+# Run all test suites
+npm run test:all
+```
 
 See [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for detailed testing documentation.
 

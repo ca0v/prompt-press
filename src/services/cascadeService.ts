@@ -30,6 +30,27 @@ export class CascadeServiceCommands {
      */
     async applyChanges(filePath: string) {
         const ui: CascadeUI = {
+            confirmGitStatus: async (hasUncommitted: boolean) => {
+                if (!hasUncommitted) {
+                    return 'continue';
+                }
+                const choice = await vscode.window.showWarningMessage(
+                    'You have uncommitted changes. Commit before cascading?',
+                    { modal: true },
+                    'Commit & Continue',
+                    'Continue Anyway',
+                    'Cancel'
+                );
+                if (choice === 'Commit & Continue') {
+                    // Open source control view
+                    await vscode.commands.executeCommand('workbench.view.scm');
+                    return 'commit';
+                } else if (choice === 'Continue Anyway') {
+                    return 'continue';
+                } else {
+                    return 'cancel';
+                }
+            },
             confirm: async (message: string) => {
                 const choice = await vscode.window.showWarningMessage(
                     message,

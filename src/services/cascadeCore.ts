@@ -24,6 +24,7 @@ export interface CascadeResult {
 
 export interface CascadeUI {
     confirm(message: string): Promise<boolean>;
+    confirmGitStatus(hasUncommitted: boolean): Promise<'commit'  | 'continue' | 'cancel'>;
     notifyInfo(message: string): void;
     notifyError(message: string): void;
 }
@@ -58,6 +59,22 @@ export class CascadeCore {
         try {
             this.logger.log(`[Cascade] Starting change detection for ${path.basename(filePath)}`);
 
+            // Check git status
+            const hasUncommitted = await this.checkGitStatus();
+            if (hasUncommitted) {
+                const gitAction = await ui.confirmGitStatus(hasUncommitted);
+                if (gitAction === 'cancel') {
+                    this.logger.log('[Cascade] User cancelled due to uncommitted changes');
+                    result.success = true;
+                    return result;
+                } else if (gitAction === 'commit') {
+                    ui.notifyInfo('Please commit your changes, then run Apply Changes again.');
+                    result.success = true;
+                    return result;
+                }
+                // 'continue' falls through
+            }
+
             await fs.mkdir(this.cacheDir, { recursive: true });
 
             const currentContent = await fs.readFile(filePath, 'utf-8');
@@ -81,14 +98,10 @@ export class CascadeCore {
             this.logger.log(`[Cascade] Changes detected in sections: ${changes.modifiedSections.join(', ')}`);
             this.logger.log(`[Cascade] Summary: ${changes.summary}`);
 
-            const confirmMessage = this.buildConfirmMessage(metadata, changes);
-            const proceed = await ui.confirm(confirmMessage);
-            if (!proceed) {
-                this.logger.log('[Cascade] User cancelled cascade operation');
-                result.success = true;
-                return result;
-            }
+            // Refine source document first
+            await this.refineSourceDocument(filePath, currentContent, changes, result);
 
+            // Then cascade to dependent files
             if (metadata.phase === 'requirement') {
                 await this.cascadeFromRequirement(filePath, currentContent, changes, result);
             } else if (metadata.phase === 'design') {
@@ -113,6 +126,83 @@ export class CascadeCore {
             result.errors.push(errorMsg);
             ui.notifyError(`Cascade failed: ${errorMsg}`);
             return result;
+        }
+    }
+
+    private async checkGitStatus(): Promise<boolean> {
+        try {
+            const { execSync } = require('child_process');
+            const status = execSync('git status --porcelain', {
+                cwd: this.workspaceRoot,
+                encoding: 'utf-8'
+            });
+            return status.trim().length > 0;
+        } catch {
+            // Git not available or not a git repo - proceed without check
+            return false;
+        }
+    }
+
+    private async refineSourceDocument(
+        filePath: string,
+        currentContent: string,
+        changes: ChangeDetectionResult,
+        result: CascadeResult
+    ): Promise<void> {
+        try {
+            const parsed = this.parser.parse(currentContent);
+            const metadata = parsed.metadata;
+            if (!metadata) { return; }
+
+            this.logger.log('[Cascade] Analyzing changes for extractable content...');
+
+            const systemPrompt = `You are an expert at refining technical specifications. Analyze the changes in this ${metadata.phase} specification and determine if any content should be extracted into formal sections.
+
+For REQUIREMENT specs:
+- Extract functional/non-functional requirements from prose in Overview or other sections
+- Number them appropriately (FR-N, NFR-N)
+- Ensure requirements are atomic, testable, and unambiguous
+
+For DESIGN specs:
+- Extract component descriptions, API contracts, data structures from discussions
+- Organize into proper sections (Components, APIs, Data Models)
+- Clarify architectural decisions
+
+For IMPLEMENTATION specs:
+- Extract precise code generation instructions from notes
+- Organize into File Structure, Module Implementation sections
+- Add missing error handling or edge cases
+
+Return the refined document in full. Preserve the original metadata header exactly. Only make changes if meaningful extractions or clarifications are needed. If no refinement needed, return empty string.`;
+
+            const userPrompt = `Modified sections: ${changes.modifiedSections.join(', ')}
+
+Changes summary: ${changes.summary}
+
+Current document:
+${currentContent}
+
+Refine this document by extracting structured content from the changes. Return the complete refined document or empty string if no refinement needed.`;
+
+            const messages: ChatMessage[] = [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ];
+
+            this.logger.log('[Cascade] Calling AI for document refinement...');
+            const refinedContent = await this.xaiClient.chat(messages, { maxTokens: 4000 });
+
+            if (refinedContent && refinedContent.trim().length > 100) {
+                await fs.writeFile(filePath, refinedContent, 'utf-8');
+                result.updatedFiles.push(filePath);
+                this.logger.log(`[Cascade] ✅ Refined source document: ${path.basename(filePath)}`);
+            } else {
+                this.logger.log('[Cascade] No refinements needed for source document');
+            }
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            this.logger.log(`[Cascade] ⚠️  Document refinement skipped: ${errorMsg}`);
+            // Don't fail cascade if refinement fails
         }
     }
 
