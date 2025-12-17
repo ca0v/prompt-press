@@ -12,43 +12,73 @@ export class ImplParser {
     constructor(private parser: MarkdownParser, private xaiClient: XAIClient) {}
 
     async parseAndGenerate(implPath: string): Promise<void> {
+        console.log(`[ImplParser] Starting code generation for ${implPath}`);
+        
         const parsed = await this.parser.parseFile(implPath);
+        console.log(`[ImplParser] Parsed metadata: artifact=${parsed.metadata.artifact}, phase=${parsed.metadata.phase}`);
+        
         const fileStructureSection = parsed.sections.get('File Structure');
         if (!fileStructureSection) {
             throw new Error('File Structure section not found in impl.md');
         }
+        console.log(`[ImplParser] Found File Structure section (${fileStructureSection.length} chars)`);
+        
         const codeGenSection = parsed.sections.get('Code Generation Instructions') || '';
+        console.log(`[ImplParser] Found Code Generation Instructions section (${codeGenSection.length} chars)`);
+        
         const fileDescriptions = this.parseFileDescriptions(fileStructureSection);
-        const instructions = this.parseCodeInstructions(codeGenSection);
+        console.log(`[ImplParser] Parsed ${fileDescriptions.size} file descriptions`);
+        
+        let instructions = this.parseCodeInstructions(codeGenSection);
+        console.log(`[ImplParser] Parsed ${instructions.size} code generation instructions`);
+        
+        // If no code generation instructions, generate basic ones for all files
+        if (instructions.size === 0 && fileDescriptions.size > 0) {
+            console.log(`[ImplParser] No code generation instructions found, generating basic instructions for all ${fileDescriptions.size} files`);
+            instructions = this.generateBasicInstructions(fileDescriptions);
+            console.log(`[ImplParser] Generated ${instructions.size} basic instructions`);
+        }
 
         const base = path.dirname(implPath);
         const artifact = parsed.metadata.artifact;
-        const designPath = path.join(base, artifact + '.design.md');
-        const reqPath = path.join(base, artifact + '.req.md');
+        console.log(`[ImplParser] Base directory: ${base}, Artifact: ${artifact}`);
+        
+        // Assuming specs structure: specs/{phase}/{artifact}.{phase}.md
+        const specsRoot = path.dirname(base); // Go up from implementation/ to specs/
+        const designPath = path.join(specsRoot, 'design', artifact + '.design.md');
+        const reqPath = path.join(specsRoot, 'requirements', artifact + '.req.md');
 
         let designContent = '';
         let reqContent = '';
         try {
             designContent = await fs.readFile(designPath, 'utf8');
+            console.log(`[ImplParser] Loaded design file: ${designPath}`);
         } catch (e) {
-            // ignore if not found
+            console.log(`[ImplParser] Design file not found: ${designPath}`);
         }
         try {
             reqContent = await fs.readFile(reqPath, 'utf8');
+            console.log(`[ImplParser] Loaded requirements file: ${reqPath}`);
         } catch (e) {
-            // ignore
+            console.log(`[ImplParser] Requirements file not found: ${reqPath}`);
         }
 
         // Create output directory, perhaps artifact name
         const outputDir = path.join(base, artifact + '-generated');
+        console.log(`[ImplParser] Creating output directory: ${outputDir}`);
         await fs.mkdir(outputDir, { recursive: true });
 
         const clarifications: string[] = [];
 
+        console.log(`[ImplParser] Starting code generation for ${instructions.size} files...`);
         for (const [filePath, instr] of instructions) {
+            console.log(`[ImplParser] Processing file: ${filePath}`);
+            
             const fileName = path.basename(filePath);
-            const description = fileDescriptions.get(fileName) || 'No description available';
+            const description = fileDescriptions.get(filePath) || fileDescriptions.get(fileName) || 'No description available';
             const fullFilePath = path.join(outputDir, filePath);
+            console.log(`[ImplParser] Full output path: ${fullFilePath}`);
+            
             await fs.mkdir(path.dirname(fullFilePath), { recursive: true });
 
             const prompt = `Purpose: ${description}
@@ -71,45 +101,107 @@ Instructions: Implement the code for ${filePath} according to the above specific
 
             // Now call AI
             try {
+                console.log(`[ImplParser] Calling AI for ${filePath}...`);
                 const response = await this.xaiClient.chat([{ role: 'user', content: prompt }], { maxTokens: 8000 });
+                console.log(`[ImplParser] AI response received for ${filePath} (${response.length} chars): ${response.substring(0, 200)}${response.length > 200 ? '...' : ''}`);
                 
                 // Process response: extract clarifications
                 const parsedResponse = this.parser.parse(response);
-                clarifications.push(...parsedResponse.clarifications);
+                if (parsedResponse.clarifications.length > 0) {
+                    console.log(`[ImplParser] Found ${parsedResponse.clarifications.length} clarifications for ${filePath}`);
+                    clarifications.push(...parsedResponse.clarifications);
+                }
                 
                 // The content is the code
                 const code = response.replace(/\[AI-CLARIFY:[^\]]+\]/g, '').trim();
+                console.log(`[ImplParser] Writing generated code to ${fullFilePath}`);
                 
                 // Write the code to the file
                 await fs.writeFile(fullFilePath, code);
             } catch (error) {
-                console.error(`Failed to generate code for ${filePath}:`, error);
+                console.error(`[ImplParser] Failed to generate code for ${filePath}:`, error);
                 // Keep the prompt as is
             }
         }
 
         // If there are clarifications, append to impl.md
         if (clarifications.length > 0) {
+            console.log(`[ImplParser] Appending ${clarifications.length} clarifications to ${implPath}`);
             const clarificationText = clarifications.map(c => `[AI-CLARIFY: ${c}]`).join('\n');
             const implContent = await fs.readFile(implPath, 'utf8');
             const updatedContent = implContent + '\n\n' + clarificationText;
             await fs.writeFile(implPath, updatedContent);
+        } else {
+            console.log(`[ImplParser] No clarifications to append`);
         }
+        
+        console.log(`[ImplParser] Code generation completed for ${artifact}`);
     }
 
     private parseFileDescriptions(section: string): Map<string, string> {
         const descriptions = new Map<string, string>();
-        const regex = /- `([^`]+)`: ([^\n]+)/g;
+        
+        // First, try the original format: - `file`: desc
+        const originalRegex = /- `([^`]+)`: ([^\n]+)/g;
         let match;
-        while ((match = regex.exec(section)) !== null) {
+        let foundOriginal = false;
+        while ((match = originalRegex.exec(section)) !== null) {
             const filePath = match[1];
             const description = match[2];
-            // Skip directories (end with /)
             if (!filePath.endsWith('/')) {
-                const fileName = path.basename(filePath);
-                descriptions.set(fileName, description);
+                descriptions.set(filePath, description);
+                foundOriginal = true;
             }
         }
+        
+        if (foundOriginal) {
+            return descriptions;
+        }
+        
+        // If no original format, try tree format
+        console.log(`[ImplParser] No original format found, trying tree format parsing`);
+        const lines = section.split('\n');
+        const pathStack: string[] = [];
+        
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            
+            // Count indentation (spaces before ├── or └── or directory)
+            const indentMatch = line.match(/^(\s*)/);
+            const indent = indentMatch ? indentMatch[1].length : 0;
+            
+            // Adjust stack to current indent level (assuming 4 spaces per level)
+            const level = Math.floor(indent / 4);
+            while (pathStack.length > level) {
+                pathStack.pop();
+            }
+            
+            const trimmed = line.trim();
+            
+            if (trimmed.endsWith('/') && !trimmed.includes('├──') && !trimmed.includes('└──')) {
+                // Directory line like "src/"
+                const dirName = trimmed.replace('/', '');
+                pathStack.push(dirName);
+            } else if (trimmed.includes('├──') || trimmed.includes('└──')) {
+                const parts = trimmed.split('          # ');
+                if (parts.length === 2) {
+                    const filePart = parts[0].replace(/├──|└──/, '').trim();
+                    const description = parts[1].trim();
+                    
+                    if (filePart.endsWith('/')) {
+                        // Directory
+                        const dirName = filePart.replace('/', '');
+                        pathStack.push(dirName);
+                    } else {
+                        // File
+                        const fullPath = [...pathStack, filePart].join('/');
+                        descriptions.set(fullPath, description);
+                    }
+                }
+            }
+        }
+        
+        console.log(`[ImplParser] Parsed ${descriptions.size} file descriptions from tree format`);
         return descriptions;
     }
 
@@ -132,6 +224,14 @@ Instructions: Implement the code for ${filePath} according to the above specific
         }
         if (currentFile) {
             instructions.set(currentFile, currentText.trim());
+        }
+        return instructions;
+    }
+
+    private generateBasicInstructions(fileDescriptions: Map<string, string>): Map<string, string> {
+        const instructions = new Map<string, string>();
+        for (const [filePath, description] of fileDescriptions) {
+            instructions.set(filePath, `Implement the ${description}`);
         }
         return instructions;
     }

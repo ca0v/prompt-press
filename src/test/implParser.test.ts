@@ -25,23 +25,35 @@ function example() {
     console.log('Hello from ${filePath}');
 }
 module.exports = example;`;
+        } else if (ext === '.ts') {
+            return `// Implementation for ${filePath}
+// This is valid TypeScript code
+export class Example {
+    constructor() {
+        console.log('Hello from ${filePath}');
+    }
+}`;
         } else if (ext === '.html') {
             return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Game of Life</title>
+    <title>Game Board</title>
 </head>
 <body>
-    <h1>Game of Life</h1>
+    <h1>Game Board</h1>
     <div id="app"></div>
 </body>
 </html>`;
         } else if (ext === '.json') {
             return `{
-    "name": "game-of-life",
+    "name": "game-board",
     "version": "1.0.0"
 }`;
+        } else if (ext === '.md') {
+            return `# Game Board
+
+Implementation notes for the game board component.`;
         } else {
             return `// Mock implementation for ${filePath}`;
         }
@@ -86,6 +98,8 @@ export async function runImplParserTest(): Promise<void> {
                         const ext = path.extname(item.name);
                         if (ext === '.js') {
                             Assert.ok(content.includes('function') || content.includes('console.log'), `JS file ${fullPath} should contain valid JS code`);
+                        } else if (ext === '.ts') {
+                            Assert.ok(content.includes('export') || content.includes('class'), `TS file ${fullPath} should contain valid TS code`);
                         } else if (ext === '.html') {
                             Assert.ok(content.includes('<html'), `HTML file ${fullPath} should contain valid HTML`);
                         }
