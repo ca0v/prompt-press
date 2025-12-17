@@ -113,11 +113,13 @@ export class SpecFileWatcher implements vscode.Disposable {
             `phase: ${metadata.phase}`,
         ];
         
-        if (metadata.dependsOn && metadata.dependsOn.length > 0) {
-            frontmatterLines.push(`depends-on: [${metadata.dependsOn.join(', ')}]`);
+        if (metadata.dependsOn !== undefined) {
+            const items = (metadata.dependsOn || []).map(v => `"${v}"`).join(', ');
+            frontmatterLines.push(`depends-on: [${items}]`);
         }
-        if (metadata.references && metadata.references.length > 0) {
-            frontmatterLines.push(`references: [${metadata.references.join(', ')}]`);
+        if (metadata.references !== undefined) {
+            const items = (metadata.references || []).map(v => `"${v}"`).join(', ');
+            frontmatterLines.push(`references: [${items}]`);
         }
         if (metadata.version) {
             frontmatterLines.push(`version: ${metadata.version}`);

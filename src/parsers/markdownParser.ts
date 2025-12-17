@@ -60,7 +60,17 @@ export class MarkdownParser {
         }
 
         try {
-            const metadata = YAML.parse(frontmatterMatch[1]) as SpecMetadata;
+            const raw = YAML.parse(frontmatterMatch[1]) as any;
+            const dependsOn = raw['depends-on'] ?? raw.dependsOn ?? [];
+            const references = raw.references ?? [];
+            const metadata: SpecMetadata = {
+                artifact: raw.artifact || 'unknown',
+                phase: raw.phase || 'requirement',
+                dependsOn,
+                references,
+                version: raw.version,
+                lastUpdated: raw['last-updated'] ?? raw.lastUpdated
+            };
             return metadata;
         } catch (error) {
             console.error('Failed to parse metadata:', error);
