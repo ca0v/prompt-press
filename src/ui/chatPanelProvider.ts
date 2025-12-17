@@ -331,7 +331,7 @@ export class ChatPanelProvider implements vscode.Disposable {
         console.log('[Chat:updateMarkdownFile] Content length:', content.length);
 
         // Extract markdown content from response (remove conversational wrapper if present)
-        let markdownContent = this.extractMarkdownContent(content);
+        const markdownContent = this.extractMarkdownContent(content);
         console.log('[Chat:updateMarkdownFile] Extracted markdown length:', markdownContent.length);
 
         // Validate the content has required structure
