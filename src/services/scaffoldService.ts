@@ -11,6 +11,13 @@ type ReferencedArtifact = {
 
 export class ScaffoldService {
     private promptCache: Map<string, { system: string; user: string }> = new Map();
+    private outputChannel: vscode.OutputChannel;
+    private aiClient: XAIClient;
+
+    constructor(aiClient: XAIClient, outputChannel: vscode.OutputChannel) {
+        this.aiClient = aiClient;
+        this.outputChannel = outputChannel;
+    }
 
     /**
      * Load prompt templates from markdown files (system/user split by ---\n\n# User Prompt:)
@@ -320,7 +327,7 @@ export class ScaffoldService {
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
             return response;
-        } catch (error) {
+        } catch (error: any) {
             this.outputChannel.appendLine(`[Scaffold] Error generating design: ${error.message}`);
             throw error;
         }
