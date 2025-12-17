@@ -614,84 +614,27 @@ export class ScaffoldService {
             await fs.mkdir(path.join(workspaceRoot, dir), { recursive: true });
         }
 
-        // Create ConOps.md template
-        const conopsContent = `---
-artifact: conops
-phase: concept
-depends-on: []
-references: []
-version: 1.0.0
-last-updated: ${new Date().toISOString().split('T')[0]}
----
-
-# Concept of Operations (ConOps)
-
-## Executive Summary
-[High-level overview of the project, its purpose, and key objectives]
-
-## Business Objectives
-- [Primary business goals]
-- [Success criteria]
-- [Value proposition]
-
-## Stakeholders
-- [Key users and their roles]
-- [System administrators]
-- [External systems/interfaces]
-
-## Operational Concept
-### Current State
-[Description of current processes, pain points, and limitations]
-
-### Proposed Solution
-[High-level description of how the system will work]
-
-### Operational Scenarios
-- [Scenario 1: Description]
-- [Scenario 2: Description]
-
-## Functional Requirements Overview
-[High-level functional capabilities the system must provide]
-
-## Non-Functional Requirements Overview
-[Performance, security, usability, scalability requirements]
-
-## Constraints and Assumptions
-- [Technical constraints]
-- [Business constraints]
-- [Assumptions]
-
-## Risks and Mitigations
-- [Risk 1: Mitigation]
-- [Risk 2: Mitigation]
-
-## Future Considerations
-[Roadmap, scalability, extensibility]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-`;
-
-        await fs.writeFile(path.join(workspaceRoot, 'specs', 'ConOps.md'), conopsContent, 'utf-8');
+        // Create ConOps.md from template
+        const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
+        const conopsContent = await fs.readFile(conopsTemplatePath, 'utf-8');
+        const conopsWithDate = conopsContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
+        await fs.writeFile(path.join(workspaceRoot, 'specs', 'ConOps.md'), conopsWithDate, 'utf-8');
 
         // Set up configuration files (.gitignore, VS Code settings)
         await this.setupConfigurationFiles(workspaceRoot);
 
-        // Copy templates if they don't exist
+        // Copy templates
         const templateSource = path.join(__dirname, '../../templates');
         const templateDest = path.join(workspaceRoot, 'templates');
 
         try {
-            // Check if we have templates in extension
+            // Copy template files from extension to workspace
             const templates = ['requirement.template.md', 'design.template.md', 'implementation.template.md'];
             for (const template of templates) {
+                const srcPath = path.join(templateSource, template);
                 const destPath = path.join(templateDest, template);
-                try {
-                    await fs.access(destPath);
-                } catch {
-                    // Template doesn't exist, create basic one
-                    await this.createBasicTemplate(destPath, template);
-                }
+                const content = await fs.readFile(srcPath, 'utf-8');
+                await fs.writeFile(destPath, content, 'utf-8');
             }
         } catch (error) {
             console.warn('Could not copy templates:', error);
@@ -700,40 +643,5 @@ last-updated: ${new Date().toISOString().split('T')[0]}
         vscode.window.showInformationMessage(
             '✅ PromptPress project structure created! Use "Scaffold Artifact" to create your first spec.'
         );
-    }
-
-    /**
-     * Create a basic template file
-     */
-    private async createBasicTemplate(filePath: string, templateName: string): Promise<void> {
-        const phase = templateName.replace('.template.md', '').replace('requirement', 'requirement');
-        const content = `---
-artifact: <artifact-name>
-phase: ${phase === 'requirement' ? 'requirement' : phase}
-depends-on: []
-references: []
-version: 1.0.0
-last-updated: YYYY-MM-DD
----
-
-# [Artifact Name] - ${phase.charAt(0).toUpperCase() + phase.slice(1)}
-
-## Overview
-[Description]
-
-## [Phase-Specific Sections]
-[Content]
-
-## Questions & Clarifications
-[AI-CLARIFY: Questions?]
-
-## Cross-References
-[References to other specs]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-`;
-
-        await fs.writeFile(filePath, content, 'utf-8');
     }
 }
