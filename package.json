@@ -44,6 +44,10 @@
       {
         "command": "promptpress.applyChanges",
         "title": "PromptPress: Apply Changes"
+      },
+      {
+        "command": "promptpress.generateImplementation",
+        "title": "PromptPress: Generate Implementation"
       }
     ],
     "configuration": {

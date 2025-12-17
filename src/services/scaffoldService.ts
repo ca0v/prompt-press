@@ -374,6 +374,229 @@ Generate a complete, detailed design specification. Be precise about architectur
     }
 
     /**
+     * Generate implementation spec from existing requirement and design specs
+     */
+    public async generateImplementationSpec(): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+
+        // Get active editor or prompt for artifact name
+        const editor = vscode.window.activeTextEditor;
+        let artifactName: string | undefined;
+
+        if (editor) {
+            const filePath = editor.document.uri.fsPath;
+            const match = filePath.match(/([a-z0-9-]+)\.(req|design)\.md$/);
+            if (match) {
+                artifactName = match[1];
+            }
+        }
+
+        if (!artifactName) {
+            artifactName = await vscode.window.showInputBox({
+                prompt: 'Enter artifact name (e.g., user-authentication)',
+                placeHolder: 'artifact-name',
+                validateInput: (value) => {
+                    if (!value.match(/^[a-z0-9-]+$/)) {
+                        return 'Use lowercase letters, numbers, and hyphens only';
+                    }
+                    return null;
+                }
+            });
+
+            if (!artifactName) {
+                return;
+            }
+        }
+
+        const reqDir = path.join(workspaceRoot, 'specs', 'requirements');
+        const designDir = path.join(workspaceRoot, 'specs', 'design');
+        const implDir = path.join(workspaceRoot, 'specs', 'implementation');
+
+        const reqPath = path.join(reqDir, `${artifactName}.req.md`);
+        const designPath = path.join(designDir, `${artifactName}.design.md`);
+        const implPath = path.join(implDir, `${artifactName}.impl.md`);
+
+        // Check if requirement and design exist
+        try {
+            await fs.access(reqPath);
+            await fs.access(designPath);
+        } catch {
+            vscode.window.showErrorMessage(
+                `Missing requirement or design spec for ${artifactName}. Both ${artifactName}.req.md and ${artifactName}.design.md must exist.`
+            );
+            return;
+        }
+
+        // Check if implementation already exists
+        try {
+            await fs.access(implPath);
+            const response = await vscode.window.showWarningMessage(
+                `Implementation spec ${artifactName}.impl.md already exists. Overwrite?`,
+                'Yes',
+                'No'
+            );
+            if (response !== 'Yes') {
+                return;
+            }
+        } catch {
+            // Implementation doesn't exist, good to proceed
+        }
+
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: `Generating implementation for ${artifactName}...`,
+                cancellable: false
+            },
+            async (progress) => {
+                try {
+                    this.outputChannel.appendLine(`[Generate] Reading requirement and design specs...`);
+                    const requirementContent = await fs.readFile(reqPath, 'utf-8');
+                    const designContent = await fs.readFile(designPath, 'utf-8');
+
+                    this.outputChannel.appendLine(`[Generate] Generating implementation spec with AI...`);
+                    const implSpec = await this.generateImplementation(
+                        artifactName,
+                        requirementContent,
+                        designContent
+                    );
+
+                    await fs.mkdir(implDir, { recursive: true });
+                    await fs.writeFile(implPath, implSpec, 'utf-8');
+
+                    this.outputChannel.appendLine(`[Generate] ✅ Implementation spec created: ${implPath}`);
+                    vscode.window.showInformationMessage(
+                        `✅ Implementation spec generated: ${artifactName}.impl.md`
+                    );
+
+                    // Open the generated file
+                    const doc = await vscode.workspace.openTextDocument(implPath);
+                    await vscode.window.showTextDocument(doc);
+
+                } catch (error: any) {
+                    this.outputChannel.appendLine(`[ERROR] Implementation generation failed: ${error.message}`);
+                    this.outputChannel.show();
+                    vscode.window.showErrorMessage(`Failed to generate implementation: ${error.message}`);
+                }
+            }
+        );
+    }
+
+    /**
+     * Generate implementation specification using AI
+     */
+    private async generateImplementation(
+        artifactName: string,
+        requirementSpec: string,
+        designSpec: string
+    ): Promise<string> {
+        this.outputChannel.appendLine(`[Generate] Generating implementation for artifact: ${artifactName}`);
+
+        const artifactTitle = artifactName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+        const messages: ChatMessage[] = [
+            {
+                role: 'system',
+                content: `You are an expert software engineer. Generate a PromptPress implementation specification following this exact structure:
+
+---
+artifact: ${artifactName}
+phase: implementation
+depends-on: []
+references: [@ref:${artifactName}.req, @ref:${artifactName}.design]
+version: 1.0.0
+last-updated: ${new Date().toISOString().split('T')[0]}
+---
+
+# ${artifactTitle} - Implementation
+
+## Overview
+[High-level implementation summary]
+
+## File Structure
+\`\`\`
+artifact-name/
+├── src/
+│   ├── index.ts
+│   └── ...
+└── tests/
+    └── ...
+\`\`\`
+
+## Modules & Components
+### Module 1
+- Purpose: [What it does]
+- Exports: [Public API]
+- Dependencies: [What it uses]
+
+## Implementation Details
+### Component/Function 1
+- Signature: \`function name(params): returnType\`
+- Logic: [Step-by-step algorithm]
+- Edge cases: [Error handling, validation]
+
+## Data Structures
+\`\`\`typescript
+interface Example {
+    // ...
+}
+\`\`\`
+
+## Test Scenarios
+- Test 1: [What to test, expected behavior]
+- Test 2: [Edge case testing]
+
+## Dependencies
+- package1: [Why needed]
+- package2: [Purpose]
+
+## Configuration
+[Environment variables, config files, setup]
+
+## Deployment Notes
+[Build process, deployment steps]
+
+## Cross-References
+- @ref:${artifactName}.req - Requirements
+- @ref:${artifactName}.design - Design
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+Generate a complete, precise implementation specification. Include exact function signatures, detailed logic, and comprehensive test scenarios.`
+            },
+            {
+                role: 'user',
+                content: `Generate an implementation specification based on:
+
+**Requirements:**
+${requirementSpec}
+
+**Design:**
+${designSpec}`
+            }
+        ];
+
+        this.outputChannel.appendLine(`[Generate] Sending ${messages.length} messages to AI`);
+        
+        try {
+            const result = await this.aiClient.chat(messages);
+            this.outputChannel.appendLine(`[Generate] Implementation generation successful`);
+            return result;
+        } catch (error: any) {
+            this.outputChannel.appendLine(`[ERROR] Implementation generation failed: ${error.message}`);
+            this.outputChannel.show();
+            throw error;
+        }
+    }
+
+    /**
      * Create spec files in workspace
      */
     private async createSpecFiles(

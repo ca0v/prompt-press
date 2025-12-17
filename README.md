@@ -122,6 +122,7 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
 ### FR-12: Artifact Scaffolding
 - Extension SHALL provide command to scaffold new PromptPress projects
 - Extension SHALL provide command to scaffold individual artifacts
+- Extension SHALL provide command to generate implementation specs from existing requirement/design pairs
 - Extension SHALL use AI to generate initial requirement and design specifications
 - Extension SHALL accept high-level description or reference to project README
 - Extension SHALL create properly structured markdown files with correct metadata
