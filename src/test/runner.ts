@@ -12,6 +12,7 @@ import { runXAIClientTests } from './xaiClient.test';
 import { runScaffoldIntegrationTest } from './scaffold-integration.test';
 import { runCascadeServiceTest } from './cascadeService.test';
 import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test';
+import { runImplParserTest } from './implParser.test';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -33,6 +34,9 @@ async function main() {
             console.log('\n2️⃣  Cascade Service Tests\n');
             await runCascadeServiceTest();
             
+            console.log('\n5️⃣  ImplParser Tests\n');
+            await runImplParserTest();
+            
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();
             
@@ -50,6 +54,7 @@ async function main() {
         } else {
             console.log('📦 Running Standard Tests\n');
             await runXAIClientTests();
+            await runImplParserTest();
             
             console.log('\n💡 Tips:');
             console.log('  - Run "node out/test/runner.js scaffold" for scaffold integration tests');
