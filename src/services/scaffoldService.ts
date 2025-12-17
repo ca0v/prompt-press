@@ -400,6 +400,56 @@ Generate a complete, detailed design specification. Be precise about architectur
     /**
      * Scaffold entire project structure
      */
+    private async setupConfigurationFiles(workspaceRoot: string): Promise<void> {
+        // Update .gitignore to exclude .baseline files
+        const gitignorePath = path.join(workspaceRoot, '.gitignore');
+        const baselineIgnorePattern = '*.baseline';
+        
+        try {
+            const existingGitignore = await fs.readFile(gitignorePath, 'utf-8');
+            // Only add if not already present
+            if (!existingGitignore.includes(baselineIgnorePattern)) {
+                const updatedGitignore = existingGitignore.trimEnd() + `\n\n# PromptPress cache files\n${baselineIgnorePattern}\n.promptpress/\n`;
+                await fs.writeFile(gitignorePath, updatedGitignore, 'utf-8');
+                this.outputChannel.appendLine('[Scaffold] Updated .gitignore to exclude .baseline files');
+            }
+        } catch {
+            // .gitignore doesn't exist, create it
+            const gitignoreContent = `# PromptPress cache files\n${baselineIgnorePattern}\n.promptpress/\n`;
+            await fs.writeFile(gitignorePath, gitignoreContent, 'utf-8');
+            this.outputChannel.appendLine('[Scaffold] Created .gitignore to exclude .baseline files');
+        }
+
+        // Update VS Code settings to exclude .baseline from search
+        const vscodeDir = path.join(workspaceRoot, '.vscode');
+        const settingsPath = path.join(vscodeDir, 'settings.json');
+
+        try {
+            await fs.mkdir(vscodeDir, { recursive: true });
+            let settings: any = {};
+            
+            try {
+                const existingSettings = await fs.readFile(settingsPath, 'utf-8');
+                settings = JSON.parse(existingSettings);
+            } catch {
+                // File doesn't exist or is invalid JSON, start fresh
+            }
+
+            // Add search exclude pattern for .baseline files if not present
+            if (!settings['search.exclude']) {
+                settings['search.exclude'] = {};
+            }
+            if (!settings['search.exclude']['**/*.baseline']) {
+                settings['search.exclude']['**/*.baseline'] = true;
+                settings['search.exclude']['.promptpress/**'] = true;
+                await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+                this.outputChannel.appendLine('[Scaffold] Updated VS Code settings to exclude .baseline from search');
+            }
+        } catch (error) {
+            this.outputChannel.appendLine(`[Scaffold] Warning: Could not update VS Code settings: ${error}`);
+        }
+    }
+
     public async scaffoldProject(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -441,6 +491,9 @@ Generate a complete, detailed design specification. Be precise about architectur
         for (const dir of dirs) {
             await fs.mkdir(path.join(workspaceRoot, dir), { recursive: true });
         }
+
+        // Set up configuration files (.gitignore, VS Code settings)
+        await this.setupConfigurationFiles(workspaceRoot);
 
         // Copy templates if they don't exist
         const templateSource = path.join(__dirname, '../../templates');
