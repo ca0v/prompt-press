@@ -83,18 +83,25 @@ export class SpecFileWatcher implements vscode.Disposable {
         try {
             const content = await fs.readFile(filePath, 'utf-8');
             const parsed = this.parser.parse(content);
-            
             if (parsed.metadata) {
                 const today = new Date().toISOString().split('T')[0];
                 parsed.metadata.lastUpdated = today;
-                
-                // Reconstruct frontmatter with updated lastUpdated
+
+                // Enforce correct phase based on file extension
+                if (filePath.endsWith('.req.md')) {
+                    parsed.metadata.phase = 'requirement';
+                } else if (filePath.endsWith('.design.md')) {
+                    parsed.metadata.phase = 'design';
+                } else if (filePath.endsWith('.impl.md')) {
+                    parsed.metadata.phase = 'implementation';
+                }
+
+                // Reconstruct frontmatter with updated metadata
                 const updatedContent = this.updateFrontmatter(content, parsed.metadata);
-                
                 // Only write if changed
                 if (updatedContent !== content) {
                     await fs.writeFile(filePath, updatedContent, 'utf-8');
-                    console.log(`PromptPress: Updated last-updated field in ${path.basename(filePath)}`);
+                    console.log(`PromptPress: Updated last-updated/phase in ${path.basename(filePath)}`);
                 }
             }
         } catch (error) {
