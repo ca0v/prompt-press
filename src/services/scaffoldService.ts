@@ -442,8 +442,9 @@ Generate a complete, detailed design specification. Be precise about architectur
             if (!settings['search.exclude']['**/*.baseline']) {
                 settings['search.exclude']['**/*.baseline'] = true;
                 settings['search.exclude']['.promptpress/**'] = true;
+                settings['search.exclude']['templates/**'] = true;
                 await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
-                this.outputChannel.appendLine('[Scaffold] Updated VS Code settings to exclude .baseline from search');
+                this.outputChannel.appendLine('[Scaffold] Updated VS Code settings to exclude .baseline and templates from search');
             }
         } catch (error) {
             this.outputChannel.appendLine(`[Scaffold] Warning: Could not update VS Code settings: ${error}`);
