@@ -96,6 +96,13 @@ export class SpecFileWatcher implements vscode.Disposable {
                     parsed.metadata.phase = 'implementation';
                 }
 
+                // Set artifact from filename if not present
+                const fileName = path.basename(filePath);
+                const artifactName = fileName.replace(/\.(req|design|impl)\.md$/, '');
+                if (parsed.metadata.artifact === 'unknown') {
+                    parsed.metadata.artifact = artifactName;
+                }
+
                 // Reconstruct frontmatter with updated metadata
                 const updatedContent = this.updateFrontmatter(content, parsed.metadata);
                 // Only write if changed

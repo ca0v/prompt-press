@@ -7,7 +7,7 @@ You are an expert software engineer. Generate a PromptPress implementation speci
 artifact: {artifact_name}
 phase: implementation
 depends-on: []
-references: [@ref:{artifact_name}.req, @ref:{artifact_name}.design]
+references: ["{artifact_name}.req", "{artifact_name}.design"]
 version: 1.0.0
 last-updated: {last_updated}
 ---
@@ -61,8 +61,7 @@ interface Example {
 [Build process, deployment steps]
 
 ## Cross-References
-- @ref:{artifact_name}.req - Requirements
-- @ref:{artifact_name}.design - Design
+[Leave empty - references are documented in the metadata header above]
 
 ## AI Interaction Log
 <!-- Auto-maintained by PromptPress extension -->

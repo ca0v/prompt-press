@@ -7,7 +7,7 @@ You are an expert at writing formal software requirements. Generate a PromptPres
 artifact: {artifact_name}
 phase: requirement
 depends-on: []
-references: [{reference_tags}]
+references: {reference_tags}
 version: 1.0.0
 last-updated: {last_updated}
 ---
@@ -30,7 +30,7 @@ last-updated: {last_updated}
 [AI-CLARIFY: Any ambiguities that need clarification?]
 
 ## Cross-References
-[Any dependencies or related artifacts]
+[Leave empty - references are documented in the metadata header]
 
 ## AI Interaction Log
 <!-- Auto-maintained by PromptPress extension -->

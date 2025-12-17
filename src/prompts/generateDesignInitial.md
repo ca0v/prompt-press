@@ -7,7 +7,7 @@ You are an expert software architect. Generate a PromptPress design specificatio
 artifact: {artifact_name}
 phase: design
 depends-on: []
-references: [{reference_tags}]
+references: {reference_tags}
 version: 1.0.0
 last-updated: {last_updated}
 ---
@@ -36,7 +36,7 @@ last-updated: {last_updated}
 [AI-CLARIFY: Design decisions that need input?]
 
 ## Cross-References
-- @ref:{artifact_name}.req - Requirements
+[Leave empty - references are documented in the metadata header above]
 
 ## AI Interaction Log
 <!-- Auto-maintained by PromptPress extension -->

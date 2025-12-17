@@ -259,7 +259,7 @@ export class ScaffoldService {
         const today = new Date().toISOString().split('T')[0];
         const systemPrompt = prompts.system
             .replace(/{artifact_name}/g, artifactName)
-            .replace('{reference_tags}', referenceTags.join(', '))
+            .replace('{reference_tags}', referenceTags.length > 0 ? '["' + referenceTags.join('", "') + '"]' : '[]')
             .replace('{last_updated}', today);
         const userPrompt = prompts.user
             .replace('{description}', description)
@@ -311,7 +311,7 @@ export class ScaffoldService {
         const today = new Date().toISOString().split('T')[0];
         const systemPrompt = prompts.system
             .replace(/{artifact_name}/g, artifactName)
-            .replace('{reference_tags}', referenceTags.join(', '))
+            .replace('{reference_tags}', referenceTags.length > 0 ? '["' + referenceTags.join('", "') + '"]' : '[]')
             .replace('{last_updated}', today);
         const userPrompt = prompts.user
             .replace('{description}', description)
