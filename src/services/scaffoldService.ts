@@ -10,10 +10,32 @@ type ReferencedArtifact = {
 };
 
 export class ScaffoldService {
-    constructor(
-        private aiClient: XAIClient,
-        private outputChannel: vscode.OutputChannel
-    ) {}
+    private promptCache: Map<string, { system: string; user: string }> = new Map();
+
+    /**
+     * Load prompt templates from markdown files (system/user split by ---\n\n# User Prompt:)
+     */
+    private async loadPrompt(promptKey: string): Promise<{ system: string; user: string }> {
+        if (this.promptCache.has(promptKey)) {
+            return this.promptCache.get(promptKey)!;
+        }
+        const promptFile = path.join(__dirname, '../prompts', promptKey);
+        try {
+            const content = await fs.readFile(promptFile, 'utf-8');
+            const parts = content.split('---\n\n# User Prompt:');
+            if (parts.length !== 2) {
+                throw new Error(`Invalid prompt file format: ${promptKey}`);
+            }
+            const system = parts[0].replace(/^# System Prompt: .*(\n|$)/, '').trim();
+            const user = parts[1].replace(/^.*\n/, '').trim();
+            const prompts = { system, user };
+            this.promptCache.set(promptKey, prompts);
+            return prompts;
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to load prompt for ${promptKey}: ${errorMsg}`);
+        }
+    }
 
     /**
      * Extract mentioned artifacts in the form @artifact-name
@@ -224,61 +246,29 @@ export class ScaffoldService {
         const referenceBlock = referencedArtifacts.length > 0
             ? `\n\nReferenced artifacts (context):\n${this.formatReferencedArtifacts(referencedArtifacts)}`
             : '';
-        
+
+        // Load prompt template
+        const prompts = await this.loadPrompt('generateRequirement.md');
+        const today = new Date().toISOString().split('T')[0];
+        const systemPrompt = prompts.system
+            .replace(/{artifact_name}/g, artifactName)
+            .replace('{reference_tags}', referenceTags.join(', '))
+            .replace('{last_updated}', today);
+        const userPrompt = prompts.user
+            .replace('{description}', description)
+            .replace('{reference_block}', referenceBlock);
+
         const messages: ChatMessage[] = [
-            {
-                role: 'system',
-                content: `You are an expert at writing formal software requirements. Generate a PromptPress requirement specification following this exact structure:
-
----
-artifact: ${artifactName}
-phase: requirement
-depends-on: []
-references: [${referenceTags.join(', ')}]
-version: 1.0.0
-last-updated: ${new Date().toISOString().split('T')[0]}
----
-
-# [Title] - Requirements
-
-## Overview
-[High-level description]
-
-## Functional Requirements
-- FR-1: [Requirement]
-- FR-2: [Requirement]
-...
-
-## Non-Functional Requirements
-- NFR-1: [Performance, security, scalability, etc.]
-...
-
-## Questions & Clarifications
-[AI-CLARIFY: Any ambiguities that need clarification?]
-
-## Cross-References
-[Any dependencies or related artifacts]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-
-Generate a complete, well-structured requirement specification. Be specific and thorough.`
-            },
-            {
-                role: 'user',
-                content: `Generate a requirement specification for:\n\n${description}${referenceBlock}`
-            }
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
         ];
 
         this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for requirement generation`);
-        
         try {
-            const result = await this.aiClient.chat(messages);
-            this.outputChannel.appendLine(`[Scaffold] Requirement generation successful`);
-            return result;
+            const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+            return response;
         } catch (error: any) {
-            this.outputChannel.appendLine(`[ERROR] Requirement generation failed: ${error.message}`);
-            this.outputChannel.show();
+            this.outputChannel.appendLine(`[Scaffold] Error generating requirement: ${error.message}`);
             throw error;
         }
     }
@@ -298,9 +288,9 @@ Generate a complete, well-structured requirement specification. Be specific and 
         const referenceTags = [
             `${artifactName}.req`,
             ...referencedArtifacts.flatMap(ref => {
-                const tags: string[] = [];
-                if (ref.requirement) { tags.push(`${ref.name}.req`); }
-                if (ref.design) { tags.push(`${ref.name}.design`); }
+                const tags = [];
+                if (ref.requirement) tags.push(`${ref.name}.req`);
+                if (ref.design) tags.push(`${ref.name}.design`);
                 return tags;
             })
         ];
@@ -308,67 +298,30 @@ Generate a complete, well-structured requirement specification. Be specific and 
         const referenceBlock = referencedArtifacts.length > 0
             ? `\n\nReferenced artifacts (context):\n${this.formatReferencedArtifacts(referencedArtifacts)}`
             : '';
-        
+
+        // Load prompt template
+        const prompts = await this.loadPrompt('generateDesignInitial.md');
+        const today = new Date().toISOString().split('T')[0];
+        const systemPrompt = prompts.system
+            .replace(/{artifact_name}/g, artifactName)
+            .replace('{reference_tags}', referenceTags.join(', '))
+            .replace('{last_updated}', today);
+        const userPrompt = prompts.user
+            .replace('{description}', description)
+            .replace('{reference_block}', referenceBlock)
+            .replace('{requirement_spec}', requirementSpec);
+
         const messages: ChatMessage[] = [
-            {
-                role: 'system',
-                content: `You are an expert software architect. Generate a PromptPress design specification following this exact structure:
-
----
-artifact: ${artifactName}
-phase: design
-depends-on: []
-references: [${referenceTags.join(', ')}]
-version: 1.0.0
-last-updated: ${new Date().toISOString().split('T')[0]}
----
-
-# [Title] - Design
-
-## Overview
-[High-level design approach]
-
-## Architecture
-[System components, modules, layers]
-
-## API Contracts
-[Interfaces, function signatures, data structures]
-
-## Data Model
-[Database schema, data structures, relationships]
-
-## Algorithms & Logic
-[Key algorithms, decision flows, business logic]
-
-## Dependencies
-[Third-party libraries, external services]
-
-## Questions & Clarifications
-[AI-CLARIFY: Design decisions that need input?]
-
-## Cross-References
-- @ref:${artifactName}.req - Requirements
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-
-Generate a complete, detailed design specification. Be precise about architecture and APIs.`
-            },
-            {
-                role: 'user',
-                content: `Generate a design specification for:\n\n${description}${referenceBlock}\n\nBased on these requirements:\n\n${requirementSpec}`
-            }
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
         ];
 
         this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for design generation`);
-        
         try {
-            const result = await this.aiClient.chat(messages);
-            this.outputChannel.appendLine(`[Scaffold] Design generation successful`);
-            return result;
-        } catch (error: any) {
-            this.outputChannel.appendLine(`[ERROR] Design generation failed: ${error.message}`);
-            this.outputChannel.show();
+            const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+            return response;
+        } catch (error) {
+            this.outputChannel.appendLine(`[Scaffold] Error generating design: ${error.message}`);
             throw error;
         }
     }
@@ -499,99 +452,28 @@ Generate a complete, detailed design specification. Be precise about architectur
         this.outputChannel.appendLine(`[Generate] Generating implementation for artifact: ${artifactName}`);
 
         const artifactTitle = artifactName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        // Load prompt template
+        const prompts = await this.loadPrompt('generateImplementationInitial.md');
+        const today = new Date().toISOString().split('T')[0];
+        const systemPrompt = prompts.system
+            .replace(/{artifact_name}/g, artifactName)
+            .replace('{artifact_title}', artifactTitle)
+            .replace('{last_updated}', today);
+        const userPrompt = prompts.user
+            .replace('{requirement_spec}', requirementSpec)
+            .replace('{design_spec}', designSpec);
 
         const messages: ChatMessage[] = [
-            {
-                role: 'system',
-                content: `You are an expert software engineer. Generate a PromptPress implementation specification following this exact structure:
-
----
-artifact: ${artifactName}
-phase: implementation
-depends-on: []
-references: [@ref:${artifactName}.req, @ref:${artifactName}.design]
-version: 1.0.0
-last-updated: ${new Date().toISOString().split('T')[0]}
----
-
-# ${artifactTitle} - Implementation
-
-## Overview
-[High-level implementation summary]
-
-## File Structure
-\`\`\`
-artifact-name/
-├── src/
-│   ├── index.ts
-│   └── ...
-└── tests/
-    └── ...
-\`\`\`
-
-## Modules & Components
-### Module 1
-- Purpose: [What it does]
-- Exports: [Public API]
-- Dependencies: [What it uses]
-
-## Implementation Details
-### Component/Function 1
-- Signature: \`function name(params): returnType\`
-- Logic: [Step-by-step algorithm]
-- Edge cases: [Error handling, validation]
-
-## Data Structures
-\`\`\`typescript
-interface Example {
-    // ...
-}
-\`\`\`
-
-## Test Scenarios
-- Test 1: [What to test, expected behavior]
-- Test 2: [Edge case testing]
-
-## Dependencies
-- package1: [Why needed]
-- package2: [Purpose]
-
-## Configuration
-[Environment variables, config files, setup]
-
-## Deployment Notes
-[Build process, deployment steps]
-
-## Cross-References
-- @ref:${artifactName}.req - Requirements
-- @ref:${artifactName}.design - Design
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-
-Generate a complete, precise implementation specification. Include exact function signatures, detailed logic, and comprehensive test scenarios.`
-            },
-            {
-                role: 'user',
-                content: `Generate an implementation specification based on:
-
-**Requirements:**
-${requirementSpec}
-
-**Design:**
-${designSpec}`
-            }
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
         ];
 
         this.outputChannel.appendLine(`[Generate] Sending ${messages.length} messages to AI`);
-        
         try {
-            const result = await this.aiClient.chat(messages);
-            this.outputChannel.appendLine(`[Generate] Implementation generation successful`);
-            return result;
+            const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+            return response;
         } catch (error: any) {
-            this.outputChannel.appendLine(`[ERROR] Implementation generation failed: ${error.message}`);
-            this.outputChannel.show();
+            this.outputChannel.appendLine(`[Generate] Error generating implementation: ${error.message}`);
             throw error;
         }
     }
