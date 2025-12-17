@@ -31,7 +31,7 @@ export interface CascadeResult {
 
 export interface CascadeUI {
     confirm(message: string): Promise<boolean>;
-    confirmGitStatus(hasUncommitted: boolean): Promise<'commit'  | 'continue' | 'cancel'>;
+    confirmGitStatus(hasUnstaged: boolean): Promise<'stage' | 'continue' | 'cancel'>;
     notifyInfo(message: string): void;
     notifyError(message: string): void;
 }
@@ -96,20 +96,20 @@ export class CascadeCore {
         try {
             this.logger.log(`[Cascade] Starting change detection for ${path.basename(filePath)}`);
 
-            // Check git status
-            const hasUncommitted = await this.checkGitStatus();
-            if (hasUncommitted) {
-                const gitAction = await ui.confirmGitStatus(hasUncommitted);
+            // Check git status for unstaged changes
+            const hasUnstaged = await this.checkGitStatus();
+            if (hasUnstaged) {
+                const gitAction = await ui.confirmGitStatus(hasUnstaged);
                 if (gitAction === 'cancel') {
-                    this.logger.log('[Cascade] User cancelled due to uncommitted changes');
+                    this.logger.log('[Cascade] User cancelled due to unstaged changes');
                     result.success = true;
                     return result;
-                } else if (gitAction === 'commit') {
-                    ui.notifyInfo('Please commit your changes, then run Apply Changes again.');
-                    result.success = true;
-                    return result;
+                } else if (gitAction === 'stage') {
+                    await this.stageChanges();
+                    this.logger.log('[Cascade] Staged changes, proceeding with cascade');
+                    // 'stage' falls through to continue
                 }
-                // 'continue' falls through
+                // 'continue' or 'stage' falls through
             }
 
             await fs.mkdir(this.cacheDir, { recursive: true });
@@ -169,14 +169,34 @@ export class CascadeCore {
     private async checkGitStatus(): Promise<boolean> {
         try {
             const { execSync } = require('child_process');
+            // Check for unstaged changes only (leading space means staged, M/A/D means unstaged)
             const status = execSync('git status --porcelain', {
                 cwd: this.workspaceRoot,
                 encoding: 'utf-8'
             });
-            return status.trim().length > 0;
+            // Lines starting with space followed by M/A/D are unstaged changes
+            const unstaged = status
+                .split('\n')
+                .filter((line: string) => line.match(/^\s[MAD]/));
+            return unstaged.length > 0;
         } catch {
             // Git not available or not a git repo - proceed without check
             return false;
+        }
+    }
+
+    private async stageChanges(): Promise<void> {
+        try {
+            const { execSync } = require('child_process');
+            execSync('git add -A', {
+                cwd: this.workspaceRoot,
+                encoding: 'utf-8'
+            });
+            this.logger.log('[Cascade] Successfully staged all changes');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            this.logger.log(`[Cascade] Warning: Failed to stage changes: ${errorMsg}`);
+            // Don't throw - allow cascade to continue even if staging fails
         }
     }
 

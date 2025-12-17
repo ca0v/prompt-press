@@ -3,11 +3,82 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { XAIClient, ChatMessage } from '../ai/xaiClient';
 
+type ReferencedArtifact = {
+    name: string;
+    requirement?: string;
+    design?: string;
+};
+
 export class ScaffoldService {
     constructor(
         private aiClient: XAIClient,
         private outputChannel: vscode.OutputChannel
     ) {}
+
+    /**
+     * Extract mentioned artifacts in the form @artifact-name
+     */
+    private parseMentions(text: string): string[] {
+        const mentions = new Set<string>();
+        const regex = /@([a-z0-9-]+)/g;
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(text)) !== null) {
+            mentions.add(match[1]);
+        }
+        return Array.from(mentions);
+    }
+
+    /**
+     * Load referenced artifact specs (requirement/design/implementation) if present.
+     * Silently skips artifacts that do not exist.
+     */
+    private async loadReferencedArtifacts(
+        workspaceRoot: string,
+        artifactNames: string[],
+        phaseContext: 'requirement' | 'design'
+    ): Promise<ReferencedArtifact[]> {
+        const results: ReferencedArtifact[] = [];
+
+        for (const name of artifactNames) {
+            const ref: ReferencedArtifact = { name };
+
+            const reqPath = path.join(workspaceRoot, 'specs', 'requirements', `${name}.req.md`);
+            const designPath = path.join(workspaceRoot, 'specs', 'design', `${name}.design.md`);
+
+            try {
+                ref.requirement = await fs.readFile(reqPath, 'utf-8');
+            } catch { /* ignore */ }
+
+            if (phaseContext === 'design') {
+                try {
+                    ref.design = await fs.readFile(designPath, 'utf-8');
+                } catch { /* ignore */ }
+            }
+
+            if (ref.requirement || ref.design) {
+                results.push(ref);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Format referenced artifacts into a concise context block for the AI.
+     */
+    private formatReferencedArtifacts(references: ReferencedArtifact[]): string {
+        const limit = 1500;
+        return references.map(ref => {
+            const parts: string[] = [`Artifact: ${ref.name}`];
+            if (ref.requirement) {
+                parts.push(`Requirement (${ref.name}.req):\n${ref.requirement.slice(0, limit)}${ref.requirement.length > limit ? '... [truncated]' : ''}`);
+            }
+            if (ref.design) {
+                parts.push(`Design (${ref.name}.design):\n${ref.design.slice(0, limit)}${ref.design.length > limit ? '... [truncated]' : ''}`);
+            }
+            return parts.join('\n\n');
+        }).join('\n\n---\n\n');
+    }
 
     /**
      * Scaffold a new PromptPress artifact
@@ -68,7 +139,14 @@ export class ScaffoldService {
             }
         }
 
-        // Step 4: Show progress
+        // Step 4: Collect referenced artifacts mentioned via @artifact-name
+        const mentionedArtifacts = this.parseMentions(description);
+        let referencedArtifacts: ReferencedArtifact[] = [];
+        if (mentionedArtifacts.length > 0) {
+            referencedArtifacts = await this.loadReferencedArtifacts(workspaceRoot, mentionedArtifacts, 'requirement');
+        }
+
+        // Step 5: Show progress
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
             title: `Scaffolding ${artifactName}...`,
@@ -78,13 +156,17 @@ export class ScaffoldService {
                 // Generate requirement spec
                 progress.report({ message: 'Generating requirements...', increment: 25 });
                 this.outputChannel.appendLine(`[Scaffold] Generating requirement spec for: ${artifactName}`);
-                const requirementSpec = await this.generateRequirement(artifactName, contextDescription);
+                const requirementSpec = await this.generateRequirement(artifactName, contextDescription, referencedArtifacts);
                 this.outputChannel.appendLine(`[Scaffold] Requirement spec generated (${requirementSpec.length} chars)`);
 
                 // Generate design spec
                 progress.report({ message: 'Generating design...', increment: 25 });
                 this.outputChannel.appendLine(`[Scaffold] Generating design spec for: ${artifactName}`);
-                const designSpec = await this.generateDesign(artifactName, contextDescription, requirementSpec);
+                const designRefArtifacts = mentionedArtifacts.length > 0
+                    ? await this.loadReferencedArtifacts(workspaceRoot, mentionedArtifacts, 'design')
+                    : [];
+
+                const designSpec = await this.generateDesign(artifactName, contextDescription, requirementSpec, designRefArtifacts);
                 this.outputChannel.appendLine(`[Scaffold] Design spec generated (${designSpec.length} chars)`);
 
                 // Create files
@@ -124,9 +206,24 @@ export class ScaffoldService {
     /**
      * Generate requirement specification using AI
      */
-    private async generateRequirement(artifactName: string, description: string): Promise<string> {
+    private async generateRequirement(
+        artifactName: string,
+        description: string,
+        referencedArtifacts: ReferencedArtifact[]
+    ): Promise<string> {
         this.outputChannel.appendLine(`[Scaffold] Generating requirement for artifact: ${artifactName}`);
         this.outputChannel.appendLine(`[Scaffold] Description length: ${description.length} chars`);
+
+        const referenceTags = referencedArtifacts.flatMap(ref => {
+            const tags: string[] = [];
+            if (ref.requirement) { tags.push(`@ref:${ref.name}.req`); }
+            if (ref.design) { tags.push(`@ref:${ref.name}.design`); }
+            return tags;
+        });
+
+        const referenceBlock = referencedArtifacts.length > 0
+            ? `\n\nReferenced artifacts (context):\n${this.formatReferencedArtifacts(referencedArtifacts)}`
+            : '';
         
         const messages: ChatMessage[] = [
             {
@@ -137,7 +234,7 @@ export class ScaffoldService {
 artifact: ${artifactName}
 phase: requirement
 depends-on: []
-references: []
+references: [${referenceTags.join(', ')}]
 version: 1.0.0
 last-updated: ${new Date().toISOString().split('T')[0]}
 ---
@@ -169,7 +266,7 @@ Generate a complete, well-structured requirement specification. Be specific and 
             },
             {
                 role: 'user',
-                content: `Generate a requirement specification for:\n\n${description}`
+                content: `Generate a requirement specification for:\n\n${description}${referenceBlock}`
             }
         ];
 
@@ -192,10 +289,25 @@ Generate a complete, well-structured requirement specification. Be specific and 
     private async generateDesign(
         artifactName: string,
         description: string,
-        requirementSpec: string
+        requirementSpec: string,
+        referencedArtifacts: ReferencedArtifact[]
     ): Promise<string> {
         this.outputChannel.appendLine(`[Scaffold] Generating design for artifact: ${artifactName}`);
         this.outputChannel.appendLine(`[Scaffold] Requirement spec length: ${requirementSpec.length} chars`);
+
+        const referenceTags = [
+            `@ref:${artifactName}.req`,
+            ...referencedArtifacts.flatMap(ref => {
+                const tags: string[] = [];
+                if (ref.requirement) { tags.push(`@ref:${ref.name}.req`); }
+                if (ref.design) { tags.push(`@ref:${ref.name}.design`); }
+                return tags;
+            })
+        ];
+
+        const referenceBlock = referencedArtifacts.length > 0
+            ? `\n\nReferenced artifacts (context):\n${this.formatReferencedArtifacts(referencedArtifacts)}`
+            : '';
         
         const messages: ChatMessage[] = [
             {
@@ -206,7 +318,7 @@ Generate a complete, well-structured requirement specification. Be specific and 
 artifact: ${artifactName}
 phase: design
 depends-on: []
-references: [@ref:${artifactName}.req]
+references: [${referenceTags.join(', ')}]
 version: 1.0.0
 last-updated: ${new Date().toISOString().split('T')[0]}
 ---
@@ -244,7 +356,7 @@ Generate a complete, detailed design specification. Be precise about architectur
             },
             {
                 role: 'user',
-                content: `Generate a design specification for:\n\n${description}\n\nBased on these requirements:\n\n${requirementSpec}`
+                content: `Generate a design specification for:\n\n${description}${referenceBlock}\n\nBased on these requirements:\n\n${requirementSpec}`
             }
         ];
 

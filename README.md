@@ -126,6 +126,7 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
 - Extension SHALL accept high-level description or reference to project README
 - Extension SHALL create properly structured markdown files with correct metadata
 - Scaffolding SHALL follow the same formal markdown schema as manual specs
+- Scaffolding MAY reference existing artifacts using @artifact-name mentions; referenced artifacts are added to `references` metadata and their specs are supplied as AI context (requirements only when generating requirements; requirements+design when generating design; implementation is not shared)
 
 ### FR-13: Change Detection and Cascading
 - Extension SHALL provide command to detect changes in requirement or design specs

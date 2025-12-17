@@ -30,22 +30,20 @@ export class CascadeServiceCommands {
      */
     async applyChanges(filePath: string) {
         const ui: CascadeUI = {
-            confirmGitStatus: async (hasUncommitted: boolean) => {
-                if (!hasUncommitted) {
+            confirmGitStatus: async (hasUnstaged: boolean) => {
+                if (!hasUnstaged) {
                     return 'continue';
                 }
                 const choice = await vscode.window.showWarningMessage(
-                    'You have uncommitted changes. Commit before cascading?',
+                    'You have unstaged changes. Would you like to stage them before proceeding?',
                     { modal: true },
-                    'Commit & Continue',
-                    'Continue Anyway',
+                    'Stage & Continue',
+                    'Continue Without Staging',
                     'Cancel'
                 );
-                if (choice === 'Commit & Continue') {
-                    // Open source control view
-                    await vscode.commands.executeCommand('workbench.view.scm');
-                    return 'commit';
-                } else if (choice === 'Continue Anyway') {
+                if (choice === 'Stage & Continue') {
+                    return 'stage';
+                } else if (choice === 'Continue Without Staging') {
                     return 'continue';
                 } else {
                     return 'cancel';
