@@ -147,7 +147,16 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             outputChannel.appendLine(`[Command] Apply Changes triggered for ${filePath}`);
-            await cascadeService.applyChanges(filePath);
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Applying changes...',
+                    cancellable: false
+                },
+                async () => {
+                    await cascadeService.applyChanges(filePath);
+                }
+            );
         })
     );
 

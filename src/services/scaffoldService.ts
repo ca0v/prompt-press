@@ -67,7 +67,7 @@ export class ScaffoldService {
      * Format referenced artifacts into a concise context block for the AI.
      */
     private formatReferencedArtifacts(references: ReferencedArtifact[]): string {
-        const limit = 1500;
+        const limit = 15000;
         return references.map(ref => {
             const parts: string[] = [`Artifact: ${ref.name}`];
             if (ref.requirement) {
