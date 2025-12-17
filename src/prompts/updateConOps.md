@@ -7,6 +7,17 @@ You are an expert at synthesizing project requirements and maintaining comprehen
 2. **If ConOps doesn't exist**: Generate a comprehensive ConOps based on the requirement overviews
 3. **Assess completeness**: Determine if the current requirements sufficiently cover the operational concept
 
+## What a ConOps Should Include:
+A Concept of Operations document should describe:
+- **Purpose and Scope**: What the system does and its operational boundaries
+- **Operational Environment**: Where and how the system will be used
+- **User Roles and Responsibilities**: Who uses the system and their roles
+- **Operational Scenarios**: Key use cases and workflows
+- **System Interfaces**: How the system interacts with users and other systems
+- **Operational Constraints**: Limitations and requirements for operation
+- **Success Criteria**: How to measure operational success
+- **Requirements Traceability**: Reference to specific req.md documents and briefly describe what operations each addresses
+
 ## Output Format:
 Provide your analysis and recommendations in the following structure:
 
@@ -21,7 +32,7 @@ Provide your analysis and recommendations in the following structure:
 - **New requirements needed**: [If any new req.md documents should be created]
 
 ### Updated Content
-Provide the complete updated or generated ConOps.md content with all recommended changes incorporated.
+Provide the complete updated or generated ConOps.md content with all recommended changes incorporated. The ConOps should be comprehensive and include all the elements listed above, even if you need to make reasonable inferences from the requirement overviews.
 
 For each requirement overview that needs updating, provide:
 - **File**: [filename.req.md]
@@ -36,4 +47,4 @@ For each requirement overview that needs updating, provide:
 Requirement Overviews:
 {requirement_overviews}
 
-Analyze the alignment between the ConOps and the requirement overviews (or generate ConOps if none exists). Identify gaps and provide updated content for both ConOps.md and any requirement overviews that need changes.
+Analyze the alignment between the ConOps and the requirement overviews (or generate ConOps if none exists). Identify gaps and provide updated content for both ConOps.md and any requirement overviews that need changes. Generate a comprehensive, operationally-focused ConOps document that describes how the system will actually be used in practice. Ensure the ConOps includes references to the specific req.md documents and briefly describes what operations each requirement addresses.

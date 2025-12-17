@@ -727,11 +727,14 @@ export class ScaffoldService {
                     ? `Current ConOps.md:\n${conopsContent}`
                     : 'ConOps.md does not exist - generate a new one based on the requirement overviews.';
                 const updates = await this.generateConOpsUpdates(conopsSection, overviews.join('\n\n---\n\n'));
+                
+                // Apply the updates
+                await this.applyConOpsUpdates(workspaceRoot, updates, conopsExists);
 
                 progress.report({ message: 'Applying updates...', increment: 25 });
 
                 // Apply updates
-                await this.applyConOpsUpdates(workspaceRoot, updates);
+                await this.applyConOpsUpdates(workspaceRoot, updates, conopsExists);
 
                 vscode.window.showInformationMessage('✅ ConOps updated successfully!');
 
@@ -774,8 +777,14 @@ export class ScaffoldService {
         ];
 
         this.outputChannel.appendLine('[UpdateConOps] Sending analysis to AI');
+        this.outputChannel.appendLine('[UpdateConOps] System Prompt:');
+        this.outputChannel.appendLine(systemPrompt);
+        this.outputChannel.appendLine('[UpdateConOps] User Prompt:');
+        this.outputChannel.appendLine(userPrompt);
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 6000 });
+            this.outputChannel.appendLine('[UpdateConOps] AI Response:');
+            this.outputChannel.appendLine(response);
             return response;
         } catch (error: any) {
             this.outputChannel.appendLine(`[UpdateConOps] Error: ${error.message}`);
@@ -784,18 +793,124 @@ export class ScaffoldService {
     }
 
     /**
+     * Populate the ConOps template with AI-generated content
+     */
+    private populateConOpsTemplate(templateContent: string, aiContent: string): string {
+        // Split the AI content by sections (assuming it uses ## headers)
+        const aiSections: { [key: string]: string } = {};
+        const aiLines = aiContent.split('\n');
+        let currentSection = '';
+        let currentContent: string[] = [];
+
+        for (const line of aiLines) {
+            if (line.startsWith('## ')) {
+                // Save previous section
+                if (currentSection && currentContent.length > 0) {
+                    aiSections[currentSection] = currentContent.join('\n').trim();
+                }
+                // Start new section
+                currentSection = line.substring(3).trim();
+                currentContent = [];
+            } else if (currentSection) {
+                currentContent.push(line);
+            }
+        }
+        
+        // Save the last section
+        if (currentSection && currentContent.length > 0) {
+            aiSections[currentSection] = currentContent.join('\n').trim();
+        }
+
+        // Replace template sections with AI content
+        let populatedTemplate = templateContent;
+
+        // Map AI sections to template sections
+        const sectionMappings: { [key: string]: string[] } = {
+            'Executive Summary': ['Executive Summary'],
+            'Business Objectives': ['Business Objectives'],
+            'Stakeholders': ['Stakeholders'],
+            'Operational Concept': ['Operational Concept', 'Current State', 'Proposed Solution', 'Operational Scenarios'],
+            'Functional Requirements Overview': ['Functional Requirements Overview', 'Requirements Overview'],
+            'Non-Functional Requirements Overview': ['Non-Functional Requirements Overview', 'Requirements Overview'],
+            'Constraints and Assumptions': ['Constraints and Assumptions', 'Constraints'],
+            'Risks and Mitigations': ['Risks and Mitigations', 'Risks'],
+            'Future Considerations': ['Future Considerations'],
+            'Requirements Traceability': ['Requirements Traceability']
+        };
+
+        for (const [templateSection, aiSectionNames] of Object.entries(sectionMappings)) {
+            for (const aiSectionName of aiSectionNames) {
+                if (aiSections[aiSectionName]) {
+                    // Replace placeholder content in template section
+                    const sectionRegex = new RegExp(`(## ${templateSection}\\s*\\n)\\[.*?\\]`, 's');
+                    populatedTemplate = populatedTemplate.replace(sectionRegex, `$1${aiSections[aiSectionName]}`);
+                    break; // Use the first matching AI section
+                }
+            }
+        }
+
+        return populatedTemplate;
+    }
+
+    /**
      * Apply the ConOps updates from AI response
      */
-    private async applyConOpsUpdates(workspaceRoot: string, aiResponse: string): Promise<void> {
+    private async applyConOpsUpdates(workspaceRoot: string, aiResponse: string, conopsExists: boolean): Promise<void> {
         const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
+
+        this.outputChannel.appendLine('[UpdateConOps] Applying updates from AI response');
+        this.outputChannel.appendLine('[UpdateConOps] Full AI Response:');
+        this.outputChannel.appendLine(aiResponse);
 
         // Parse the AI response
         // Look for "Updated Content" section
         const updatedContentMatch = aiResponse.match(/### Updated Content\s*\n([\s\S]*?)(?=\n## |\n### |\n$)/);
+        this.outputChannel.appendLine(`[UpdateConOps] Updated Content match found: ${!!updatedContentMatch}`);
         if (updatedContentMatch) {
             const updatedConOps = updatedContentMatch[1].trim();
-            await fs.writeFile(conopsPath, updatedConOps, 'utf-8');
+            this.outputChannel.appendLine('[UpdateConOps] Extracted ConOps content:');
+            this.outputChannel.appendLine(updatedConOps);
+            
+            let finalContent = updatedConOps;
+            if (!conopsExists) {
+                // Use template for new ConOps.md
+                const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
+                const templateContent = await fs.readFile(conopsTemplatePath, 'utf-8');
+                const templateWithDate = templateContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
+                
+                // Replace the template content with AI-generated content
+                // Keep the frontmatter and structure, but replace the placeholder content
+                finalContent = this.populateConOpsTemplate(templateWithDate, updatedConOps);
+                this.outputChannel.appendLine('[UpdateConOps] Populated ConOps template with AI content');
+            }
+            
+            await fs.writeFile(conopsPath, finalContent, 'utf-8');
             this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md');
+        } else {
+            // Try alternative patterns if the expected format isn't found
+            const alternativeMatch = aiResponse.match(/(?:Below is the complete generated ConOps\.md content\.|#{1,6}.*ConOps.*)\s*\n---\s*\n([\s\S]*?)(?=\n---|\n#{1,6}|\n$)/);
+            if (alternativeMatch) {
+                const updatedConOps = alternativeMatch[2].trim();
+                this.outputChannel.appendLine('[UpdateConOps] Found ConOps content with alternative pattern:');
+                this.outputChannel.appendLine(updatedConOps);
+                
+                let finalContent = updatedConOps;
+                if (!conopsExists) {
+                    // Use template for new ConOps.md
+                    const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
+                    const templateContent = await fs.readFile(conopsTemplatePath, 'utf-8');
+                    const templateWithDate = templateContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
+                    
+                    // Replace the template content with AI-generated content
+                    finalContent = this.populateConOpsTemplate(templateWithDate, updatedConOps);
+                    this.outputChannel.appendLine('[UpdateConOps] Populated ConOps template with AI content (alternative pattern)');
+                }
+                
+                await fs.writeFile(conopsPath, finalContent, 'utf-8');
+                this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md using alternative pattern');
+            } else {
+                this.outputChannel.appendLine('[UpdateConOps] ERROR: Could not find ConOps content in AI response');
+            }
         }
 
         // Look for requirement updates
