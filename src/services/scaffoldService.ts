@@ -186,6 +186,13 @@ export class ScaffoldService {
             referencedArtifacts = await this.loadReferencedArtifacts(workspaceRoot, mentionedArtifacts, 'requirement');
         }
 
+        // Check if all mentioned artifacts exist
+        if (mentionedArtifacts.length > 0 && referencedArtifacts.length !== mentionedArtifacts.length) {
+            const missing = mentionedArtifacts.filter(name => !referencedArtifacts.some(ref => ref.name === name));
+            vscode.window.showErrorMessage(`Some mentioned artifacts (@${missing.join(', @')}) could not be found. Please ensure all referenced artifacts exist before scaffolding.`);
+            return;
+        }
+
         // Step 5: Show progress
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
