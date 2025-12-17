@@ -6,6 +6,8 @@ import { ConversationManager } from './services/conversationManager';
 import { ContextBuilder } from './services/contextBuilder';
 import { ScaffoldService } from './services/scaffoldService';
 import { CascadeServiceCommands } from './services/cascadeService';
+import { ImplParser } from './services/implParser';
+import { MarkdownParser } from './parsers/markdownParser';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -58,6 +60,8 @@ export function activate(context: vscode.ExtensionContext) {
     const conversationManager = new ConversationManager(context);
     const contextBuilder = new ContextBuilder();
     const scaffoldService = new ScaffoldService(aiClient, outputChannel);
+    const markdownParser = new MarkdownParser();
+    const implParser = new ImplParser(markdownParser, aiClient);
     
     // Get workspace root for cascade service
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
@@ -99,9 +103,23 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            vscode.window.showInformationMessage(
-                'Code generation not yet implemented - coming soon!'
-            );
+            try {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Generating code from implementation spec...',
+                    cancellable: false
+                }, async (progress) => {
+                    progress.report({ increment: 0, message: 'Parsing spec...' });
+                    await implParser.parseAndGenerate(filePath);
+                    progress.report({ increment: 100, message: 'Code generation complete' });
+                });
+
+                vscode.window.showInformationMessage('Code generation completed successfully!');
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error occurred';
+                vscode.window.showErrorMessage(`Code generation failed: ${message}`);
+                outputChannel.appendLine(`[ERROR] Code generation failed: ${message}`);
+            }
         })
     );
 
