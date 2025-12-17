@@ -216,8 +216,8 @@ export class ScaffoldService {
 
         const referenceTags = referencedArtifacts.flatMap(ref => {
             const tags: string[] = [];
-            if (ref.requirement) { tags.push(`@ref:${ref.name}.req`); }
-            if (ref.design) { tags.push(`@ref:${ref.name}.design`); }
+            if (ref.requirement) { tags.push(`${ref.name}.req`); }
+            if (ref.design) { tags.push(`${ref.name}.design`); }
             return tags;
         });
 
@@ -296,11 +296,11 @@ Generate a complete, well-structured requirement specification. Be specific and 
         this.outputChannel.appendLine(`[Scaffold] Requirement spec length: ${requirementSpec.length} chars`);
 
         const referenceTags = [
-            `@ref:${artifactName}.req`,
+            `${artifactName}.req`,
             ...referencedArtifacts.flatMap(ref => {
                 const tags: string[] = [];
-                if (ref.requirement) { tags.push(`@ref:${ref.name}.req`); }
-                if (ref.design) { tags.push(`@ref:${ref.name}.design`); }
+                if (ref.requirement) { tags.push(`${ref.name}.req`); }
+                if (ref.design) { tags.push(`${ref.name}.design`); }
                 return tags;
             })
         ];
