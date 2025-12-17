@@ -175,7 +175,19 @@ export class SpecFileWatcher implements vscode.Disposable {
     private resolveSpecPath(specRef: string): string {
         // specRef format: "artifact-name.phase"
         const [artifact, phase] = specRef.split('.');
-        return path.join(this.workspaceRoot, 'specs', `${artifact}.${phase}.md`);
+        let subdir = '';
+        if (phase === 'req') {
+            subdir = 'requirements';
+        } else if (phase === 'design') {
+            subdir = 'design';
+        } else if (phase === 'impl') {
+            subdir = 'implementation';
+        }
+        if (subdir) {
+            return path.join(this.workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
+        } else {
+            return path.join(this.workspaceRoot, 'specs', `${artifact}.${phase}.md`);
+        }
     }
 
     private async fileExists(filePath: string): Promise<boolean> {
