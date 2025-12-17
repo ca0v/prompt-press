@@ -1,0 +1,408 @@
+=== AI Response Log: generateDesign ===
+Timestamp: 2025-12-17T20:24:12.321Z
+
+=== System Prompt ===
+You are an expert software architect. Generate a PromptPress design specification following this exact structure:
+
+```
+---
+artifact: geode-rose-quartz
+phase: design
+depends-on: []
+references: ["geode-rose-quartz.req", "game-board.req", "game-board.design"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# [Title] - Design
+
+## Overview
+[High-level design approach]
+
+## Architecture
+[System components, modules, layers]
+
+## API Contracts
+[Interfaces, function signatures, data structures]
+
+## Data Model
+[Database schema, data structures, relationships]
+
+## Algorithms & Logic
+[Key algorithms, decision flows, business logic]
+
+## Dependencies
+[Third-party libraries, external services]
+
+## Questions & Clarifications
+[AI-CLARIFY: Design decisions that need input?]
+
+## Cross-References
+[Leave empty - references are documented in the metadata header above]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+```
+
+Generate a complete, detailed design specification. Be precise about architecture and APIs.
+
+=== User Prompt ===
+Generate a design specification for:
+
+Describe the characteristics of the rose quartz geode as first describe in @game-board
+
+Concept of Operations:
+
+---
+artifact: conops
+phase: concept
+depends-on: []
+references: [faction.req.md, fissure-cell.req.md, game-board.req.md, game-state-manager.req.md, geode-pyrite.req.md, rules-engine.req.md, ui-ux.req.md]
+version: 1.2.0
+last-updated: 2025-12-17
+---
+
+# Concept of Operations (ConOps)
+
+## Executive Summary
+Petrified is a two-player, turn-based strategy board game implemented as a web-based application. Players compete to erode the opponent's Pyrite geode by strategically placing and moving geodes on a 5x5 grid board featuring rotatable fissures. The game emphasizes strategic depth through unique geode powers, fissure rotations affecting movement, and visual distinctions for immersive play. This ConOps outlines how the system supports gameplay in a web environment, ensuring fair, rule-compliant experiences for users.
+
+## Business Objectives
+- Provide an engaging, accessible web-based strategy game that promotes strategic thinking and competition.
+- Enable easy deployment and play in standard web browsers without requiring specialized hardware or software installations.
+- Deliver a complete gaming experience, from setup to win/loss determination, with real-time state management and feedback.
+- Success criteria: Achieve a user satisfaction rating of 80%+ via post-game surveys, with average game completion time under 15 minutes and win rates balanced (e.g., 50/50 for skilled players) through fair geode power designs, including specific mechanics like Pyrite's movement and fissure effects.
+- Value proposition: Offers a free, browser-based alternative to physical board games, combining collectible elements with dynamic strategy for casual and competitive players.
+
+## Stakeholders
+- **Players**: End-users (two per game session) who interact with the UI to place, move, and rotate elements, adhering to game rules. Responsibilities include turn-taking, strategic decision-making, and understanding geode powers (e.g., Pyrite as the erosion target).
+- **Game Administrators/Developers**: Responsible for deploying and maintaining the web application, ensuring rules are enforced and UI is functional. They may handle future updates based on user feedback.
+- **External Systems/Interfaces**: Web browsers (e.g., Chrome, Firefox) for rendering the UI hosted on GitHub Pages or other CDN. Data persistence will be satisfied using https://jsonbin.io/; users must paste an API key into the browser to create a shared game.
+
+## Operational Concept
+### Current State
+Traditional board games require physical components, limiting accessibility and scalability. Players face challenges in setup, rule enforcement, and state tracking, leading to disputes or incomplete games. Web-based alternatives exist but often lack the tactile strategy of Petrified's rotatable fissures and unique geodes.
+
+### Proposed Solution
+The system operates as a web application where players access a responsive UI via browsers. The game board is a 5x5 grid with strata (home rows) and rotatable fissures. Players control identical factions of 5 geodes (Pyrite - yellow, erosion target with movement 1 cell in any direction; Rose Quartz - pink, enhanced capture; Calcite - white/clear, movement boosts; Amethyst - purple, blocking; Quartz - white/clear, fissure manipulation—details to be specified in faction.req.md). Turns involve placing/moving geodes, rotating fissures (which affect cell entry for certain geodes, e.g., blocking or allowing based on rotation and geode type), and capturing opponents. The rules engine validates actions, the state manager tracks changes, and the UI provides visual feedback with distinct colors and hover states. Play continues until one player's Pyrite is eroded (captured or unable to move).
+
+### Operational Scenarios
+- **Scenario 1: Game Setup and Initial Placement**: Players access the web app and select to start a new game. The board initializes with geodes in strata positions (e.g., Player 1's Pyrite in row 1, column 1) and fissures in neutral orientations. Player 1 places their first geode, rotating a fissure if desired (affecting future movement). The UI updates in real-time with visual distinctions (e.g., pyrite in yellow), and the state manager records positions. (Addresses initial user interaction and state initialization from game-state-manager.req.md and ui-ux.req.md.)
+- **Scenario 2: Turn-Based Gameplay and Strategy**: During a turn, a player selects a geode (e.g., Pyrite moves 1 cell in any direction), chooses a valid move (validated by rules-engine.req.md), and optionally rotates a fissure (determining which geodes can enter/traverse based on rotation and type, e.g., blocking some while permitting others). If a capture occurs (e.g., landing on an opponent via geode power), the opponent's piece is removed. The UI highlights valid moves, provides feedback on game state, and shows fissure orientations. Play alternates until win conditions are met. (Covers turn sequencing, validation, captures, and fissure effects from rules-engine.req.md, game-board.req.md, fissure-cell.req.md, geode-pyrite.req.md, and faction.req.md.)
+- **Scenario 3: Endgame and Win Determination**: As pieces are captured, the state manager checks for the erosion of Pyrite (the sole win condition). The UI displays a win/loss message, allowing players to restart or exit. (Addresses win/loss logic from rules-engine.req.md and state tracking from game-state-manager.req.md.)
+
+## Functional Requirements Overview
+The system must support geode placement/movement (with unique powers for strategy, e.g., Pyrite's directional movement), fissure rotation (impacting cell access based on geode types), turn validation, captures, and win/loss checks focused on Pyrite erosion. It requires visual representation of the board, geodes (with specified colors), and fissures, with interactive UI elements for selection and feedback.
+
+## Non-Functional Requirements Overview
+- **Performance**: Real-time updates with <2-second latency for moves in standard web browsers.
+- **Security**: No sensitive data handling; basic input validation to prevent cheating.
+- **Usability**: Responsive design for desktop/mobile, with accessibility features (e.g., keyboard navigation, screen reader support) and visual distinctions for geodes and fissures.
+- **Scalability**: Support for single-session games; extensible to multiplayer if networked.
+
+## Constraints and Assumptions
+- **Technical Constraints**: Must run in modern web browsers (e.g., HTML5+ support); no offline mode; assumes stable internet for loading.
+- **Business Constraints**: Two-player only; no monetization or user accounts initially.
+- **Assumptions**: Players have basic web literacy; game rules are self-explanatory via UI tooltips; fissures' rotation effects are predefined and balanced; geode powers (including Pyrite's specifics) are fair to ensure 50/50 win rates.
+
+## Risks and Mitigations
+- **Risk 1: Rule Misinterpretation Leading to Invalid Moves**: Mitigation - Robust validation in rules-engine.req.md and UI feedback.
+- **Risk 2: Browser Incompatibility Causing UI Issues**: Mitigation - Cross-browser testing and fallback CSS from ui-ux.req.md.
+- **Risk 3: State Loss During Play**: Mitigation - Client-side state persistence with warnings from game-state-manager.req.md.
+
+## Future Considerations
+Potential roadmap includes multiplayer over networks (requiring new networking.req.md), AI opponents, mobile app ports, and custom faction expansions for enhanced scalability and engagement.
+
+## Gap Analysis
+See the Gap Analysis section above in this document for details on alignment with requirements.
+
+## Recommended Updates
+See the Recommended Updates section above in this document for suggestions.
+
+## Requirements Traceability
+- **faction.req.md**: Addresses geode design, powers (e.g., unique abilities for movement and capture, such as Pyrite's directional movement and erosion role), faction naming (The Crystalline Guard), and visual distinctions, supporting operational scenarios where players select and use geodes strategically (e.g., Pyrite as the key target; note: other powers need detailing for full workflows).
+- **fissure-cell.req.md**: Defines fissure cell design, rotation mechanics (altering orientations to block/permit geode entry based on types), and integration with state management, enabling operational workflows for turn-based rotation and movement impacts in gameplay scenarios.
+- **game-board.req.md**: Defines the board layout, mechanics (e.g., strata as home rows, fissure rows), and operational constraints (e.g., turn alternation, browser responsiveness), enabling workflows for piece placement, movement, and rotation.
+- **game-state-manager.req.md**: Manages real-time state (positions, turns, fissures), ensuring operational consistency in tracking changes during play.
+- **geode-pyrite.req.md**: Specifies Pyrite's movement (1 cell in any direction), capture rules as the erosion target, and visual aspects (yellow color), supporting endgame operational scenarios and win determination.
+- **rules-engine.req.md**: Enforces turn sequencing, validations, win conditions (Pyrite erosion), and special rules (e.g., fissure effects, geode powers), critical for fair operational scenarios.
+- **ui-ux.req.md**: Provides the interactive web interface (grid layout, geode colors, hover states, fissure visuals), facilitating user interactions in all operational scenarios with feedback and responsiveness.
+
+
+Referenced artifacts (context):
+Artifact: game-board
+
+Requirement (game-board.req):
+---
+artifact: game-board
+phase: requirement
+depends-on: []
+references: []
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Game Board - Requirements
+
+## Overview
+
+This requirement specification details the design and functionality of the game board for the board game "Petrified." "Petrified" is a turn-based strategy game involving piece placement on a grid, with the end result being to capture all of the opponents pieces. It is a two-player web-based game, where players access the board via standard web browsers and interact through a responsive UI to place, move, and rotate elements in real-time. The board is laid out as follows:
+
+|   | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| 1 | Pyrite | Rose Quartz | Calcite | Amethyst | Quartz |
+| 2 | Fissure | Fissure | Fissure | Fissure | Fissure |
+| 3 | Fissure | Fissure | Center Fissure | Fissure | Fissure |
+| 4 | Fissure | Fissure | Fissure | Fissure | Fissure |
+| 5 | Pyrite | Rose Quartz | Calcite | Amethyst | Quartz |
+
+The game board is a 5x5 grid structure that serves as the playing surface, where players interact with both game pieces and the board itself according to the game's rules. The board must visually represent the grid, support piece placement and movement, and provide feedback on game state. The physical board is composed of 25 "cells". Each player plays with a "faction" of 5 "geodes". Both players play with identical factions and each faction is composed of 5 distinct types of geode. Each geode has a different skill, allowing it to behave uniquely. The "cells" in rows 2-4 can be rotated to affect how the "geode" interacts with that cell. The cells in rows 1 and 5 are called "strata" and these are the home positions for each faction. The baseline faction is made of Pyrite, Rose Quartz, Calcite, Amethyst and Quartz. The cells in rows 2-4 can be rotated affecting movement characteristics of most geodes, allowing some to enter the cell and others to be blocked from entering. The goal of the game is to "Erode the other players Pyrite"; every faction must contain at least one piece Pyrite. Operationally, players alternate turns, with constraints such as browser-based responsiveness and no offline play, ensuring fair, interactive gameplay.
+## Functional Requirements
+- FR-1: The game board must display a fixed 5x5 grid consisting of 25 equally sized cells, arranged in rows and columns. Each cell must be uniquely identifiable by coordinates (e.g., row 1-5, column A-E).
+- FR-2: The board must support the placement of up to one game piece per cell, where pieces are represented by visual icons, colors, or symbols (e.g., player-specific tokens).
+- FR-3: The board must allow authorized users (e.g., players or game administrators) to place, move, or remove pieces on the grid during game turns, with validation to prevent invalid moves (e.g., placing on occupied cells unless rules permit).
+- FR-4: The board must track and display the current state of all pieces on the grid in real-time, including piece ownership, type, and position.
+- FR-5: The board must provide visual feedback for game events, such as highlighting cells for valid moves, indicating turn changes, or showing win/loss conditions (e.g., a line of five aligned pieces).
+- FR-6: The board must reset to an empty state at the start of a new game session, clearing all pieces and resetting any internal state.
+- FR-7: The board must support saving and loading of the current grid state for game persistence across sessions.
+- FR-8: The board must display distinct visual representations for different cell types, including "strata" cells in rows 1 and 5, "fissure" cells in rows 2-4, and a special "center fissure" in row 3, column 3, as per the initial layout.
+- FR-9: The board must support rotation of cells in rows 2-4 (20 cells total), allowing authorized users to change the orientation of these cells, which affects piece movement and interaction based on the rotation state.
+- FR-10: The board must support up to 10 geode pieces per game (5 per player), each of a distinct type (Pyrite, Rose Quartz, Calcite, Amethyst, Quartz), with visual differentiation and enforcement of one piece per cell.
+- FR-11: The board must designate rows 1 and 5 as home positions (strata) for each player's faction of geode pieces.
+- FR-12: The board must enforce the game win condition by detecting and signaling when one player's Pyrite piece is eroded (captured or removed from the board).
+
+## Non-Functional Requirements
+- NFR-1: The board must render the 5x5 grid with high visual fidelity, using responsive design to ensure it scales appropriately on screens ranging from 480px to 1920px width, maintaining aspect ratios and readability.
+- NFR-2: The board must respond to user interactions (e.g., clicks or taps) within 100 milliseconds to provide a smooth user experience.
+- NFR-3: The board must be accessible, supporting keyboard navigation, screen readers, and high-contrast modes for users with disabilities, in compliance with WCAG 2.1 AA standards.
+- NFR-4: The board must be scalable to handle up to 100 concurrent game sessions without performance degradation, assuming a cloud-based deployment.
+- NFR-5: The board must ensure data security by encrypting any stored grid states and preventing unauthorized modifications, with no sensitive game data exposed in logs.
+- NFR-6: The board must be compatible with modern web browsers (e.g., Chrome, Firefox, Safari) and mobile devices, using standard web technologies like HTML5, CSS3, and JavaScript.
+
+## Cross-References
+This artifact has no dependencies on other artifacts at this time. It may relate to future artifacts such as game-engine (for logic integration) or user-interface (for broader UI components).
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+Design (game-board.design):
+---
+artifact: unknown
+phase: design
+depends-on: ["game-state-manager.design", "faction.design"]
+references: []
+last-updated: 2025-12-17
+---
+
+# Game Board - Design
+
+## Overview
+The design for the game board in "Petrified" adopts a modular, component-based architecture suitable for a digital web-based implementation. It leverages HTML5 Canvas or SVG for rendering the 5x5 grid, ensuring responsiveness across devices (FR-1, NFR-1). The board is designed as a self-contained module that manages grid state, user interactions, and visual feedback, integrating seamlessly with a broader game engine for turn-based logic. Key design principles include separation of concerns (e.g., state management separate from rendering), event-driven interactions for real-time updates (FR-4, NFR-2), and accessibility features (NFR-3). The board supports persistence via serialized state storage (FR-7, NFR-5) and assumes integration with a game engine for rule validation (e.g., move legality). Assumed mechanics: Pieces cannot stack currently (but may be in future factions) (FR-2), cells have special effects expressed as fissures (see @game-board.req), cells are uniform otherwise, geode movement is described in @faction (with some pieces able to move diagonally, some both horizontally and diagonally, constrained by individual geode configuration), and multiplayer turns are managed externally in a turn-based game where only the playing faction's geodes can move (on shared devices or separate systems). Win condition (FR-8): The pyrite is "petrified", analogous to checkmate ("petrified") or stalemate ("wedged"). Visual theme: Rock-based wood/nature theme with suitable colors and branding guidelines.
+
+## Architecture
+The game board is structured as a layered architecture with the following components and modules:
+
+- **Presentation Layer**: Handles rendering and user interface.
+  - **Grid Renderer Module**: Responsible for drawing the 5x5 grid (25 cells, labeled 1-5 rows and A-E columns). Uses SVG for scalability and accessibility (NFR-1, NFR-3). Each cell is a clickable element with visual states (e.g., hover, selected).
+  - **Piece Renderer Module**: Overlays visual representations (e.g., icons or colors) for pieces on cells. Supports dynamic updates for placement/movement (FR-2, FR-4).
+  - **Feedback Module**: Manages visual cues like highlights for valid moves, animations for events (e.g., piece placement), and win indicators (FR-5).
+
+- **Logic Layer**: Manages state and interactions.
+  - **State Manager Module**: Maintains the current board state as a 5x5 array, tracking piece positions, ownership, and types. Handles reset and serialization for save/load (FR-6, FR-7).
+  - **Interaction Handler Module**: Processes user inputs (clicks/taps) and validates actions (e.g., prevent placement on occupied cells unless rules allow). Integrates with game engine for authorization and rule enforcement (FR-3). Enforces turn-based restrictions where only the current playing faction's pieces can move, whether on a shared device or separate systems.
+  - **Event Dispatcher Module**: Publishes events (e.g., "piecePlaced", "turnChanged") for external listeners, enabling real-time updates.
+
+- **Data Layer**: Interfaces with persistence.
+  - **Persistence Module**: Encrypts and stores board states using localStorage or a secure cloud API (NFR-5). Supports loading states across sessions.
+
+The architecture is event-driven, with modules communicating via a pub-sub pattern. It assumes a React-like framework for component lifecycle but remains framework-agnostic. For scalability (NFR-4), rendering is optimized with virtual DOM updates, and state is immutable to avoid concurrency issues in multi-session environments.
+
+## API Contracts
+The contracts must be compatible with those defined in @game-state-manager.design.
+
+The board exposes the following public interfaces for integration with the game engine and UI:
+
+- **Board Class**:
+  - Constructor: `new Board(options: { size: 5, theme: string, accessibility: boolean })` – Initializes the board with grid size, visual theme, and accessibility flags.
+  - Methods:
+    - `placePiece(row: number, col: number, piece: PieceObject): boolean` – Places a piece at coordinates (1-5, A-E mapped to 0-4). Returns true if valid; throws error for invalid moves (e.g., occupied cell). Validates via game rules.
+    - `movePiece(fromRow: number, fromCol: number, toRow: number, toCol: number): boolean` – Moves a piece if rules allow; removes from source.
+    - `removePiece(row: number, col: number): boolean` – Removes a piece; returns true if successful.
+    - `getState(): BoardState` – Returns current state as a 5x5 array of PieceObject or null.
+    - `reset(): void` – Clears all pieces and state.
+    - `save(): string` – Serializes encrypted state.
+    - `load(stateString: string): void` – Deserializes and restores state.
+    - `highlightCells(cells: Array<{row, col}>, type: string): void` – Applies visual highlights (e.g., "validMove", "win").
+    - `on(event: string, callback: Function): void` – Subscribes to events like "stateChanged", "invalidMove".
+
+- **Data Structures**:
+  - `PieceObject`: { id: string, owner: string (player ID), type: string (e.g., "token"), visual: { icon: string, color: string } }
+  - `BoardState`: Array<Array<PieceObject | null>> (5x5 grid).
+  - `Coordinates`: { row: number (0-4), col: number (0-4) }
+
+All methods include error handling (e.g., TypeError for invalid inputs) and are async where persistence is involved.
+
+## Data Model
+- **In-Memory Data Structures**:
+  - Board state: A 5x5 two-dimensional array (`Array<Array<PieceObject | null>>`), where null indicates empty cells. PieceObject includes ownership for multiplayer support.
+  - Event queue: Internal array for pending interactions, processed in order.
+
+- **Persistent Schema** (e.g., JSON for storage):
+  - { "grid": BoardState, "metadata": { "lastUpdated": Date, "sessionId": string } }
+  - Encrypted using AES-256 (NFR-5); stored in cloud (e.g., AWS S3) or localStorage for single-device sessions.
+
+- **Relationships**:
+  - Pieces link to players via `owner` field. No direct DB; persistence is flat-file based for simplicity. For scalability, integrates with a game session store (e.g., Redis for concurrent sessions).
+
+## Algorithms & Logic
+- **Grid Initialization**: Creates a 5x5 array initialized to null. Time complexity: O(1).
+- **Placement/Move Validation**: Checks if target cell is empty (for placement) or if move adheres to game rules (assumed external; e.g., adjacency only, with some pieces able to move diagonally or both horizontally and diagonally based on geode configuration). Algorithm: Iterate adjacent cells for valid moves; O(1) per check.
+- **State Update**: Immutable updates: Clone array, modify, trigger re-render. Prevents race conditions.
+- **Visual Feedback**: Decision flow: On user interaction → Validate → If valid, update state → Render highlight → Publish event. For win conditions, detect when pyrite is "petrified" (analogous to checkmate or stalemate); scan for relevant board states (O(n) where n=25).
+- **Persistence**: Serialize to JSON, encrypt, store; load and decrypt. Uses SHA-256 for integrity checks.
+- **Accessibility Logic**: Keyboard nav: Tab through cells, Enter to select; Screen reader: ARIA labels for cells and pieces.
+
+## Dependencies
+- **Third-Party Libraries**: 
+  - none
+- **External Services**: 
+  - game state will persist in jsonbin.io, the API key will have to be hard-coded into the client
+
+## Cross-References
+- @ref:game-board.req - Requirements
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+Based on these requirements:
+
+---
+artifact: geode-rose-quartz
+phase: requirement
+depends-on: []
+references: ["game-board.req"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Rose Quartz Geode - Requirements
+
+## Overview
+The Rose Quartz Geode is a specialized game piece in the "Petrified" board game, part of each player's faction of five distinct geodes (Pyrite, Rose Quartz, Calcite, Amethyst, Quartz). As described in the game-board.req, Rose Quartz is placed in the strata (home positions) in row 1, column 2 for Player 1 and row 5, column 2 for Player 2 in the initial 5x5 grid layout. It is a unique geode type with enhanced capture abilities, allowing it to capture opponent pieces more effectively than standard geodes, such as capturing adjacent opponents or bypassing certain fissure blocks. Rose Quartz is visually represented as pink and supports strategic gameplay by enabling aggressive plays to erode the opponent's Pyrite. This specification outlines its functional and non-functional requirements to ensure integration with the game board's grid, fissure rotations, and win conditions focused on Pyrite erosion.
+
+## Functional Requirements
+- FR-1: The Rose Quartz Geode must be initialized in the strata positions (row 1, column 2 for Player 1; row 5, column 2 for Player 2) at the start of each game, as per the game-board.req grid layout, and remain owned by its respective player throughout the game.
+- FR-2: The Rose Quartz Geode must support movement of up to 2 cells in any orthogonal (up, down, left, right) direction per turn, with validation to ensure it does not move through occupied cells or invalid fissure orientations that block pink geodes.
+- FR-3: The Rose Quartz Geode must enable enhanced capture mechanics, allowing it to capture opponent geodes by landing on their cell or adjacent cells (within 1 cell radius), removing the captured piece from the board and advancing toward the win condition of eroding the opponent's Pyrite.
+- FR-4: The Rose Quartz Geode must interact with fissure cells (rows 2-4) based on rotation states, where certain orientations permit entry (e.g., open fissures allow movement and capture), while others block or restrict it, ensuring compliance with board rotation rules from game-board.req.
+- FR-5: The Rose Quartz Geode must prevent placement or movement onto cells occupied by the same player's geodes or invalid positions, enforcing one geode per cell as specified in game-board.req.
+- FR-6: The Rose Quartz Geode must be removable from the board upon capture by an opponent's geode, triggering a check for game win/loss conditions if it contributes to Pyrite erosion, though Rose Quartz itself is not the primary erosion target.
+- FR-7: The Rose Quartz Geode must support state tracking, including its position, ownership, and capture status, integrated with the game board's real-time state management for persistence and loading across sessions.
+
+## Non-Functional Requirements
+- NFR-1: The Rose Quartz Geode must render with high visual fidelity in pink color (e.g., hex code #FFB6C1 or similar) on the 5x5 grid, scaling responsively on screens from 480px to 1920px width to maintain readability and distinguish it from other geodes like Pyrite (yellow) or Amethyst (purple).
+- NFR-2: Interactions with the Rose Quartz Geode, such as selection, movement, and capture, must respond within 100 milliseconds in modern web browsers (e.g., Chrome, Firefox) to ensure smooth gameplay without lag.
+- NFR-3: The Rose Quartz Geode must be accessible, supporting keyboard navigation for selection, screen reader compatibility (e.g., alt-text describing "Pink Rose Quartz Geode at position row 1, column 2"), and high-contrast modes compliant with WCAG 2.1 AA standards.
+- NFR-4: The Rose Quartz Geode's mechanics must be balanced for fair play, ensuring it does not dominate gameplay (e.g., capture limitations to prevent overpowered strategies), contributing to balanced win rates around 50/50 for skilled players.
+- NFR-5: The Rose Quartz Geode must handle up to 100 concurrent game sessions scalably, with no performance degradation in rendering or state updates, assuming cloud-based deployment as per game-board.req.
+- NFR-6: Security for the Rose Quartz Geode must include input validation to prevent unauthorized modifications (e.g., cheating via invalid captures), with no exposure of game state in browser logs, ensuring data integrity in web-based play.
+
+## Questions & Clarifications
+[AI-CLARIFY: The enhanced capture ability for Rose Quartz is described as "enhanced capture" in the ConOps, but specifics like exact range (adjacent cells) or interactions with other geode types (e.g., can it capture Pyrite directly?) are not detailed in game-board.req; clarification needed on precise mechanics to avoid imbalances. Additionally, how does fissure rotation specifically affect Rose Quartz entry (e.g., blocked by certain orientations?), as this impacts movement validation.]
+
+## Cross-References
+[Leave empty - references are documented in the metadata header]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+=== AI Response ===
+---
+artifact: geode-rose-quartz
+phase: design
+depends-on: []
+references: ["geode-rose-quartz.req", "game-board.req", "game-board.design"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Rose Quartz Geode - Design
+
+## Overview
+The design for the Rose Quartz Geode in "Petrified" adopts a component-based, object-oriented approach within the game's modular architecture, treating it as a specialized subclass of a generic Geode class. It extends base geode functionality (e.g., placement, ownership, and visual representation) with unique mechanics for enhanced capture and movement, ensuring seamless integration with the game board's state management and rendering modules (as defined in game-board.design). The high-level approach emphasizes encapsulation of geode-specific logic (e.g., orthogonal movement up to 2 cells, adjacent capture) while leveraging shared board interfaces for validation against fissure rotations and occupancy rules. This promotes reusability across faction designs, balances strategic depth for fair play (targeting 50/50 win rates), and adheres to web-based constraints like responsive rendering and real-time updates. Assumptions include dependency on the board's State Manager for position tracking and the Rules Engine (from external reqs) for validating captures against game-board.req mechanics; Rose Quartz is not the erosion target but aids in eroding Pyrite.
+
+## Architecture
+The Rose Quartz Geode is implemented as a layered component within the game's logic layer, building on the board's architecture from game-board.design. It consists of the following modules and layers:
+
+- **Core Layer**: Defines the geode as an instantiable object with properties and behaviors.
+  - **Geode Base Module**: Inherits from a generic Geode class (assumed shared across faction geodes), providing common attributes like ID, owner, position, and visual properties (e.g., color: pink #FFB6C1).
+  - **Rose Quartz Extension Module**: Adds specialized logic for movement (orthogonal up to 2 cells) and capture (landing or adjacent removal).
+
+- **Interaction Layer**: Handles dynamic behaviors tied to board interactions.
+  - **Movement Validator Module**: Integrates with board's Interaction Handler to check orthogonal paths, fissure orientations (e.g., open rotations allow entry, blocked ones restrict), and occupancy, preventing invalid moves through occupied cells.
+  - **Capture Executor Module**: Triggers on move completion to detect and execute captures within a 1-cell radius (including landing cell), removing opponent pieces via board's removePiece API and signaling state updates.
+
+- **Presentation Layer**: Leverages board's Piece Renderer for visual display.
+  - **Visual Renderer Submodule**: Renders the geode as a pink icon/symbol on the grid, with hover states and animations for selections/moves, ensuring responsiveness (NFR-1 from req) and accessibility (NFR-3).
+
+The architecture uses inheritance and composition for modularity, with event-driven communication (e.g., publishing "captureExecuted" events to the board's Event Dispatcher). It assumes no direct persistence layer; state is managed via the board's State Manager, with Rose Quartz properties serialized within PieceObject structures.
+
+## API Contracts
+The Rose Quartz Geode exposes interfaces compatible with game-board.design's Board Class and assumed generic Geode API. Contracts are defined in TypeScript-like pseudocode for clarity.
+
+- **RoseQuartzGeode Class** (extends Geode):
+  - Constructor: `new RoseQuartzGeode(owner: string, initialPosition: Coordinates)` – Initializes with player ID and strata position (e.g., {row: 0, col: 1} for P1). Sets type: "rose-quartz", color: "#FFB6C1".
+  - Properties:
+    - `position: Coordinates` – Current {row: number (0-4), col: number (0-4)}.
+    - `owner: string` – Player ID.
+    - `id: string` – Unique identifier.
+    - `visual: { icon: string, color: string }` – Fixed to pink theme.
+  - Methods:
+    - `getValidMoves(boardState: BoardState): Array<Coordinates>` – Returns array of up to 8 valid orthogonal positions (2 cells max in each direction: up, down, left, right), filtered by board rules (e.g., no occupied cells, fissure compatibility). Throws InvalidMoveError if none.
+    - `moveTo(newPosition: Coordinates, board: Board): boolean` – Updates position if valid (via getValidMoves), triggers capture check. Returns true on success; integrates with board.movePiece.
+    - `attemptCapture(board: Board): Array<Coordinates>` – Scans 1-cell radius (including self) for opponent pieces, removes them via board.removePiece, and returns removed positions. Skips if no captures possible.
+    - `isBlockedByFissure(position: Coordinates, fissureState: FissureOrientation, board: Board): boolean` – Checks if target cell's fissure blocks entry based on rotation (e.g., assume 4 orientations: 0° open, 90°/180°/270° blocked for pink geodes per req clarification).
+    - `resetToStrata(): void` – Resets position to initial strata on game reset.
+    - `serialize(): PieceObject` – Returns { id, owner, type: "rose-quartz", visual, position } for board state.
+
+- **Data Structures**:
+  - `Coordinates`: { row: number (0-4), col: number (0-4) }
+  - `FissureOrientation`: Enum ("open", "blocked") – Simplified; assumes board provides per-cell orientation.
+  - `PieceObject`: Extends base { id: string, owner: string, type: string, visual: object, position: Coordinates }
+
+All methods include error handling (e.g., TypeError for invalid coordinates) and are synchronous unless involving board persistence.
+
+## Data Model
+- **In-Memory Data Structures**:
+  - RoseQuartzGeode instance: Object with properties as above, stored within board's BoardState array at its position.
+  - Capture targets: Temporary array of Coordinates during attemptCapture, derived from boardState scans.
+
+- **Persistent Schema**:
+  - Embedded in board's BoardState JSON: Each geode serializes as PieceObject within the 5x5 grid. No separate schema; persistence handled via board.save/load (encrypted, NFR-5 from req).
+
+- **Relationships**:
+  - Belongs to a player (owner field links to game session players). Relates to board cells via position; captures link to opponent geodes by scanning adjacent cells. No database; flat-file persistence for scalability.
+
+## Algorithms & Logic
+- **Movement Validation**: For getValidMoves: Start from current position, iterate orthogonal directions (up/down/left/right), check up to 2 steps ahead. For each potential cell: Verify empty (unless capturing), fissure not blocking (via isBlockedByFissure), and within bounds. Algorithm: BFS-like expansion, O(1) complexity due to fixed grid size. Decision flow: Position valid? → Fissure allows? → Empty or capturable? → Add to list.
+- **Capture Logic**: On moveTo success, attemptCapture scans Manhattan distance ≤1 (including self-cell) for opponent pieces (owner != self.owner). If found, remove via board API and log positions. Flow: Move completes → Scan radius → Remove if opponent → Update state → Publish "capture" event. Prevents self-capture; assumes Pyrite erosion check external.
+- **Fissure Interaction**: isBlockedByFissure checks orientation: If "open", allow; else block. Assumes board provides orientation per cell; logic is O(1) lookup.
+- **Initialization/Reset**: On creation, set to strata; on reset, reposition. Ensures initial placement per game-board.req.
+- **State Tracking**: Position updates trigger board state changes; captures decrement opponent piece count toward win condition.
+
+## Dependencies
+- **Third-Party Libraries**: 
+  - None specific; relies on standard JavaScript for object inheritance.
+- **External Services**: 
+  - Integrates with board's State Manager and Rules Engine (assumed external); uses jsonbin.io for persistence via board API (hard-coded API key as per game-board.design).
+
+## Questions & Clarifications
+[AI-CLARIFY: Precise fissure interaction rules for Rose Quartz (e.g., which orientations block entry?) need definition to implement isBlockedByFissure accurately; current design assumes a simple open/blocked dichotomy based on geode type, but req suggests type-specific effects. Also, confirm if enhanced capture allows chaining (e.g., multiple removals per move) or is limited to one per turn, and whether it can capture Pyrite directly without additional rules.]
+
+## Cross-References
+[Leave empty - references are documented in the metadata header above]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+=== End Log ===
