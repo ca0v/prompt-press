@@ -659,12 +659,12 @@ export class ScaffoldService {
         const reqDir = path.join(workspaceRoot, 'specs', 'requirements');
         const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
 
-        // Check if ConOps exists
+        // Check if ConOps exists, if not, we'll generate it
+        let conopsExists = true;
         try {
             await fs.access(conopsPath);
         } catch {
-            vscode.window.showErrorMessage('ConOps.md not found. Run "Scaffold Project" first.');
-            return;
+            conopsExists = false;
         }
 
         await vscode.window.withProgress({
@@ -714,13 +714,19 @@ export class ScaffoldService {
 
                 progress.report({ message: 'Reading ConOps...', increment: 25 });
 
-                // Read ConOps
-                const conopsContent = await fs.readFile(conopsPath, 'utf-8');
+                // Read ConOps or use empty if generating
+                let conopsContent = '';
+                if (conopsExists) {
+                    conopsContent = await fs.readFile(conopsPath, 'utf-8');
+                }
 
                 progress.report({ message: 'Analyzing with AI...', increment: 25 });
 
                 // Generate updates
-                const updates = await this.generateConOpsUpdates(conopsContent, overviews.join('\n\n---\n\n'));
+                const conopsSection = conopsExists 
+                    ? `Current ConOps.md:\n${conopsContent}`
+                    : 'ConOps.md does not exist - generate a new one based on the requirement overviews.';
+                const updates = await this.generateConOpsUpdates(conopsSection, overviews.join('\n\n---\n\n'));
 
                 progress.report({ message: 'Applying updates...', increment: 25 });
 
@@ -754,12 +760,12 @@ export class ScaffoldService {
     /**
      * Generate ConOps updates using AI
      */
-    private async generateConOpsUpdates(conopsContent: string, requirementOverviews: string): Promise<string> {
+    private async generateConOpsUpdates(conopsSection: string, requirementOverviews: string): Promise<string> {
         // Load prompt template
         const prompts = await this.loadPrompt('updateConOps.md');
         const systemPrompt = prompts.system;
         const userPrompt = prompts.user
-            .replace('{conops_content}', conopsContent)
+            .replace('{conops_section}', conopsSection)
             .replace('{requirement_overviews}', requirementOverviews);
 
         const messages: ChatMessage[] = [

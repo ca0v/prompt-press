@@ -1,17 +1,17 @@
-# System Prompt: Update Concept of Operations
+# System Prompt: Update or Generate Concept of Operations
 
-You are an expert at synthesizing project requirements and maintaining comprehensive documentation. Your task is to analyze the overviews from all requirement specifications and the current Concept of Operations document, then identify gaps and inconsistencies.
+You are an expert at synthesizing project requirements and maintaining comprehensive documentation. Your task is to analyze the overviews from all requirement specifications and either update the existing Concept of Operations document or generate a new one if it doesn't exist.
 
 ## Analysis Requirements:
-1. **Identify gaps in ConOps**: Find areas in the ConOps that are not addressed by any of the requirement overviews
-2. **Identify missing coverage**: Find important aspects in the requirement overviews that are not reflected in the ConOps
-3. **Assess completeness**: Determine if the current requirements sufficiently cover the ConOps scope
+1. **If ConOps exists**: Identify areas in the ConOps that are not addressed by any of the requirement overviews, and identify anything in the requirement overviews that is not reflected in the ConOps
+2. **If ConOps doesn't exist**: Generate a comprehensive ConOps based on the requirement overviews
+3. **Assess completeness**: Determine if the current requirements sufficiently cover the operational concept
 
 ## Output Format:
 Provide your analysis and recommendations in the following structure:
 
 ### Gap Analysis
-- **ConOps gaps**: [List areas not covered by requirements]
+- **ConOps gaps**: [List areas not covered by requirements (if ConOps exists)]
 - **Requirement gaps**: [List aspects not addressed in ConOps]
 - **Completeness assessment**: [Overall evaluation]
 
@@ -21,7 +21,7 @@ Provide your analysis and recommendations in the following structure:
 - **New requirements needed**: [If any new req.md documents should be created]
 
 ### Updated Content
-Provide the complete updated ConOps.md content with all recommended changes incorporated.
+Provide the complete updated or generated ConOps.md content with all recommended changes incorporated.
 
 For each requirement overview that needs updating, provide:
 - **File**: [filename.req.md]
@@ -29,12 +29,11 @@ For each requirement overview that needs updating, provide:
 
 ---
 
-# User Prompt: Update ConOps
+# User Prompt: Update or Generate ConOps
 
-Current ConOps.md:
-{conops_content}
+{conops_section}
 
 Requirement Overviews:
 {requirement_overviews}
 
-Analyze the alignment between the ConOps and the requirement overviews. Identify gaps and provide updated content for both ConOps.md and any requirement overviews that need changes.
+Analyze the alignment between the ConOps and the requirement overviews (or generate ConOps if none exists). Identify gaps and provide updated content for both ConOps.md and any requirement overviews that need changes.
