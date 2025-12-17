@@ -60,13 +60,22 @@ Implementation notes for the game board component.`;
     }
 }
 
+// Mock OutputChannel
+class MockOutputChannel {
+    messages: string[] = [];
+    appendLine(message: string) {
+        this.messages.push(message);
+    }
+}
+
 export async function runImplParserTest(): Promise<void> {
     const runner = new TestRunner();
     runner.describe('ImplParser', () => {
         it('should generate game-of-life source code from impl.md using AI', async () => {
             const parser = new MarkdownParser();
             const mockClient = new MockXAIClient();
-            const implParser = new ImplParser(parser, mockClient as any);
+            const mockOutputChannel = new MockOutputChannel();
+            const implParser = new ImplParser(parser, mockClient as any, mockOutputChannel as any);
 
             const implPath = path.join(__dirname, '../../test-output/game-of-life.impl.md');
             const outputDir = path.join(path.dirname(implPath), 'game-of-life-generated');

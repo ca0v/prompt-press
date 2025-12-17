@@ -61,7 +61,7 @@ export function activate(context: vscode.ExtensionContext) {
     const contextBuilder = new ContextBuilder();
     const scaffoldService = new ScaffoldService(aiClient, outputChannel);
     const markdownParser = new MarkdownParser();
-    const implParser = new ImplParser(markdownParser, aiClient);
+    const implParser = new ImplParser(markdownParser, aiClient, outputChannel);
     
     // Get workspace root for cascade service
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';

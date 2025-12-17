@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as vscode from 'vscode';
 import { MarkdownParser } from '../parsers/markdownParser';
 import { XAIClient } from '../ai/xaiClient';
 
@@ -9,39 +10,39 @@ export interface FileInfo {
 }
 
 export class ImplParser {
-    constructor(private parser: MarkdownParser, private xaiClient: XAIClient) {}
+    constructor(private parser: MarkdownParser, private xaiClient: XAIClient, private outputChannel: vscode.OutputChannel) {}
 
     async parseAndGenerate(implPath: string): Promise<void> {
-        console.log(`[ImplParser] Starting code generation for ${implPath}`);
+        this.outputChannel.appendLine(`[ImplParser] Starting code generation for ${implPath}`);
         
         const parsed = await this.parser.parseFile(implPath);
-        console.log(`[ImplParser] Parsed metadata: artifact=${parsed.metadata.artifact}, phase=${parsed.metadata.phase}`);
+        this.outputChannel.appendLine(`[ImplParser] Parsed metadata: artifact=${parsed.metadata.artifact}, phase=${parsed.metadata.phase}`);
         
         const fileStructureSection = parsed.sections.get('File Structure');
         if (!fileStructureSection) {
             throw new Error('File Structure section not found in impl.md');
         }
-        console.log(`[ImplParser] Found File Structure section (${fileStructureSection.length} chars)`);
+        this.outputChannel.appendLine(`[ImplParser] Found File Structure section (${fileStructureSection.length} chars)`);
         
         const codeGenSection = parsed.sections.get('Code Generation Instructions') || '';
-        console.log(`[ImplParser] Found Code Generation Instructions section (${codeGenSection.length} chars)`);
+        this.outputChannel.appendLine(`[ImplParser] Found Code Generation Instructions section (${codeGenSection.length} chars)`);
         
         const fileDescriptions = this.parseFileDescriptions(fileStructureSection);
-        console.log(`[ImplParser] Parsed ${fileDescriptions.size} file descriptions`);
+        this.outputChannel.appendLine(`[ImplParser] Parsed ${fileDescriptions.size} file descriptions`);
         
         let instructions = this.parseCodeInstructions(codeGenSection);
-        console.log(`[ImplParser] Parsed ${instructions.size} code generation instructions`);
+        this.outputChannel.appendLine(`[ImplParser] Parsed ${instructions.size} code generation instructions`);
         
         // If no code generation instructions, generate basic ones for all files
         if (instructions.size === 0 && fileDescriptions.size > 0) {
-            console.log(`[ImplParser] No code generation instructions found, generating basic instructions for all ${fileDescriptions.size} files`);
+            this.outputChannel.appendLine(`[ImplParser] No code generation instructions found, generating basic instructions for all ${fileDescriptions.size} files`);
             instructions = this.generateBasicInstructions(fileDescriptions);
-            console.log(`[ImplParser] Generated ${instructions.size} basic instructions`);
+            this.outputChannel.appendLine(`[ImplParser] Generated ${instructions.size} basic instructions`);
         }
 
         const base = path.dirname(implPath);
         const artifact = parsed.metadata.artifact;
-        console.log(`[ImplParser] Base directory: ${base}, Artifact: ${artifact}`);
+        this.outputChannel.appendLine(`[ImplParser] Base directory: ${base}, Artifact: ${artifact}`);
         
         // Assuming specs structure: specs/{phase}/{artifact}.{phase}.md
         const specsRoot = path.dirname(base); // Go up from implementation/ to specs/
@@ -52,32 +53,32 @@ export class ImplParser {
         let reqContent = '';
         try {
             designContent = await fs.readFile(designPath, 'utf8');
-            console.log(`[ImplParser] Loaded design file: ${designPath}`);
+            this.outputChannel.appendLine(`[ImplParser] Loaded design file: ${designPath}`);
         } catch (e) {
-            console.log(`[ImplParser] Design file not found: ${designPath}`);
+            this.outputChannel.appendLine(`[ImplParser] Design file not found: ${designPath}`);
         }
         try {
             reqContent = await fs.readFile(reqPath, 'utf8');
-            console.log(`[ImplParser] Loaded requirements file: ${reqPath}`);
+            this.outputChannel.appendLine(`[ImplParser] Loaded requirements file: ${reqPath}`);
         } catch (e) {
-            console.log(`[ImplParser] Requirements file not found: ${reqPath}`);
+            this.outputChannel.appendLine(`[ImplParser] Requirements file not found: ${reqPath}`);
         }
 
         // Create output directory, perhaps artifact name
         const outputDir = path.join(base, artifact + '-generated');
-        console.log(`[ImplParser] Creating output directory: ${outputDir}`);
+        this.outputChannel.appendLine(`[ImplParser] Creating output directory: ${outputDir}`);
         await fs.mkdir(outputDir, { recursive: true });
 
         const clarifications: string[] = [];
 
-        console.log(`[ImplParser] Starting code generation for ${instructions.size} files...`);
+        this.outputChannel.appendLine(`[ImplParser] Starting code generation for ${instructions.size} files...`);
         for (const [filePath, instr] of instructions) {
-            console.log(`[ImplParser] Processing file: ${filePath}`);
+            this.outputChannel.appendLine(`[ImplParser] Processing file: ${filePath}`);
             
             const fileName = path.basename(filePath);
             const description = fileDescriptions.get(filePath) || fileDescriptions.get(fileName) || 'No description available';
             const fullFilePath = path.join(outputDir, filePath);
-            console.log(`[ImplParser] Full output path: ${fullFilePath}`);
+            this.outputChannel.appendLine(`[ImplParser] Full output path: ${fullFilePath}`);
             
             await fs.mkdir(path.dirname(fullFilePath), { recursive: true });
 
@@ -101,41 +102,41 @@ Instructions: Implement the code for ${filePath} according to the above specific
 
             // Now call AI
             try {
-                console.log(`[ImplParser] Calling AI for ${filePath}...`);
+                this.outputChannel.appendLine(`[ImplParser] Calling AI for ${filePath}...`);
                 const response = await this.xaiClient.chat([{ role: 'user', content: prompt }], { maxTokens: 8000 });
-                console.log(`[ImplParser] AI response received for ${filePath} (${response.length} chars): ${response.substring(0, 200)}${response.length > 200 ? '...' : ''}`);
+                this.outputChannel.appendLine(`[ImplParser] AI response received for ${filePath} (${response.length} chars): ${response.substring(0, 200)}${response.length > 200 ? '...' : ''}`);
                 
                 // Process response: extract clarifications
                 const parsedResponse = this.parser.parse(response);
                 if (parsedResponse.clarifications.length > 0) {
-                    console.log(`[ImplParser] Found ${parsedResponse.clarifications.length} clarifications for ${filePath}`);
+                    this.outputChannel.appendLine(`[ImplParser] Found ${parsedResponse.clarifications.length} clarifications for ${filePath}`);
                     clarifications.push(...parsedResponse.clarifications);
                 }
                 
                 // The content is the code
                 const code = response.replace(/\[AI-CLARIFY:[^\]]+\]/g, '').trim();
-                console.log(`[ImplParser] Writing generated code to ${fullFilePath}`);
+                this.outputChannel.appendLine(`[ImplParser] Writing generated code to ${fullFilePath}`);
                 
                 // Write the code to the file
                 await fs.writeFile(fullFilePath, code);
             } catch (error) {
-                console.error(`[ImplParser] Failed to generate code for ${filePath}:`, error);
+                this.outputChannel.appendLine(`[ERROR] [ImplParser] Failed to generate code for ${filePath}: ${error}`);
                 // Keep the prompt as is
             }
         }
 
         // If there are clarifications, append to impl.md
         if (clarifications.length > 0) {
-            console.log(`[ImplParser] Appending ${clarifications.length} clarifications to ${implPath}`);
+            this.outputChannel.appendLine(`[ImplParser] Appending ${clarifications.length} clarifications to ${implPath}`);
             const clarificationText = clarifications.map(c => `[AI-CLARIFY: ${c}]`).join('\n');
             const implContent = await fs.readFile(implPath, 'utf8');
             const updatedContent = implContent + '\n\n' + clarificationText;
             await fs.writeFile(implPath, updatedContent);
         } else {
-            console.log(`[ImplParser] No clarifications to append`);
+            this.outputChannel.appendLine(`[ImplParser] No clarifications to append`);
         }
         
-        console.log(`[ImplParser] Code generation completed for ${artifact}`);
+        this.outputChannel.appendLine(`[ImplParser] Code generation completed for ${artifact}`);
     }
 
     private parseFileDescriptions(section: string): Map<string, string> {
@@ -159,7 +160,7 @@ Instructions: Implement the code for ${filePath} according to the above specific
         }
         
         // If no original format, try tree format
-        console.log(`[ImplParser] No original format found, trying tree format parsing`);
+        this.outputChannel.appendLine(`[ImplParser] No original format found, trying tree format parsing`);
         const lines = section.split('\n');
         const pathStack: string[] = [];
         
@@ -201,7 +202,7 @@ Instructions: Implement the code for ${filePath} according to the above specific
             }
         }
         
-        console.log(`[ImplParser] Parsed ${descriptions.size} file descriptions from tree format`);
+        this.outputChannel.appendLine(`[ImplParser] Parsed ${descriptions.size} file descriptions from tree format`);
         return descriptions;
     }
 
