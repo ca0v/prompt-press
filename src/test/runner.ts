@@ -11,11 +11,13 @@
 import { runXAIClientTests } from './xaiClient.test';
 import { runScaffoldIntegrationTest } from './scaffold-integration.test';
 import { runCascadeServiceTest } from './cascadeService.test';
+import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test';
 
 async function main() {
     const args = process.argv.slice(2);
     const runScaffoldTest = args.includes('scaffold');
     const runCascadeTest = args.includes('cascade');
+    const runConOpsTest = args.includes('conops');
     const runAllTests = args.includes('all');
     
     console.log('🚀 PromptPress Test Suite\n');
@@ -33,12 +35,18 @@ async function main() {
             
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();
+            
+            console.log('\n4️⃣  ConOps Update Integration Tests\n');
+            await runConOpsUpdateIntegrationTest();
         } else if (runScaffoldTest) {
             console.log('📦 Running Scaffold Integration Test\n');
             await runScaffoldIntegrationTest();
         } else if (runCascadeTest) {
             console.log('📦 Running Cascade Service Test\n');
             await runCascadeServiceTest();
+        } else if (runConOpsTest) {
+            console.log('📦 Running ConOps Update Integration Test\n');
+            await runConOpsUpdateIntegrationTest();
         } else {
             console.log('📦 Running Standard Tests\n');
             await runXAIClientTests();
@@ -46,6 +54,7 @@ async function main() {
             console.log('\n💡 Tips:');
             console.log('  - Run "node out/test/runner.js scaffold" for scaffold integration tests');
             console.log('  - Run "node out/test/runner.js cascade" for cascade service tests');
+            console.log('  - Run "node out/test/runner.js conops" for ConOps update integration tests');
             console.log('  - Run "node out/test/runner.js all" for complete test suite\n');
         }
         

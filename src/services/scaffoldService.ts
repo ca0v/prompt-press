@@ -961,8 +961,22 @@ ${aiResponse}
         await fs.writeFile(conopsPath, finalContent, 'utf-8');
         this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md');
 
-        // Look for requirement updates
-        const reqUpdates = aiResponse.matchAll(/- \*\*File\*\*: ([^\n]+)\n- \*\*Updated Overview\*\*:([\s\S]*?)(?=\n- \*\*File\*\*|\n### |\n$)/g);
+        // Look for requirement updates in the AI response
+        // Handle both the expected format and the actual AI response format
+        const reqUpdates: RegExpMatchArray[] = [];
+        
+        // Try the expected format first: - **File**: filename\n- **Updated Overview**: content
+        const expectedMatches = Array.from(aiResponse.matchAll(/- \*\*File\*\*: ([^\n]+)\n- \*\*Updated Overview\*\*:([\s\S]*?)(?=\n- \*\*File\*\*|\n### |\n$)/g));
+        reqUpdates.push(...expectedMatches);
+        
+        // Also try to parse the actual AI format: 1. **Update filename.req.md:**\n   - **Expanded Overview:** content
+        const aiFormatMatches = Array.from(aiResponse.matchAll(/^\d+\. \*\*Update ([^\*]+)\*\*:\s*\n(?:[\s\S]*?)- \*\*Expanded Overview:\*\* ([\s\S]*?)(?=\n\d+\. \*\*Update|\n### |\n$)/gm));
+        for (const match of aiFormatMatches) {
+            const fileName = match[1].trim();
+            const updatedOverview = match[2].trim();
+            reqUpdates.push([match[0], fileName, updatedOverview] as RegExpMatchArray);
+        }
+        
         for (const match of reqUpdates) {
             const fileName = match[1].trim();
             const updatedOverview = match[2].trim();
