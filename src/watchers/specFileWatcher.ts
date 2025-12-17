@@ -144,8 +144,8 @@ export class SpecFileWatcher implements vscode.Disposable {
             const content = await fs.readFile(filePath, 'utf-8');
             const parsed = this.parser.parse(content);
             const warnings: string[] = [];
-            
-            // Validate depends-on
+
+            // Validate depends-on (format: artifact.phase)
             if (parsed.metadata.dependsOn) {
                 for (const dep of parsed.metadata.dependsOn) {
                     if (!await this.fileExists(this.resolveSpecPath(dep))) {
@@ -153,17 +153,16 @@ export class SpecFileWatcher implements vscode.Disposable {
                     }
                 }
             }
-            
-            // Validate references
+
+            // Validate references (format: artifact.phase)
             if (parsed.metadata.references) {
                 for (const ref of parsed.metadata.references) {
-                    const refPath = ref.startsWith('@ref:') ? ref.substring(5) : ref;
-                    if (!await this.fileExists(this.resolveSpecPath(refPath))) {
+                    if (!await this.fileExists(this.resolveSpecPath(ref))) {
                         warnings.push(`references: ${ref} not found`);
                     }
                 }
             }
-            
+
             // Log warnings if any
             if (warnings.length > 0) {
                 console.warn(`PromptPress: Warnings in ${path.basename(filePath)}: ${warnings.join('; ')}`);
@@ -174,9 +173,8 @@ export class SpecFileWatcher implements vscode.Disposable {
     }
 
     private resolveSpecPath(specRef: string): string {
-        // specRef format: "artifact-name.phase" or "@ref:artifact-name.phase"
-        const cleaned = specRef.startsWith('@ref:') ? specRef.substring(5) : specRef;
-        const [artifact, phase] = cleaned.split('.');
+        // specRef format: "artifact-name.phase"
+        const [artifact, phase] = specRef.split('.');
         return path.join(this.workspaceRoot, 'specs', `${artifact}.${phase}.md`);
     }
 
