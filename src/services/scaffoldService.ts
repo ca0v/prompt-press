@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { XAIClient, ChatMessage } from '../ai/xaiClient';
+import { GitHelper } from './gitHelper';
+import { DiffHelper } from './diffHelper';
 
 type ReferencedArtifact = {
     name: string;
@@ -658,6 +660,67 @@ export class ScaffoldService {
     }
 
     /**
+     * Check git status for unstaged changes
+     */
+    private async checkGitStatus(workspaceRoot: string): Promise<boolean> {
+        return GitHelper.checkGitStatus(workspaceRoot);
+    }
+
+    /**
+     * Stage all changes
+     */
+    private async stageChanges(workspaceRoot: string): Promise<void> {
+        try {
+            await GitHelper.stageChanges(workspaceRoot);
+            this.outputChannel.appendLine('[UpdateConOps] Successfully staged all changes');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            this.outputChannel.appendLine(`[UpdateConOps] Warning: Failed to stage changes: ${errorMsg}`);
+            // Don't throw - allow cascade to continue even if staging fails
+        }
+    }
+
+    /**
+     * Detect changes in ConOps file
+     */
+    private async detectConOpsChanges(workspaceRoot: string, conopsPath: string, currentContent: string): Promise<{ hasChanges: boolean; summary: string; modifiedSections: string[] }> {
+        const cacheDir = path.join(workspaceRoot, '.promptpress', 'cache');
+        const cacheFile = path.join(cacheDir, 'ConOps.md.baseline');
+        
+        try {
+            const cachedContent = await fs.readFile(cacheFile, 'utf-8');
+            const changes = DiffHelper.compareContent(cachedContent, currentContent);
+            return {
+                hasChanges: changes.hasChanges,
+                summary: changes.summary,
+                modifiedSections: changes.modifiedSections
+            };
+        } catch {
+            // No cache, try git
+            const oldContent = await GitHelper.getLastCommittedContent(workspaceRoot, conopsPath);
+            if (oldContent) {
+                const changes = DiffHelper.compareContent(oldContent, currentContent);
+                return {
+                    hasChanges: changes.hasChanges,
+                    summary: changes.summary,
+                    modifiedSections: changes.modifiedSections
+                };
+            } else {
+                // No git history
+                this.outputChannel.appendLine('[UpdateConOps] No git history found, treating as new changes');
+                return {
+                    hasChanges: true,
+                    summary: 'New or significantly modified ConOps',
+                    modifiedSections: ['All sections']
+                };
+            }
+        }
+    }
+
+    /**
+     * Compare content and detect changes
+     */
+    /**
      * Update ConOps based on requirement overviews
      */
     public async updateConOps(): Promise<void> {
@@ -728,15 +791,46 @@ export class ScaffoldService {
 
                 // Read ConOps or use empty if generating
                 let conopsContent = '';
+                let conopsChanges = { hasChanges: false, summary: '', modifiedSections: [] as string[] };
+                
                 if (conopsExists) {
                     conopsContent = await fs.readFile(conopsPath, 'utf-8');
+                    
+                    // Check git status and prompt to stage if needed
+                    const hasUnstaged = await this.checkGitStatus(workspaceRoot);
+                    if (hasUnstaged) {
+                        const gitAction = await vscode.window.showWarningMessage(
+                            'ConOps.md has unstaged changes. Stage them before updating?',
+                            'Stage Changes',
+                            'Continue Without Staging',
+                            'Cancel'
+                        );
+                        
+                        if (gitAction === 'Cancel') {
+                            return;
+                        } else if (gitAction === 'Stage Changes') {
+                            await this.stageChanges(workspaceRoot);
+                        }
+                        // 'Continue Without Staging' falls through
+                    }
+                    
+                    // Detect changes in ConOps
+                    conopsChanges = await this.detectConOpsChanges(workspaceRoot, conopsPath, conopsContent);
+                    if (conopsChanges.hasChanges) {
+                        this.outputChannel.appendLine(`[UpdateConOps] Detected changes: ${conopsChanges.summary}`);
+                        this.outputChannel.appendLine(`[UpdateConOps] Modified sections: ${conopsChanges.modifiedSections.join(', ')}`);
+                    }
                 }
 
                 progress.report({ message: 'Analyzing with AI...', increment: 25 });
 
-                // Generate updates
+                // Generate updates with change context
+                const changeContext = conopsChanges.hasChanges 
+                    ? `\n\nRecent ConOps Changes:\n- Summary: ${conopsChanges.summary}\n- Modified sections: ${conopsChanges.modifiedSections.join(', ')}`
+                    : '';
+                    
                 const conopsSection = conopsExists 
-                    ? `Current ConOps.md:\n${conopsContent}`
+                    ? `Current ConOps.md:${changeContext}\n\n${conopsContent}`
                     : 'ConOps.md does not exist - generate a new one based on the requirement overviews.';
                 const updates = await this.generateConOpsUpdates(conopsSection, overviews.join('\n\n---\n\n'));
                 

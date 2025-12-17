@@ -7,6 +7,8 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { XAIClient, ChatMessage } from '../ai/xaiClient';
 import { MarkdownParser } from '../parsers/markdownParser';
+import { GitHelper } from './gitHelper';
+import { DiffHelper, ChangeDetectionResult } from './diffHelper';
 
 // Prompt file paths
 const PROMPTS = {
@@ -14,14 +16,6 @@ const PROMPTS = {
     generateDesign: path.join(__dirname, '../prompts/generateDesign.md'),
     generateImplementation: path.join(__dirname, '../prompts/generateImplementation.md')
 };
-
-export interface ChangeDetectionResult {
-    hasChanges: boolean;
-    modifiedSections: string[];
-    summary: string;
-    oldContent: string;
-    newContent: string;
-}
 
 export interface CascadeResult {
     success: boolean;
@@ -222,32 +216,13 @@ export class CascadeCore {
         }
     }
 
-    private async checkGitStatus(): Promise<boolean> {
-        try {
-            const { execSync } = require('child_process');
-            // Check for unstaged changes only (leading space means staged, M/A/D means unstaged)
-            const status = execSync('git status --porcelain', {
-                cwd: this.workspaceRoot,
-                encoding: 'utf-8'
-            });
-            // Lines starting with space followed by M/A/D are unstaged changes
-            const unstaged = status
-                .split('\n')
-                .filter((line: string) => line.match(/^\s[MAD]/));
-            return unstaged.length > 0;
-        } catch {
-            // Git not available or not a git repo - proceed without check
-            return false;
-        }
+    public async checkGitStatus(): Promise<boolean> {
+        return GitHelper.checkGitStatus(this.workspaceRoot);
     }
 
-    private async stageChanges(): Promise<void> {
+    public async stageChanges(): Promise<void> {
         try {
-            const { execSync } = require('child_process');
-            execSync('git add -A', {
-                cwd: this.workspaceRoot,
-                encoding: 'utf-8'
-            });
+            await GitHelper.stageChanges(this.workspaceRoot);
             this.logger.log('[Cascade] Successfully staged all changes');
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : String(error);
@@ -322,143 +297,24 @@ export class CascadeCore {
         const cacheFile = path.join(this.cacheDir, `${path.basename(filePath)}.baseline`);
         try {
             const cachedContent = await fs.readFile(cacheFile, 'utf-8');
-            return this.compareContent(cachedContent, currentContent);
+            return DiffHelper.compareContent(cachedContent, currentContent);
         } catch {
-            return await this.detectChangesFromGit(filePath, currentContent);
-        }
-    }
-
-    private async detectChangesFromGit(filePath: string, currentContent: string): Promise<ChangeDetectionResult> {
-        try {
-            const { execSync } = require('child_process');
-            const gitRoot = execSync('git rev-parse --show-toplevel', { cwd: this.workspaceRoot }).toString().trim();
-            const relativePath = path.relative(gitRoot, filePath);
-            
-            try {
-                // Try to get last committed version
-                const oldContent = execSync(`git show HEAD:"${relativePath}"`, {
-                    cwd: gitRoot,
-                    encoding: 'utf-8'
-                });
-                return this.compareContent(oldContent, currentContent);
-            } catch (gitError) {
-                // File not in git yet or other issue
-                // Check if file has been modified since last commit
-                const gitStatus = execSync(`git status --porcelain "${relativePath}"`, {
-                    cwd: gitRoot,
-                    encoding: 'utf-8'
-                }).trim();
-                
-                // If file appears modified in git status, treat all content as changes
-                if (gitStatus.length > 0) {
-                    this.logger.log('[Cascade] No git history found, but file has uncommitted changes; treating all content as modifications');
-                    return {
-                        hasChanges: true,
-                        modifiedSections: ['All sections'],
-                        summary: 'New or significantly modified file',
-                        oldContent: '',
-                        newContent: currentContent
-                    };
-                }
-                
-                // File not modified - no changes
+            // No cache, try git
+            const oldContent = await GitHelper.getLastCommittedContent(this.workspaceRoot, filePath);
+            if (oldContent) {
+                return DiffHelper.compareContent(oldContent, currentContent);
+            } else {
+                // No git history, treat as all changes
+                this.logger.log('[Cascade] No git history found; treating all content as changes');
                 return {
-                    hasChanges: false,
-                    modifiedSections: [],
-                    summary: 'No changes',
+                    hasChanges: true,
+                    modifiedSections: ['All sections'],
+                    summary: 'New or significantly modified file',
                     oldContent: '',
                     newContent: currentContent
                 };
             }
-        } catch (error) {
-            this.logger.log('[Cascade] Git not available; treating all content as changes');
-            // Not a git repo - treat as new file with all content as changes
-            return {
-                hasChanges: true,
-                modifiedSections: ['All sections'],
-                summary: 'New or significantly modified file',
-                oldContent: '',
-                newContent: currentContent
-            };
         }
-    }
-
-    private compareContent(oldContent: string, newContent: string): ChangeDetectionResult {
-        if (oldContent === newContent) {
-            return {
-                hasChanges: false,
-                modifiedSections: [],
-                summary: 'No changes',
-                oldContent,
-                newContent
-            };
-        }
-
-        const oldLines = oldContent.split('\n');
-        const newLines = newContent.split('\n');
-        const modifiedSections = this.findModifiedSections(oldLines, newLines);
-        const summary = this.generateChangeSummary(oldLines, newLines, modifiedSections);
-
-        return {
-            hasChanges: true,
-            modifiedSections,
-            summary,
-            oldContent,
-            newContent
-        };
-    }
-
-    private findModifiedSections(oldLines: string[], newLines: string[]): string[] {
-        const sections = new Set<string>();
-        const oldSections = this.buildSectionMap(oldLines);
-        const newSections = this.buildSectionMap(newLines);
-
-        for (const [section, newContent] of newSections) {
-            const oldContent = oldSections.get(section);
-            if (!oldContent || oldContent !== newContent) {
-                sections.add(section);
-            }
-        }
-        for (const section of oldSections.keys()) {
-            if (!newSections.has(section)) {
-                sections.add(section);
-            }
-        }
-        return Array.from(sections);
-    }
-
-    private buildSectionMap(lines: string[]): Map<string, string> {
-        const sections = new Map<string, string>();
-        let currentSection = '';
-        let currentContent: string[] = [];
-
-        for (const line of lines) {
-            if (line.startsWith('##')) {
-                if (currentSection) {
-                    sections.set(currentSection, currentContent.join('\n'));
-                }
-                currentSection = line.replace(/^##\s+/, '').trim();
-                currentContent = [];
-            } else if (currentSection) {
-                currentContent.push(line);
-            }
-        }
-        if (currentSection) {
-            sections.set(currentSection, currentContent.join('\n'));
-        }
-        return sections;
-    }
-
-    private generateChangeSummary(oldLines: string[], newLines: string[], modifiedSections: string[]): string {
-        const added = newLines.length - oldLines.length;
-        const sections = modifiedSections.length;
-        let summary = `Modified ${sections} section(s)`;
-        if (added > 0) {
-            summary += `, added ${added} line(s)`;
-        } else if (added < 0) {
-            summary += `, removed ${Math.abs(added)} line(s)`;
-        }
-        return summary;
     }
 
     private buildConfirmMessage(metadata: any, changes: ChangeDetectionResult): string {
