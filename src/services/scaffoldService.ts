@@ -644,4 +644,179 @@ export class ScaffoldService {
             '✅ PromptPress project structure created! Use "Scaffold Artifact" to create your first spec.'
         );
     }
+
+    /**
+     * Update ConOps based on requirement overviews
+     */
+    public async updateConOps(): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+        const reqDir = path.join(workspaceRoot, 'specs', 'requirements');
+        const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
+
+        // Check if ConOps exists
+        try {
+            await fs.access(conopsPath);
+        } catch {
+            vscode.window.showErrorMessage('ConOps.md not found. Run "Scaffold Project" first.');
+            return;
+        }
+
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Updating ConOps...',
+            cancellable: false
+        }, async (progress) => {
+            try {
+                progress.report({ message: 'Collecting requirement overviews...', increment: 25 });
+
+                // Collect all req.md files
+                const reqFiles: string[] = [];
+                try {
+                    const files = await fs.readdir(reqDir);
+                    for (const file of files) {
+                        if (file.endsWith('.req.md')) {
+                            reqFiles.push(path.join(reqDir, file));
+                        }
+                    }
+                } catch {
+                    // No requirements directory or empty
+                }
+
+                if (reqFiles.length === 0) {
+                    vscode.window.showErrorMessage('No requirement files found to analyze.');
+                    return;
+                }
+
+                // Extract overviews
+                const overviews: string[] = [];
+                for (const reqFile of reqFiles) {
+                    try {
+                        const content = await fs.readFile(reqFile, 'utf-8');
+                        const overview = this.extractOverviewSection(content);
+                        if (overview) {
+                            overviews.push(`${path.basename(reqFile)}:\n${overview}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to read ${reqFile}:`, error);
+                    }
+                }
+
+                if (overviews.length === 0) {
+                    vscode.window.showErrorMessage('No overview sections found in requirement files.');
+                    return;
+                }
+
+                progress.report({ message: 'Reading ConOps...', increment: 25 });
+
+                // Read ConOps
+                const conopsContent = await fs.readFile(conopsPath, 'utf-8');
+
+                progress.report({ message: 'Analyzing with AI...', increment: 25 });
+
+                // Generate updates
+                const updates = await this.generateConOpsUpdates(conopsContent, overviews.join('\n\n---\n\n'));
+
+                progress.report({ message: 'Applying updates...', increment: 25 });
+
+                // Apply updates
+                await this.applyConOpsUpdates(workspaceRoot, updates);
+
+                vscode.window.showInformationMessage('✅ ConOps updated successfully!');
+
+            } catch (error: any) {
+                this.outputChannel.appendLine(`[ERROR] ConOps update failed: ${error.message}`);
+                this.outputChannel.show();
+                vscode.window.showErrorMessage(`Failed to update ConOps: ${error.message}`);
+            }
+        });
+    }
+
+    /**
+     * Extract the ## Overview section from content
+     */
+    private extractOverviewSection(content: string): string | null {
+        const lines = content.split('\n');
+        const overviewStart = lines.findIndex(line => line.trim() === '## Overview');
+        if (overviewStart === -1) return null;
+
+        let overviewEnd = lines.findIndex((line, index) => index > overviewStart && line.startsWith('## '));
+        if (overviewEnd === -1) overviewEnd = lines.length;
+
+        return lines.slice(overviewStart + 1, overviewEnd).join('\n').trim();
+    }
+
+    /**
+     * Generate ConOps updates using AI
+     */
+    private async generateConOpsUpdates(conopsContent: string, requirementOverviews: string): Promise<string> {
+        // Load prompt template
+        const prompts = await this.loadPrompt('updateConOps.md');
+        const systemPrompt = prompts.system;
+        const userPrompt = prompts.user
+            .replace('{conops_content}', conopsContent)
+            .replace('{requirement_overviews}', requirementOverviews);
+
+        const messages: ChatMessage[] = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ];
+
+        this.outputChannel.appendLine('[UpdateConOps] Sending analysis to AI');
+        try {
+            const response = await this.aiClient.chat(messages, { maxTokens: 6000 });
+            return response;
+        } catch (error: any) {
+            this.outputChannel.appendLine(`[UpdateConOps] Error: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Apply the ConOps updates from AI response
+     */
+    private async applyConOpsUpdates(workspaceRoot: string, aiResponse: string): Promise<void> {
+        const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
+
+        // Parse the AI response
+        // Look for "Updated Content" section
+        const updatedContentMatch = aiResponse.match(/### Updated Content\s*\n([\s\S]*?)(?=\n## |\n### |\n$)/);
+        if (updatedContentMatch) {
+            const updatedConOps = updatedContentMatch[1].trim();
+            await fs.writeFile(conopsPath, updatedConOps, 'utf-8');
+            this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md');
+        }
+
+        // Look for requirement updates
+        const reqUpdates = aiResponse.matchAll(/- \*\*File\*\*: ([^\n]+)\n- \*\*Updated Overview\*\*:([\s\S]*?)(?=\n- \*\*File\*\*|\n### |\n$)/g);
+        for (const match of reqUpdates) {
+            const fileName = match[1].trim();
+            const updatedOverview = match[2].trim();
+            const reqPath = path.join(workspaceRoot, 'specs', 'requirements', fileName);
+
+            try {
+                let content = await fs.readFile(reqPath, 'utf-8');
+                // Replace the ## Overview section
+                const lines = content.split('\n');
+                const overviewIndex = lines.findIndex(line => line.trim() === '## Overview');
+                if (overviewIndex !== -1) {
+                    let endIndex = lines.findIndex((line, index) => index > overviewIndex && line.startsWith('## '));
+                    if (endIndex === -1) endIndex = lines.length;
+
+                    // Replace the section
+                    lines.splice(overviewIndex + 1, endIndex - overviewIndex - 1, '', ...updatedOverview.split('\n'));
+                    content = lines.join('\n');
+                    await fs.writeFile(reqPath, content, 'utf-8');
+                    this.outputChannel.appendLine(`[UpdateConOps] Updated overview in ${fileName}`);
+                }
+            } catch (error) {
+                console.warn(`Failed to update ${fileName}:`, error);
+            }
+        }
+    }
 }

@@ -166,6 +166,12 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
+    context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.updateConOps', async () => {
+            await scaffoldService.updateConOps();
+        })
+    );
+
     // Register disposables
     context.subscriptions.push(specsWatcher);
     context.subscriptions.push(chatPanelProvider);

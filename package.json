@@ -46,8 +46,8 @@
         "title": "PromptPress: Apply Changes"
       },
       {
-        "command": "promptpress.generateImplementation",
-        "title": "PromptPress: Generate Implementation"
+        "command": "promptpress.updateConOps",
+        "title": "PromptPress: Update ConOps"
       }
     ],
     "configuration": {
