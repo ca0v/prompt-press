@@ -1,5 +1,4 @@
 import * as fs from 'fs/promises';
-import * as YAML from 'yaml';
 
 export interface SpecMetadata {
     artifact: string;
@@ -19,6 +18,30 @@ export interface ParsedSpec {
 }
 
 export class MarkdownParser {
+    /**
+     * Simple YAML parser for frontmatter (bespoke implementation)
+     */
+    private parseYaml(yaml: string): any {
+        const obj: any = {};
+        const lines = yaml.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')); // ignore comments
+
+        for (const line of lines) {
+            if (!line.includes(':')) continue;
+            const colonIndex = line.indexOf(':');
+            const key = line.substring(0, colonIndex).trim();
+            let value = line.substring(colonIndex + 1).trim();
+
+            if (value.startsWith('[') && value.endsWith(']')) {
+                // array
+                value = value.slice(1, -1);
+                obj[key] = value ? value.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')) : [];
+            } else {
+                // string, remove quotes if present
+                obj[key] = value.replace(/^["']|["']$/g, '');
+            }
+        }
+        return obj;
+    }
     /**
      * Parse a markdown spec file
      */
@@ -60,7 +83,7 @@ export class MarkdownParser {
         }
 
         try {
-            const raw = YAML.parse(frontmatterMatch[1]) as any;
+            const raw = this.parseYaml(frontmatterMatch[1]);
             const dependsOn = raw['depends-on'] ?? raw.dependsOn ?? [];
             const references = raw.references ?? [];
             const metadata: SpecMetadata = {
