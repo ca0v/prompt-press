@@ -40,6 +40,12 @@ export interface Logger {
     log(message: string): void;
 }
 
+export interface ReferencedArtifact {
+    name: string;
+    requirement?: string;
+    design?: string;
+}
+
 export class CascadeCore {
     private parser: MarkdownParser;
     private cacheDir: string;
@@ -81,6 +87,56 @@ export class CascadeCore {
             const errorMsg = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to load prompts for ${promptKey}: ${errorMsg}`);
         }
+    }
+
+    private parseMentions(text: string): string[] {
+        const mentions = new Set<string>();
+        const regex = /@([a-z0-9-]+)/g;
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(text)) !== null) {
+            mentions.add(match[1]);
+        }
+        return Array.from(mentions);
+    }
+
+    private async loadReferencedArtifacts(
+        artifactNames: string[],
+        specsDir: string = path.join(this.workspaceRoot, 'specs')
+    ): Promise<ReferencedArtifact[]> {
+        const results: ReferencedArtifact[] = [];
+
+        for (const name of artifactNames) {
+            const req = path.join(specsDir, 'requirements', `${name}.req.md`);
+            const design = path.join(specsDir, 'design', `${name}.design.md`);
+
+            const ref: ReferencedArtifact = { name };
+            try {
+                ref.requirement = await fs.readFile(req, 'utf-8');
+            } catch {}
+            try {
+                ref.design = await fs.readFile(design, 'utf-8');
+            } catch {}
+
+            if (ref.requirement || ref.design) {
+                results.push(ref);
+            }
+        }
+
+        return results;
+    }
+
+    private formatReferencedArtifacts(references: ReferencedArtifact[]): string {
+        const limit = 15000;
+        return references.map(ref => {
+            const parts: string[] = [`Artifact: ${ref.name}`];
+            if (ref.requirement) {
+                parts.push(`**Requirement:**\n${ref.requirement.substring(0, limit)}${ref.requirement.length > limit ? '... [truncated]' : ''}`);
+            }
+            if (ref.design) {
+                parts.push(`**Design:**\n${ref.design.substring(0, limit)}${ref.design.length > limit ? '... [truncated]' : ''}`);
+            }
+            return parts.join('\n\n');
+        }).join('\n\n---\n\n');
     }
 
     async applyChanges(
@@ -213,6 +269,15 @@ export class CascadeCore {
 
             this.logger.log('[Cascade] Analyzing changes for extractable content...');
 
+            // Extract referenced artifacts from modified sections and summary
+            const changeText = changes.modifiedSections.join(' ') + ' ' + changes.summary;
+            const mentionedArtifacts = this.parseMentions(changeText);
+            let referencedArtifacts: ReferencedArtifact[] = [];
+            if (mentionedArtifacts.length > 0) {
+                referencedArtifacts = await this.loadReferencedArtifacts(mentionedArtifacts);
+                this.logger.log(`[Cascade] Found ${referencedArtifacts.length} referenced artifact(s): ${referencedArtifacts.map(r => r.name).join(', ')}`);
+            }
+
             const prompts = await this.loadPrompts('refineDocument');
             
             // Format system prompt with context
@@ -220,11 +285,16 @@ export class CascadeCore {
                 .replace('{modified_sections}', changes.modifiedSections.join(', '))
                 .replace('{change_summary}', changes.summary);
 
+            // Build reference block for user prompt
+            const referenceBlock = referencedArtifacts.length > 0
+                ? `\n\nReferenced artifacts (for context):\n${this.formatReferencedArtifacts(referencedArtifacts)}`
+                : '';
+
             // Format user prompt with context
             const userPrompt = prompts.user
                 .replace('{modified_sections}', changes.modifiedSections.join(', '))
                 .replace('{change_summary}', changes.summary)
-                .replace('{current_content}', currentContent);
+                .replace('{current_content}', currentContent + referenceBlock);
 
             const messages: ChatMessage[] = [
                 { role: 'system', content: systemPrompt },
