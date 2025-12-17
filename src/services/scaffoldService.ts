@@ -812,19 +812,27 @@ export class ScaffoldService {
      * Populate the ConOps template with AI-generated content
      */
     private populateConOpsTemplate(templateContent: string, aiContent: string): string {
-        // Split the AI content by sections (assuming it uses ## headers)
+        // Split the AI content by sections (assuming it uses ## or ### headers)
         const aiSections: { [key: string]: string } = {};
         const aiLines = aiContent.split('\n');
         let currentSection = '';
         let currentContent: string[] = [];
 
         for (const line of aiLines) {
-            if (line.startsWith('## ')) {
+            if (line.startsWith('### ')) {
                 // Save previous section
                 if (currentSection && currentContent.length > 0) {
                     aiSections[currentSection] = currentContent.join('\n').trim();
                 }
-                // Start new section
+                // Start new section (remove the ### prefix)
+                currentSection = line.substring(4).trim();
+                currentContent = [];
+            } else if (line.startsWith('## ')) {
+                // Save previous section
+                if (currentSection && currentContent.length > 0) {
+                    aiSections[currentSection] = currentContent.join('\n').trim();
+                }
+                // Start new section (remove the ## prefix)
                 currentSection = line.substring(3).trim();
                 currentContent = [];
             } else if (currentSection) {
@@ -851,6 +859,8 @@ export class ScaffoldService {
             'Constraints and Assumptions': ['Constraints and Assumptions', 'Constraints'],
             'Risks and Mitigations': ['Risks and Mitigations', 'Risks'],
             'Future Considerations': ['Future Considerations'],
+            'Gap Analysis': ['Gap Analysis'],
+            'Recommended Updates': ['Recommended Updates'],
             'Requirements Traceability': ['Requirements Traceability']
         };
 
@@ -909,56 +919,47 @@ ${aiResponse}
         this.outputChannel.appendLine('[UpdateConOps] Full AI Response:');
         this.outputChannel.appendLine(aiResponse);
 
-        // Parse the AI response
-        // Look for "Updated Content" section
-        const updatedContentMatch = aiResponse.match(/### Updated Content\s*\n([\s\S]*?)(?=\n## |\n### |\n$)/);
-        this.outputChannel.appendLine(`[UpdateConOps] Updated Content match found: ${!!updatedContentMatch}`);
-        if (updatedContentMatch) {
-            const updatedConOps = updatedContentMatch[1].trim();
-            this.outputChannel.appendLine('[UpdateConOps] Extracted ConOps content:');
-            this.outputChannel.appendLine(updatedConOps);
+        // Include the full AI response content, which contains valuable analysis
+        let finalContent = aiResponse;
+        
+        if (!conopsExists) {
+            // For new ConOps, try to use the template structure but include all analysis
+            const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
+            const templateContent = await fs.readFile(conopsTemplatePath, 'utf-8');
+            const templateWithDate = templateContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
             
-            let finalContent = updatedConOps;
-            if (!conopsExists) {
-                // Use template for new ConOps.md
-                const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
-                const templateContent = await fs.readFile(conopsTemplatePath, 'utf-8');
-                const templateWithDate = templateContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
+            // Try to extract and populate structured content, but also append the full analysis
+            const updatedContentMatch = aiResponse.match(/### Updated Content\s*\n([\s\S]*?)(?=\n## |\n### |\n$)/);
+            if (updatedContentMatch) {
+                const updatedConOps = updatedContentMatch[1].trim();
+                let structuredContent = this.populateConOpsTemplate(templateWithDate, updatedConOps);
                 
-                // Replace the template content with AI-generated content
-                // Keep the frontmatter and structure, but replace the placeholder content
-                finalContent = this.populateConOpsTemplate(templateWithDate, updatedConOps);
-                this.outputChannel.appendLine('[UpdateConOps] Populated ConOps template with AI content');
-            }
-            
-            await fs.writeFile(conopsPath, finalContent, 'utf-8');
-            this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md');
-        } else {
-            // Try alternative patterns if the expected format isn't found
-            const alternativeMatch = aiResponse.match(/(?:Below is the complete generated ConOps\.md content\.|#{1,6}.*ConOps.*)\s*\n---\s*\n([\s\S]*?)(?=\n---|\n#{1,6}|\n$)/);
-            if (alternativeMatch) {
-                const updatedConOps = alternativeMatch[2].trim();
-                this.outputChannel.appendLine('[UpdateConOps] Found ConOps content with alternative pattern:');
-                this.outputChannel.appendLine(updatedConOps);
+                // Append the Gap Analysis and Recommended Updates at the end
+                const gapAnalysisMatch = aiResponse.match(/### Gap Analysis\s*\n([\s\S]*?)(?=\n### |\n$)/);
+                const recommendedUpdatesMatch = aiResponse.match(/### Recommended Updates\s*\n([\s\S]*?)(?=\n### |\n$)/);
                 
-                let finalContent = updatedConOps;
-                if (!conopsExists) {
-                    // Use template for new ConOps.md
-                    const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
-                    const templateContent = await fs.readFile(conopsTemplatePath, 'utf-8');
-                    const templateWithDate = templateContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
-                    
-                    // Replace the template content with AI-generated content
-                    finalContent = this.populateConOpsTemplate(templateWithDate, updatedConOps);
-                    this.outputChannel.appendLine('[UpdateConOps] Populated ConOps template with AI content (alternative pattern)');
+                if (gapAnalysisMatch || recommendedUpdatesMatch) {
+                    structuredContent += '\n\n## Analysis and Recommendations\n\n';
+                    if (gapAnalysisMatch) {
+                        structuredContent += '### Gap Analysis\n' + gapAnalysisMatch[1].trim() + '\n\n';
+                    }
+                    if (recommendedUpdatesMatch) {
+                        structuredContent += '### Recommended Updates\n' + recommendedUpdatesMatch[1].trim() + '\n\n';
+                    }
                 }
                 
-                await fs.writeFile(conopsPath, finalContent, 'utf-8');
-                this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md using alternative pattern');
+                finalContent = structuredContent;
+                this.outputChannel.appendLine('[UpdateConOps] Created structured ConOps with analysis sections');
             } else {
-                this.outputChannel.appendLine('[UpdateConOps] ERROR: Could not find ConOps content in AI response');
+                // If no clear content section, include the full analysis in the template
+                finalContent = this.populateConOpsTemplate(templateWithDate, aiResponse);
+                this.outputChannel.appendLine('[UpdateConOps] Populated ConOps template with full AI response');
             }
         }
+        // For existing ConOps, replace the entire content with the full AI response (includes all analysis)
+        
+        await fs.writeFile(conopsPath, finalContent, 'utf-8');
+        this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md');
 
         // Look for requirement updates
         const reqUpdates = aiResponse.matchAll(/- \*\*File\*\*: ([^\n]+)\n- \*\*Updated Overview\*\*:([\s\S]*?)(?=\n- \*\*File\*\*|\n### |\n$)/g);

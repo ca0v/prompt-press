@@ -51,5 +51,14 @@ last-updated: YYYY-MM-DD
 ## Future Considerations
 [Roadmap, scalability, extensibility]
 
+## Gap Analysis
+[Analysis of gaps between requirements and operational needs]
+
+## Recommended Updates
+[Suggestions for updating requirements or ConOps]
+
+## Requirements Traceability
+[References to specific req.md documents and operations they address]
+
 ## AI Interaction Log
 <!-- Auto-maintained by PromptPress extension -->
