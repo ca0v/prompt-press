@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { MarkdownParser, ParsedSpec } from '../parsers/markdownParser';
 
 export interface ContextItem {
     filePath: string;
-    specType: 'requirement' | 'design' | 'implementation';
+    specType: 'requirement' | 'design' | 'implementation' | 'concept';
     content: string;
     metadata: any;
 }
@@ -30,8 +31,20 @@ export class ContextBuilder {
         const changedItem = await this.createContextItem(changedFilePath, changedSpec);
         context.push(changedItem);
 
-        // Determine what additional context to include based on phase
+        // Include ConOps for requirement files
         const phase = changedSpec.metadata.phase;
+        if (phase === 'requirement') {
+            const conopsPath = path.join(path.dirname(path.dirname(changedFilePath)), 'ConOps.md');
+            try {
+                await fs.access(conopsPath);
+                const conopsSpec = await this.parser.parseFile(conopsPath);
+                context.push(await this.createContextItem(conopsPath, conopsSpec));
+            } catch {
+                // ConOps doesn't exist or can't be read
+            }
+        }
+
+        // Determine what additional context to include based on phase
         const artifactName = changedSpec.metadata.artifact;
 
         // Add phase-based dependencies

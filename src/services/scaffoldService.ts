@@ -168,6 +168,15 @@ export class ScaffoldService {
             }
         }
 
+        // Include ConOps if it exists
+        const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
+        try {
+            const conopsContent = await fs.readFile(conopsPath, 'utf-8');
+            contextDescription += `\n\nConcept of Operations:\n\n${conopsContent}`;
+        } catch {
+            // ConOps doesn't exist, skip
+        }
+
         // Step 4: Collect referenced artifacts mentioned via @artifact-name
         const mentionedArtifacts = this.parseMentions(description);
         let referencedArtifacts: ReferencedArtifact[] = [];
@@ -604,6 +613,66 @@ export class ScaffoldService {
         for (const dir of dirs) {
             await fs.mkdir(path.join(workspaceRoot, dir), { recursive: true });
         }
+
+        // Create ConOps.md template
+        const conopsContent = `---
+artifact: conops
+phase: concept
+depends-on: []
+references: []
+version: 1.0.0
+last-updated: ${new Date().toISOString().split('T')[0]}
+---
+
+# Concept of Operations (ConOps)
+
+## Executive Summary
+[High-level overview of the project, its purpose, and key objectives]
+
+## Business Objectives
+- [Primary business goals]
+- [Success criteria]
+- [Value proposition]
+
+## Stakeholders
+- [Key users and their roles]
+- [System administrators]
+- [External systems/interfaces]
+
+## Operational Concept
+### Current State
+[Description of current processes, pain points, and limitations]
+
+### Proposed Solution
+[High-level description of how the system will work]
+
+### Operational Scenarios
+- [Scenario 1: Description]
+- [Scenario 2: Description]
+
+## Functional Requirements Overview
+[High-level functional capabilities the system must provide]
+
+## Non-Functional Requirements Overview
+[Performance, security, usability, scalability requirements]
+
+## Constraints and Assumptions
+- [Technical constraints]
+- [Business constraints]
+- [Assumptions]
+
+## Risks and Mitigations
+- [Risk 1: Mitigation]
+- [Risk 2: Mitigation]
+
+## Future Considerations
+[Roadmap, scalability, extensibility]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+`;
+
+        await fs.writeFile(path.join(workspaceRoot, 'specs', 'ConOps.md'), conopsContent, 'utf-8');
 
         // Set up configuration files (.gitignore, VS Code settings)
         await this.setupConfigurationFiles(workspaceRoot);
