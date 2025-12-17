@@ -14,6 +14,10 @@ export function activate(context: vscode.ExtensionContext) {
     const outputChannel = vscode.window.createOutputChannel('PromptPress');
     context.subscriptions.push(outputChannel);
     
+    // Create diagnostic collection for spec validation
+    const diagnosticCollection = vscode.languages.createDiagnosticCollection('promptpress');
+    context.subscriptions.push(diagnosticCollection);
+    
     // Redirect console.log to output channel
     const originalLog = console.log;
     const originalError = console.error;
@@ -70,7 +74,8 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
     const specsWatcher = new SpecFileWatcher(
         config.get<boolean>('autoMonitor', true),
-        workspaceRoot
+        workspaceRoot,
+        diagnosticCollection
     );
 
     // Register commands
@@ -108,9 +113,15 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            vscode.window.showInformationMessage(
-                'Spec validation not yet implemented - coming soon!'
-            );
+            const filePath = editor.document.uri.fsPath;
+            if (!filePath.match(/specs\/.*\.(req|design|impl)\.md$/)) {
+                vscode.window.showErrorMessage('Not a PromptPress spec file');
+                return;
+            }
+
+            // Trigger validation
+            specsWatcher.validateFile(filePath);
+            vscode.window.showInformationMessage('Spec validation completed. Check Problems panel for errors.');
         })
     );
 

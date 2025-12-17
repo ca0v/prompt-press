@@ -9,14 +9,17 @@ export class SpecFileWatcher implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private parser: MarkdownParser;
     private workspaceRoot: string;
+    private diagnosticCollection: vscode.DiagnosticCollection;
 
     constructor(
         enabled: boolean = true,
-        workspaceRoot: string = ''
+        workspaceRoot: string = '',
+        diagnosticCollection?: vscode.DiagnosticCollection
     ) {
         this.enabled = enabled;
         this.parser = new MarkdownParser();
         this.workspaceRoot = workspaceRoot;
+        this.diagnosticCollection = diagnosticCollection || vscode.languages.createDiagnosticCollection('promptpress');
         if (enabled) {
             this.startWatching();
         }
@@ -72,10 +75,20 @@ export class SpecFileWatcher implements vscode.Disposable {
             return;
         }
 
+        // On create: validate references
+        if (changeType === 'created') {
+            await this.validateReferences(filePath);
+        }
+
         // On modify: update last-updated and validate references
         if (changeType === 'modified') {
             await this.updateMetadata(filePath);
             await this.validateReferences(filePath);
+        }
+
+        // On delete: clear diagnostics
+        if (changeType === 'deleted') {
+            this.diagnosticCollection.delete(uri);
         }
     }
 
@@ -147,16 +160,22 @@ export class SpecFileWatcher implements vscode.Disposable {
     }
 
     private async validateReferences(filePath: string): Promise<void> {
+        const diagnostics: vscode.Diagnostic[] = [];
+
         try {
             const content = await fs.readFile(filePath, 'utf-8');
             const parsed = this.parser.parse(content);
-            const warnings: string[] = [];
 
             // Validate depends-on (format: artifact.phase)
             if (parsed.metadata.dependsOn) {
                 for (const dep of parsed.metadata.dependsOn) {
                     if (!await this.fileExists(this.resolveSpecPath(dep))) {
-                        warnings.push(`depends-on: ${dep} not found`);
+                        const range = this.findMetadataRange(content, 'depends-on', dep);
+                        diagnostics.push(new vscode.Diagnostic(
+                            range,
+                            `Dependency '${dep}' not found`,
+                            vscode.DiagnosticSeverity.Error
+                        ));
                     }
                 }
             }
@@ -165,18 +184,33 @@ export class SpecFileWatcher implements vscode.Disposable {
             if (parsed.metadata.references) {
                 for (const ref of parsed.metadata.references) {
                     if (!await this.fileExists(this.resolveSpecPath(ref))) {
-                        warnings.push(`references: ${ref} not found`);
+                        const range = this.findMetadataRange(content, 'references', ref);
+                        diagnostics.push(new vscode.Diagnostic(
+                            range,
+                            `Reference '${ref}' not found`,
+                            vscode.DiagnosticSeverity.Error
+                        ));
                     }
                 }
             }
 
-            // Log warnings if any
-            if (warnings.length > 0) {
-                console.warn(`PromptPress: Warnings in ${path.basename(filePath)}: ${warnings.join('; ')}`);
+            // Validate content references (@ref:artifact.phase)
+            for (const ref of parsed.references) {
+                if (!await this.fileExists(this.resolveSpecPath(ref))) {
+                    const range = this.findContentReferenceRange(content, ref);
+                    diagnostics.push(new vscode.Diagnostic(
+                        range,
+                        `Reference '${ref}' not found`,
+                        vscode.DiagnosticSeverity.Error
+                    ));
+                }
             }
         } catch (error) {
-            console.warn(`PromptPress: Could not validate references in ${path.basename(filePath)}: ${error}`);
+            // If parsing fails, don't add diagnostics
         }
+
+        // Set diagnostics for this file
+        this.diagnosticCollection.set(vscode.Uri.file(filePath), diagnostics);
     }
 
     private resolveSpecPath(specRef: string): string {
@@ -195,6 +229,32 @@ export class SpecFileWatcher implements vscode.Disposable {
         } else {
             return path.join(this.workspaceRoot, 'specs', `${artifact}.${phase}.md`);
         }
+    }
+
+    private findMetadataRange(content: string, key: string, value: string): vscode.Range {
+        const lines = content.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith(`${key}:`) && line.includes(value)) {
+                return new vscode.Range(i, 0, i, line.length);
+            }
+        }
+        // Fallback to first line of frontmatter
+        return new vscode.Range(0, 0, 0, lines[0]?.length || 0);
+    }
+
+    private findContentReferenceRange(content: string, ref: string): vscode.Range {
+        const lines = content.split('\n');
+        const regex = new RegExp(`@ref:${ref.replace('.', '\\.')}`, 'g');
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (regex.test(line)) {
+                const index = line.indexOf(`@ref:${ref}`);
+                return new vscode.Range(i, index, i, index + `@ref:${ref}`.length);
+            }
+        }
+        // Fallback
+        return new vscode.Range(0, 0, 0, 0);
     }
 
     private async fileExists(filePath: string): Promise<boolean> {
@@ -225,6 +285,10 @@ export class SpecFileWatcher implements vscode.Disposable {
         if (this.enabled && !this.watcher) {
             this.startWatching();
         }
+    }
+
+    public async validateFile(filePath: string): Promise<void> {
+        await this.validateReferences(filePath);
     }
 
     public dispose() {
