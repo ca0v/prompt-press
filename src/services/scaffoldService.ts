@@ -282,6 +282,10 @@ export class ScaffoldService {
         this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for requirement generation`);
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+            
+            // Log the AI response to file
+            await this.logAiResponse('generateRequirement', systemPrompt, userPrompt, response);
+            
             return response;
         } catch (error: any) {
             this.outputChannel.appendLine(`[Scaffold] Error generating requirement: ${error.message}`);
@@ -335,6 +339,10 @@ export class ScaffoldService {
         this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for design generation`);
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+            
+            // Log the AI response to file
+            await this.logAiResponse('generateDesign', systemPrompt, userPrompt, response);
+            
             return response;
         } catch (error: any) {
             this.outputChannel.appendLine(`[Scaffold] Error generating design: ${error.message}`);
@@ -487,6 +495,10 @@ export class ScaffoldService {
         this.outputChannel.appendLine(`[Generate] Sending ${messages.length} messages to AI`);
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+            
+            // Log the AI response to file
+            await this.logAiResponse('generateImplementation', systemPrompt, userPrompt, response);
+            
             return response;
         } catch (error: any) {
             this.outputChannel.appendLine(`[Generate] Error generating implementation: ${error.message}`);
@@ -785,6 +797,10 @@ export class ScaffoldService {
             const response = await this.aiClient.chat(messages, { maxTokens: 6000 });
             this.outputChannel.appendLine('[UpdateConOps] AI Response:');
             this.outputChannel.appendLine(response);
+            
+            // Log the AI response to file
+            await this.logAiResponse('updateConOps', systemPrompt, userPrompt, response);
+            
             return response;
         } catch (error: any) {
             this.outputChannel.appendLine(`[UpdateConOps] Error: ${error.message}`);
@@ -850,6 +866,37 @@ export class ScaffoldService {
         }
 
         return populatedTemplate;
+    }
+
+    /**
+     * Log AI responses to files for analysis
+     */
+    private async logAiResponse(operation: string, systemPrompt: string, userPrompt: string, aiResponse: string): Promise<void> {
+        try {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const logFileName = `${operation}_${timestamp}.log`;
+            const logFilePath = path.join(__dirname, '../../logs', logFileName);
+            
+            const logContent = `=== AI Response Log: ${operation} ===
+Timestamp: ${new Date().toISOString()}
+
+=== System Prompt ===
+${systemPrompt}
+
+=== User Prompt ===
+${userPrompt}
+
+=== AI Response ===
+${aiResponse}
+
+=== End Log ===
+`;
+            
+            await fs.writeFile(logFilePath, logContent, 'utf-8');
+            this.outputChannel.appendLine(`[Log] AI response saved to: logs/${logFileName}`);
+        } catch (error) {
+            this.outputChannel.appendLine(`[Log] Failed to save AI response log: ${error}`);
+        }
     }
 
     /**
