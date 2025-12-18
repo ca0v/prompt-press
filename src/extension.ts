@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SpecFileWatcher } from './watchers/specFileWatcher';
 import { XAIClient } from './ai/xaiClient';
 import { ChatPanelProvider } from './ui/chatPanelProvider';
@@ -83,6 +85,50 @@ export function activate(context: vscode.ExtensionContext) {
         workspaceRoot,
         diagnosticCollection
     );
+
+    // Function to resolve spec path
+    function resolveSpecPath(specRef: string, workspaceRoot: string): string {
+        const [artifact, phase] = specRef.split('.');
+        let subdir = '';
+        if (phase === 'req') {
+            subdir = 'requirements';
+        } else if (phase === 'design') {
+            subdir = 'design';
+        } else if (phase === 'impl') {
+            subdir = 'implementation';
+        }
+        if (subdir) {
+            return path.join(workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
+        } else {
+            return path.join(workspaceRoot, 'specs', `${artifact}.${phase}.md`);
+        }
+    }
+
+    // Register document link provider for valid spec mentions
+    const linkProvider = vscode.languages.registerDocumentLinkProvider(
+        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md}' },
+        {
+            provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
+                const links: vscode.DocumentLink[] = [];
+                const text = document.getText();
+                const regex = /@([a-zA-Z0-9-]+\.(req|design|impl))/g; // Only valid format mentions
+                let match;
+                while ((match = regex.exec(text)) !== null) {
+                    const ref = match[1];
+                    const startPos = document.positionAt(match.index);
+                    const endPos = document.positionAt(match.index + match[0].length);
+                    const range = new vscode.Range(startPos, endPos);
+                    const filePath = resolveSpecPath(ref, workspaceRoot);
+                    if (fs.existsSync(filePath)) {
+                        const uri = vscode.Uri.file(filePath);
+                        links.push(new vscode.DocumentLink(range, uri));
+                    }
+                }
+                return links;
+            }
+        }
+    );
+    context.subscriptions.push(linkProvider);
 
     // Register commands
     context.subscriptions.push(
