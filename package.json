@@ -4,6 +4,10 @@
   "description": "Prompt-Driven Development Tool - Track AI prompts as persistent, versioned specs",
   "version": "0.1.0",
   "publisher": "promptpress",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ca0v/prompt-press.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
