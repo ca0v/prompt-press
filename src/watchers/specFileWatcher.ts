@@ -36,7 +36,7 @@ export class SpecFileWatcher implements vscode.Disposable {
         // Watch for changes in specs directory
         const pattern = new vscode.RelativePattern(
             workspaceFolders[0],
-            'specs/**/*.{req.md,design.md,impl.md}'
+            'specs/**/*.{req.md,design.md,impl.md,md}'
         );
 
         this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
@@ -69,9 +69,11 @@ export class SpecFileWatcher implements vscode.Disposable {
         
         console.log(`PromptPress: File ${changeType}: ${fileName}`);
 
-        // Determine spec type
+        // Determine spec type or if it's ConOps
         const specType = this.getSpecType(fileName);
-        if (!specType) {
+        const isConOps = fileName === 'ConOps.md';
+
+        if (!specType && !isConOps) {
             return;
         }
 
@@ -80,9 +82,11 @@ export class SpecFileWatcher implements vscode.Disposable {
             await this.validateReferences(filePath);
         }
 
-        // On modify: update last-updated and validate references
+        // On modify: update last-updated and validate references (only for specs, not ConOps)
         if (changeType === 'modified') {
-            await this.updateMetadata(filePath);
+            if (specType) {
+                await this.updateMetadata(filePath);
+            }
             await this.validateReferences(filePath);
         }
 
@@ -168,11 +172,22 @@ export class SpecFileWatcher implements vscode.Disposable {
 
             const fileName = path.basename(filePath);
             const specRef = fileName.replace(/\.(req|design|impl)\.md$/, '.$1');
+            const isConOps = fileName === 'ConOps.md';
 
             // Validate depends-on
             if (parsed.metadata.dependsOn) {
                 for (const dep of parsed.metadata.dependsOn) {
                     const range = this.findMetadataRange(content, 'depends-on', dep);
+                    
+                    // For ConOps, warn if it has any dependencies
+                    if (isConOps) {
+                        diagnostics.push(new vscode.Diagnostic(
+                            range,
+                            `ConOps should not have dependencies`,
+                            vscode.DiagnosticSeverity.Warning
+                        ));
+                        continue;
+                    }
                     
                     // Check over-specification
                     if (!/^[a-zA-Z0-9-]+\.(req|design|impl)$/.test(dep)) {
@@ -224,6 +239,15 @@ export class SpecFileWatcher implements vscode.Disposable {
                                 `Reference '${ref}' not found`,
                                 vscode.DiagnosticSeverity.Warning
                             ));
+                        } else {
+                            // For ConOps, check that references are only .req
+                            if (isConOps && !ref.endsWith('.req')) {
+                                diagnostics.push(new vscode.Diagnostic(
+                                    range,
+                                    `ConOps can only reference .req files, not '${ref}'`,
+                                    vscode.DiagnosticSeverity.Warning
+                                ));
+                            }
                         }
                     }
                 }
@@ -246,6 +270,13 @@ export class SpecFileWatcher implements vscode.Disposable {
                         diagnostics.push(new vscode.Diagnostic(
                             range,
                             `Mention '${ref}' not found`,
+                            vscode.DiagnosticSeverity.Warning
+                        ));
+                    } else if (isConOps && !ref.endsWith('.req')) {
+                        // ConOps can only reference .req files
+                        diagnostics.push(new vscode.Diagnostic(
+                            range,
+                            `ConOps can only reference requirement files`,
                             vscode.DiagnosticSeverity.Warning
                         ));
                     }

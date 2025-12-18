@@ -106,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register document link provider for valid spec mentions
     const linkProvider = vscode.languages.registerDocumentLinkProvider(
-        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md}' },
+        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md,md}' },
         {
             provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
                 const links: vscode.DocumentLink[] = [];
@@ -182,6 +182,10 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             }
         }
+        // Add ConOps
+        if (fs.existsSync(path.join(specsDir, 'ConOps.md'))) {
+            refs.push('ConOps');
+        }
         return refs;
     }
 
@@ -226,15 +230,15 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register completion provider for @ mentions
     const completionProvider = vscode.languages.registerCompletionItemProvider(
-        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md}' },
+        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md,md}' },
         {
             provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {
                 const filePath = document.uri.fsPath;
                 const fileName = path.basename(filePath);
+                const isConOps = fileName === 'ConOps.md';
                 const currentRefMatch = fileName.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
-                if (!currentRefMatch) return [];
-                const currentRef = `${currentRefMatch[1]}.${currentRefMatch[2]}`;
-                let currentPhase = currentRefMatch[2];
+                const currentRef = currentRefMatch ? `${currentRefMatch[1]}.${currentRefMatch[2]}` : (isConOps ? 'ConOps' : null);
+                let currentPhase = currentRefMatch ? currentRefMatch[2] : null;
 
                 const line = document.lineAt(position).text;
                 const linePrefix = line.substr(0, position.character);
@@ -246,9 +250,10 @@ export function activate(context: vscode.ExtensionContext) {
                     
                     const allRefs = getAllSpecRefs(workspaceRoot);
                     let allowedRefs = allRefs.filter(ref => {
-                        if (ref.endsWith('.impl')) return false; // don't show .impl
-                        if (currentPhase === 'req' && ref.endsWith('.design')) return false;
                         if (ref === currentRef) return false; // don't show current
+                        if (ref.endsWith('.impl')) return false; // don't show .impl
+                        if (isConOps && !ref.endsWith('.req')) return false; // ConOps only .req
+                        if (currentPhase === 'req' && ref.endsWith('.design')) return false;
                         return ref.startsWith(afterAt);
                     });
                     
@@ -277,22 +282,30 @@ export function activate(context: vscode.ExtensionContext) {
                 if (position.line > frontmatterStart && position.line < frontmatterEnd && line.trim().startsWith('- ')) {
                     // In frontmatter list, check if depends-on or references
                     let isDependsOn = false;
+                    let isReferences = false;
                     for (let i = position.line - 1; i >= frontmatterStart; i--) {
                         if (lines[i].includes('depends-on:')) {
                             isDependsOn = true;
                             break;
                         }
                         if (lines[i].includes('references:')) {
+                            isReferences = true;
                             break;
                         }
                     }
                     
+                    if (isDependsOn && isConOps) {
+                        // ConOps should not have depends-on
+                        return [];
+                    }
+                    
                     const allRefs = getAllSpecRefs(workspaceRoot);
                     let allowedRefs = allRefs.filter(ref => {
+                        if (ref === currentRef) return false; // don't show current
                         if (ref.endsWith('.impl')) return false; // don't show .impl
                         if (currentPhase === 'req' && ref.endsWith('.design')) return false;
-                        if (ref === currentRef) return false; // don't show current
-                        if (isDependsOn && wouldCreateCycle(ref, currentRef, workspaceRoot)) return false; // no circular
+                        if (isConOps && isReferences && !ref.endsWith('.req')) return false; // ConOps references only .req
+                        if (isDependsOn && currentRef && wouldCreateCycle(ref, currentRef, workspaceRoot)) return false; // no circular
                         return true;
                     });
                     
