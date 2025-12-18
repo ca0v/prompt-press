@@ -100,20 +100,58 @@ export class CascadeCore {
         const results: ReferencedArtifact[] = [];
 
         for (const name of artifactNames) {
-            const req = path.join(specsDir, 'requirements', `${name}.req.md`);
-            const design = path.join(specsDir, 'design', `${name}.design.md`);
+            // Parse artifact name to separate base name from phase if present
+            const parts = name.split('.');
+            let baseName: string;
+            let specificPhase: string | null = null;
 
-            const ref: ReferencedArtifact = { name };
-            try {
-                ref.requirement = await fs.readFile(req, 'utf-8');
-            } catch {}
-            try {
-                ref.design = await fs.readFile(design, 'utf-8');
-            } catch {}
-
-            if (ref.requirement || ref.design) {
-                results.push(ref);
+            if (parts.length === 2 && (parts[1] === 'req' || parts[1] === 'design')) {
+                // Name includes phase (e.g. "geode-quartz.req")
+                baseName = parts[0];
+                specificPhase = parts[1];
+            } else {
+                // Name without phase (e.g. "geode-quartz")
+                baseName = name;
             }
+
+            const ref: ReferencedArtifact = { name: baseName };
+
+            if (specificPhase) {
+                // Load only the specific phase file
+                const filePath = path.join(specsDir, specificPhase === 'req' ? 'requirements' : 'design', `${baseName}.${specificPhase}.md`);
+                try {
+                    if (specificPhase === 'req') {
+                        ref.requirement = await fs.readFile(filePath, 'utf-8');
+                    } else {
+                        ref.design = await fs.readFile(filePath, 'utf-8');
+                    }
+                } catch (error) {
+                    throw new Error(`Referenced artifact file not found: ${filePath}`);
+                }
+            } else {
+                // Load both req and design, but only fail if neither exists
+                const reqPath = path.join(specsDir, 'requirements', `${baseName}.req.md`);
+                const designPath = path.join(specsDir, 'design', `${baseName}.design.md`);
+
+                let hasReq = false;
+                let hasDesign = false;
+
+                try {
+                    ref.requirement = await fs.readFile(reqPath, 'utf-8');
+                    hasReq = true;
+                } catch {}
+
+                try {
+                    ref.design = await fs.readFile(designPath, 'utf-8');
+                    hasDesign = true;
+                } catch {}
+
+                if (!hasReq && !hasDesign) {
+                    throw new Error(`No requirement or design files found for artifact: ${baseName}`);
+                }
+            }
+
+            results.push(ref);
         }
 
         return results;
