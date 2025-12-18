@@ -50,6 +50,9 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
 - System SHALL treat implementation markdown as source and generated code as derived output
 - System SHALL support regeneration of code for upgrades or language changes
 - System SHALL maintain the relationship between markdown specs and generated code
+- System SHALL parse file structure descriptions using tree format (directories ending in `/`, `├──` for branches, `│` for indentation, `#` for comments)
+- System SHALL generate complete project structures with proper directory hierarchies
+- System SHALL support multiple programming languages (JavaScript, TypeScript, HTML, JSON, etc.)
 
 ### FR-4: Version Control Integration
 - All prompt specifications SHALL be compatible with standard version control systems
@@ -115,9 +118,10 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
 
 ### FR-11: Code Generation Trigger
 - Extension SHALL provide command to trigger code generation from implementation specs
-- Extension SHALL invoke generator tools with appropriate parameters
+- Extension SHALL invoke ImplParser with appropriate AI client and file structure parser
 - Extension SHALL display generation progress and results
 - Extension SHALL handle generation errors and present them to user
+- Extension SHALL create output directories automatically based on parsed file structures
 
 ### FR-12: Artifact Scaffolding
 - Extension SHALL provide command to scaffold new PromptPress projects
@@ -181,6 +185,9 @@ PromptPress follows three iterative phases that operate as a continuous cycle (t
 - Extension SHALL identify cross-references and dependencies using `@ref:` syntax
 - Extension SHALL validate markdown against defined schemas
 - Extension SHALL detect `[AI-CLARIFY:]` markers and other structured annotations
+- Extension SHALL parse file structure sections using tree format with proper path resolution
+- Extension SHALL extract code generation instructions from implementation markdown
+- Extension SHALL validate file structure descriptions for consistency and completeness
 
 ### TR-3: Context Window Management
 - Extension SHALL calculate token/character count of context payload before API submission
@@ -372,7 +379,7 @@ Validation result if checking spec completeness.
    - Extension automatically loads and submits requested context
 6. **AI** generates `<artifact>.impl.md` with precise, unambiguous specifications
 7. **Developer** reviews and approves implementation spec
-8. **Extension or tooling** generates code in `artifacts/<artifact>/` from implementation spec
+8. **Developer** runs `Generate Code from Implementation` command to create code in `artifacts/<artifact>/` from implementation spec
 9. **Iterate**: If code doesn't meet requirements, refine the specs (not the code directly)
 10. **Regenerate**: To upgrade or change languages, rerun generation from existing specs
 
@@ -517,6 +524,8 @@ npm run watch
 - **Configuration Tests**: Endpoint configuration, model selection
 - **Error Handling**: Output channel logging, request/response details
 - **Cascade Service Tests**: Change detection, baseline comparison, git fallback, cascade propagation
+- **ImplParser Tests**: Code generation from implementation specs, file structure parsing, AI client integration
+- **FileStructureParser Tests**: Tree format parsing, path resolution, multiple format support
 - **Scaffold Integration Tests**: Complete artifact generation, caching, change propagation
 - **Mock Objects**: Platform-agnostic testing without VS Code dependencies
 
@@ -527,6 +536,9 @@ npm run test:cascade
 
 # Run scaffold tests only
 npm run test:scaffold
+
+# Run parser tests only
+npm run test:parser
 
 # Run all test suites
 npm run test:all
