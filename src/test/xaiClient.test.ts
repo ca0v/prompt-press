@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode';
 import { XAIClient } from '../ai/xaiClient';
-import { TestRunner, Assert, it } from './framework';
+import { TestRunner, it } from './framework';
+import { Assert } from "./Assert";
 
 // Mock output channel for testing
 class MockOutputChannel implements vscode.OutputChannel {

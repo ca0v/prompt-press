@@ -1,4 +1,5 @@
-import { TestRunner, Assert, it } from './framework';
+import { TestRunner, it } from './framework';
+import { Assert } from "./Assert";
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { MarkdownParser } from '../parsers/markdownParser';

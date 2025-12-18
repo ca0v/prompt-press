@@ -2,7 +2,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { SpecFileWatcher } from '../watchers/specFileWatcher';
 import { MarkdownParser } from '../parsers/markdownParser';
-import { TestRunner, it, Assert } from './framework';
+import { TestRunner, it } from './framework';
+import { Assert } from "./Assert";
 
 const tmpDir = path.join(__dirname, '../../test-output/specFileWatcher');
 const parser = new MarkdownParser();

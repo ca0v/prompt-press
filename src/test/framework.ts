@@ -3,6 +3,8 @@
  * Lightweight testing without heavy dependencies
  */
 
+import { Assert } from "./Assert";
+
 export interface TestResult {
     name: string;
     passed: boolean;
@@ -107,100 +109,6 @@ export function it(name: string, fn: () => Promise<void> | void): void {
         global.currentTest(name, fn);
     } else {
         throw new Error('it() must be called within a describe() block');
-    }
-}
-
-// Assertion helpers
-export class Assert {
-    static equal(actual: any, expected: any, message?: string): void {
-        if (actual !== expected) {
-            throw new Error(message || `Expected ${expected}, but got ${actual}`);
-        }
-    }
-
-    static deepEqual(actual: any, expected: any, message?: string): void {
-        if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(message || `Expected ${JSON.stringify(expected)}, but got ${JSON.stringify(actual)}`);
-        }
-    }
-
-    static throws(fn: () => void | Promise<void>, expectedError?: string | RegExp): void {
-        let thrown = false;
-        try {
-            const result = fn();
-            if (result instanceof Promise) {
-                throw new Error('Assert.throws does not support async functions. Use Assert.rejects instead.');
-            }
-        } catch (error) {
-            thrown = true;
-            if (expectedError) {
-                const message = (error as Error).message;
-                if (typeof expectedError === 'string') {
-                    if (!message.includes(expectedError)) {
-                        throw new Error(`Expected error message to include "${expectedError}", but got "${message}"`);
-                    }
-                } else {
-                    if (!expectedError.test(message)) {
-                        throw new Error(`Expected error message to match ${expectedError}, but got "${message}"`);
-                    }
-                }
-            }
-        }
-        if (!thrown) {
-            throw new Error('Expected function to throw, but it did not');
-        }
-    }
-
-    static async rejects(fn: () => Promise<void>, expectedError?: string | RegExp): Promise<void> {
-        let thrown = false;
-        try {
-            await fn();
-        } catch (error) {
-            thrown = true;
-            if (expectedError) {
-                const message = (error as Error).message;
-                if (typeof expectedError === 'string') {
-                    if (!message.includes(expectedError)) {
-                        throw new Error(`Expected error message to include "${expectedError}", but got "${message}"`);
-                    }
-                } else {
-                    if (!expectedError.test(message)) {
-                        throw new Error(`Expected error message to match ${expectedError}, but got "${message}"`);
-                    }
-                }
-            }
-        }
-        if (!thrown) {
-            throw new Error('Expected function to reject, but it did not');
-        }
-    }
-
-    static ok(value: any, message?: string): void {
-        if (!value) {
-            throw new Error(message || `Expected truthy value, but got ${value}`);
-        }
-    }
-
-    static notOk(value: any, message?: string): void {
-        if (value) {
-            throw new Error(message || `Expected falsy value, but got ${value}`);
-        }
-    }
-
-    static includes(haystack: string | any[], needle: any, message?: string): void {
-        const includes = typeof haystack === 'string' 
-            ? haystack.includes(needle as string)
-            : haystack.includes(needle);
-        
-        if (!includes) {
-            throw new Error(message || `Expected ${haystack} to include ${needle}`);
-        }
-    }
-
-    static match(actual: string, pattern: RegExp, message?: string): void {
-        if (!pattern.test(actual)) {
-            throw new Error(message || `Expected "${actual}" to match ${pattern}`);
-        }
     }
 }
 

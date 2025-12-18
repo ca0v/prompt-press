@@ -5,7 +5,8 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { TestRunner, Assert, it } from './framework';
+import { TestRunner, it } from './framework';
+import { Assert } from "./Assert";
 
 // Simple cache implementation
 class ResponseCache {

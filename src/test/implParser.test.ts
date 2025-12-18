@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { TestRunner, Assert, it } from './framework';
+import { TestRunner, it } from './framework';
+import { Assert } from "./Assert";
 import { ImplParser } from '../services/implParser';
 import { FileStructureParser } from '../services/fileStructureParser';
 import { MarkdownParser } from '../parsers/markdownParser';
@@ -143,9 +144,11 @@ export async function runImplParserTest(): Promise<void> {
             const parser = new FileStructureParser(mockOutputChannel as any);
 
             const section = `
+\`\`\`
 src/
     ├── index.js          # Main entry point
     ├── game.js           # Game logic
+\`\`\`
 `;
 
             const result = parser.parseFileDescriptions(section);
@@ -169,6 +172,7 @@ src/
             const parser = new FileStructureParser(mockOutputChannel as any);
 
             const section = `
+\`\`\`
 game-board/
 ├── src/
 │   ├── board.ts          # Main Board class implementation
@@ -185,6 +189,7 @@ game-board/
 ├── package.json          # NPM dependencies and scripts
 ├── tsconfig.json         # TypeScript configuration
 └── README.md             # Implementation notes
+\`\`\`
 `;
 
             const result = parser.parseFileDescriptions(section);

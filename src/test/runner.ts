@@ -6,6 +6,8 @@
  * Run all tests: node out/test/runner.js all
  */
 
+// Last commit hash for test updates: 6d6e538
+
 // Removed vscode module interception; tests avoid vscode dependencies now.
 
 import { runXAIClientTests } from './xaiClient.test';
