@@ -130,6 +130,49 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(linkProvider);
 
+    // Function to get all spec refs
+    function getAllSpecRefs(workspaceRoot: string): string[] {
+        const refs: string[] = [];
+        const specsDir = path.join(workspaceRoot, 'specs');
+        if (!fs.existsSync(specsDir)) return refs;
+        const subdirs = ['requirements', 'design', 'implementation'];
+        for (const subdir of subdirs) {
+            const dir = path.join(specsDir, subdir);
+            if (fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+                for (const file of files) {
+                    const match = file.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
+                    if (match) {
+                        refs.push(`${match[1]}.${match[2]}`);
+                    }
+                }
+            }
+        }
+        return refs;
+    }
+
+    // Register completion provider for @ mentions
+    const completionProvider = vscode.languages.registerCompletionItemProvider(
+        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md}' },
+        {
+            provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {
+                const linePrefix = document.lineAt(position).text.substr(0, position.character);
+                if (!linePrefix.endsWith('@')) {
+                    return [];
+                }
+                const refs = getAllSpecRefs(workspaceRoot);
+                return refs.map(ref => {
+                    const item = new vscode.CompletionItem(`@${ref}`, vscode.CompletionItemKind.Reference);
+                    item.insertText = ref;
+                    item.documentation = `Reference to ${ref}`;
+                    return item;
+                });
+            }
+        },
+        '@' // trigger character
+    );
+    context.subscriptions.push(completionProvider);
+
     // Register commands
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.openChat', () => {
