@@ -21,7 +21,7 @@ last-updated: {last_updated}
 # {artifact_title} - Implementation
 
 ## File Structure
-[Detailed file organization - INCLUDE files for changes]
+[Detailed file organization in standard tree format with directories ending in /, ├── for subdirectories, │ for indentation, and # for comments - INCLUDE files for changes]
 
 ## Module Implementation
 [Precise implementation details - DETAIL changed/new modules]

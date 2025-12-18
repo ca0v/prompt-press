@@ -123,6 +123,7 @@
     "test:scaffold": "node ./out/test/runner.js scaffold",
     "test:cascade": "node ./out/test/runner.js cascade",
     "test:all": "node ./out/test/runner.js all",
+    "test:parser": "node ./out/test/runner.js parser",
     "package": "vsce package",
     "install-deps": "npm install"
   },

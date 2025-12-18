@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { TestRunner, Assert, it } from './framework';
 import { ImplParser } from '../services/implParser';
+import { FileStructureParser } from '../services/fileStructureParser';
 import { MarkdownParser } from '../parsers/markdownParser';
 
 // Mock XAIClient
@@ -68,6 +69,22 @@ class MockOutputChannel {
     }
 }
 
+// Mock FileStructureParser
+class MockFileStructureParser {
+    parseFileDescriptions(section: string): Map<string, string> {
+        // Simple mock that parses basic format for testing
+        const descriptions = new Map<string, string>();
+        const lines = section.split('\n');
+        for (const line of lines) {
+            const match = line.match(/- `([^`]+)`: (.+)/);
+            if (match) {
+                descriptions.set(match[1], match[2]);
+            }
+        }
+        return descriptions;
+    }
+}
+
 export async function runImplParserTest(): Promise<void> {
     const runner = new TestRunner();
     runner.describe('ImplParser', () => {
@@ -75,7 +92,8 @@ export async function runImplParserTest(): Promise<void> {
             const parser = new MarkdownParser();
             const mockClient = new MockXAIClient();
             const mockOutputChannel = new MockOutputChannel();
-            const implParser = new ImplParser(parser, mockClient as any, mockOutputChannel as any);
+            const mockFileStructureParser = new MockFileStructureParser();
+            const implParser = new ImplParser(parser, mockClient as any, mockOutputChannel as any, mockFileStructureParser as any);
 
             const implPath = path.join(__dirname, '../../test-output/game-of-life.impl.md');
             const outputDir = path.join(path.dirname(implPath), 'game-of-life-generated');
@@ -117,6 +135,76 @@ export async function runImplParserTest(): Promise<void> {
             };
             await validateFiles(outputDir);
         });
+    });
+
+    runner.describe('FileStructureParser', () => {
+        it('should parse tree format file descriptions', async () => {
+            const mockOutputChannel = new MockOutputChannel();
+            const parser = new FileStructureParser(mockOutputChannel as any);
+
+            const section = `
+src/
+    ├── index.js          # Main entry point
+    ├── game.js           # Game logic
+`;
+
+            const result = parser.parseFileDescriptions(section);
+
+            Assert.equal(result.size, 2, 'Should parse 2 file descriptions from tree format');
+            Assert.equal(result.get('src/index.js'), 'Main entry point');
+            Assert.equal(result.get('src/game.js'), 'Game logic');
+        });
+
+        it('should return empty map for empty section', async () => {
+            const mockOutputChannel = new MockOutputChannel();
+            const parser = new FileStructureParser(mockOutputChannel as any);
+
+            const result = parser.parseFileDescriptions('');
+
+            Assert.equal(result.size, 0, 'Should return empty map for empty section');
+        });
+
+        it('should parse standard tree format file descriptions', async () => {
+            const mockOutputChannel = new MockOutputChannel();
+            const parser = new FileStructureParser(mockOutputChannel as any);
+
+            const section = `
+game-board/
+├── src/
+│   ├── board.ts          # Main Board class implementation
+│   ├── renderer.ts       # Grid and piece rendering logic
+│   ├── state-manager.ts  # In-memory state management
+│   ├── interaction-handler.ts  # User input processing
+│   ├── persistence.ts    # Save/load with jsonbin.io
+│   ├── types.ts          # TypeScript interfaces and types
+│   └── index.ts          # Entry point exporting Board class
+├── tests/
+│   ├── board.test.ts     # Unit tests for Board class
+│   ├── renderer.test.ts  # Tests for rendering components
+│   └── integration.test.ts  # End-to-end tests for full board behavior
+├── package.json          # NPM dependencies and scripts
+├── tsconfig.json         # TypeScript configuration
+└── README.md             # Implementation notes
+`;
+
+            const result = parser.parseFileDescriptions(section);
+
+            Assert.equal(result.size, 13, 'Should parse 13 file descriptions');
+            Assert.equal(result.get('game-board/src/board.ts'), 'Main Board class implementation');
+            Assert.equal(result.get('game-board/src/renderer.ts'), 'Grid and piece rendering logic');
+            Assert.equal(result.get('game-board/src/state-manager.ts'), 'In-memory state management');
+            Assert.equal(result.get('game-board/src/interaction-handler.ts'), 'User input processing');
+            Assert.equal(result.get('game-board/src/persistence.ts'), 'Save/load with jsonbin.io');
+            Assert.equal(result.get('game-board/src/types.ts'), 'TypeScript interfaces and types');
+            Assert.equal(result.get('game-board/src/index.ts'), 'Entry point exporting Board class');
+            Assert.equal(result.get('game-board/tests/board.test.ts'), 'Unit tests for Board class');
+            Assert.equal(result.get('game-board/tests/renderer.test.ts'), 'Tests for rendering components');
+            Assert.equal(result.get('game-board/tests/integration.test.ts'), 'End-to-end tests for full board behavior');
+            Assert.equal(result.get('game-board/package.json'), 'NPM dependencies and scripts');
+            Assert.equal(result.get('game-board/tsconfig.json'), 'TypeScript configuration');
+            Assert.equal(result.get('game-board/README.md'), 'Implementation notes');
+        });
+
     });
     await runner.run();
 }

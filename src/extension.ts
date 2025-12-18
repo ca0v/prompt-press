@@ -7,6 +7,7 @@ import { ContextBuilder } from './services/contextBuilder';
 import { ScaffoldService } from './services/scaffoldService';
 import { CascadeServiceCommands } from './services/cascadeService';
 import { ImplParser } from './services/implParser';
+import { FileStructureParser } from './services/fileStructureParser';
 import { MarkdownParser } from './parsers/markdownParser';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -61,7 +62,8 @@ export function activate(context: vscode.ExtensionContext) {
     const contextBuilder = new ContextBuilder();
     const scaffoldService = new ScaffoldService(aiClient, outputChannel);
     const markdownParser = new MarkdownParser();
-    const implParser = new ImplParser(markdownParser, aiClient, outputChannel);
+    const fileStructureParser = new FileStructureParser(outputChannel);
+    const implParser = new ImplParser(markdownParser, aiClient, outputChannel, fileStructureParser);
     
     // Get workspace root for cascade service
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';

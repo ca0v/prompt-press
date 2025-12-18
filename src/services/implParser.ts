@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { MarkdownParser } from '../parsers/markdownParser';
 import { XAIClient } from '../ai/xaiClient';
+import { FileStructureParser } from './fileStructureParser';
 
 export interface FileInfo {
     path: string;
@@ -10,7 +11,7 @@ export interface FileInfo {
 }
 
 export class ImplParser {
-    constructor(private parser: MarkdownParser, private xaiClient: XAIClient, private outputChannel: vscode.OutputChannel) {}
+    constructor(private parser: MarkdownParser, private xaiClient: XAIClient, private outputChannel: vscode.OutputChannel, private fileStructureParser: FileStructureParser) {}
 
     async parseAndGenerate(implPath: string): Promise<void> {
         this.outputChannel.appendLine(`[ImplParser] Starting code generation for ${implPath}`);
@@ -27,7 +28,7 @@ export class ImplParser {
         const codeGenSection = parsed.sections.get('Code Generation Instructions') || '';
         this.outputChannel.appendLine(`[ImplParser] Found Code Generation Instructions section (${codeGenSection.length} chars)`);
         
-        const fileDescriptions = this.parseFileDescriptions(fileStructureSection);
+        const fileDescriptions = this.fileStructureParser.parseFileDescriptions(fileStructureSection);
         this.outputChannel.appendLine(`[ImplParser] Parsed ${fileDescriptions.size} file descriptions`);
         
         let instructions = this.parseCodeInstructions(codeGenSection);
@@ -137,73 +138,6 @@ Instructions: Implement the code for ${filePath} according to the above specific
         }
         
         this.outputChannel.appendLine(`[ImplParser] Code generation completed for ${artifact}`);
-    }
-
-    private parseFileDescriptions(section: string): Map<string, string> {
-        const descriptions = new Map<string, string>();
-        
-        // First, try the original format: - `file`: desc
-        const originalRegex = /- `([^`]+)`: ([^\n]+)/g;
-        let match;
-        let foundOriginal = false;
-        while ((match = originalRegex.exec(section)) !== null) {
-            const filePath = match[1];
-            const description = match[2];
-            if (!filePath.endsWith('/')) {
-                descriptions.set(filePath, description);
-                foundOriginal = true;
-            }
-        }
-        
-        if (foundOriginal) {
-            return descriptions;
-        }
-        
-        // If no original format, try tree format
-        this.outputChannel.appendLine(`[ImplParser] No original format found, trying tree format parsing`);
-        const lines = section.split('\n');
-        const pathStack: string[] = [];
-        
-        for (const line of lines) {
-            if (!line.trim()) continue;
-            
-            // Count indentation (spaces before ├── or └── or directory)
-            const indentMatch = line.match(/^(\s*)/);
-            const indent = indentMatch ? indentMatch[1].length : 0;
-            
-            // Adjust stack to current indent level (assuming 4 spaces per level)
-            const level = Math.floor(indent / 4);
-            while (pathStack.length > level) {
-                pathStack.pop();
-            }
-            
-            const trimmed = line.trim();
-            
-            if (trimmed.endsWith('/') && !trimmed.includes('├──') && !trimmed.includes('└──')) {
-                // Directory line like "src/"
-                const dirName = trimmed.replace('/', '');
-                pathStack.push(dirName);
-            } else if (trimmed.includes('├──') || trimmed.includes('└──')) {
-                const parts = trimmed.split('          # ');
-                if (parts.length === 2) {
-                    const filePart = parts[0].replace(/├──|└──/, '').trim();
-                    const description = parts[1].trim();
-                    
-                    if (filePart.endsWith('/')) {
-                        // Directory
-                        const dirName = filePart.replace('/', '');
-                        pathStack.push(dirName);
-                    } else {
-                        // File
-                        const fullPath = [...pathStack, filePart].join('/');
-                        descriptions.set(fullPath, description);
-                    }
-                }
-            }
-        }
-        
-        this.outputChannel.appendLine(`[ImplParser] Parsed ${descriptions.size} file descriptions from tree format`);
-        return descriptions;
     }
 
     private parseCodeInstructions(section: string): Map<string, string> {

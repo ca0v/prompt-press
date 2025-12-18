@@ -20,6 +20,7 @@ async function main() {
     const runCascadeTest = args.includes('cascade');
     const runConOpsTest = args.includes('conops');
     const runAllTests = args.includes('all');
+    const runParserTest = args.includes('parser');
     
     console.log('🚀 PromptPress Test Suite\n');
     console.log('Running tests...\n');
@@ -51,6 +52,9 @@ async function main() {
         } else if (runConOpsTest) {
             console.log('📦 Running ConOps Update Integration Test\n');
             await runConOpsUpdateIntegrationTest();
+        } else if (runParserTest) {
+            console.log('📦 Running ImplParser Test\n');
+            await runImplParserTest();
         } else {
             console.log('📦 Running Standard Tests\n');
             await runXAIClientTests();
