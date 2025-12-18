@@ -150,11 +150,17 @@ export class MarkdownParser {
      */
     private extractReferences(content: string): string[] {
         const references: string[] = [];
-        const regex = /@([a-zA-Z0-9-]+\.(req|design|impl)[^\s]*)/g;
+        const regex = /(@([a-zA-Z0-9-]+\.(req|design|impl)[^\s]*)|([a-zA-Z0-9-]+\.(req|design|impl)\.md))/g;
         
         let match;
         while ((match = regex.exec(content)) !== null) {
-            references.push(match[1]);
+            if (match[1]) {
+                // @ref
+                references.push(match[2]);
+            } else if (match[3]) {
+                // ref.md
+                references.push(match[3]);
+            }
         }
         
         return references;

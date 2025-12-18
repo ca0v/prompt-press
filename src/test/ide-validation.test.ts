@@ -6,6 +6,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { MarkdownParser } from '../parsers/markdownParser';
+import { SpecFileProcessor } from '../services/specFileProcessor';
 import { TestRunner, it } from './framework';
 import { Assert } from "./Assert";
 
@@ -84,7 +85,10 @@ export async function runIdeValidationTests() {
     // Clean up
     await fs.rm(tmpDir, { recursive: true, force: true });
 
-    new TestRunner().describe('IDE Validation Tests', () => {
+    const processor = new SpecFileProcessor(parser, tmpDir);
+    const runner = new TestRunner();
+
+    runner.describe('IDE Validation Tests', () => {
         it('should extract simple mentions from content', () => {
             const content = `
 # Test
@@ -127,8 +131,29 @@ This references @foo.req[extra] and @bar.design.md
         });
 
         it('should detect circular dependency', () => {
-            const specRef = 'a.req';
+            // This test verifies that the getAllDependencies function can detect circular dependencies
+            // in the dependency graph. A circular dependency occurs when spec A depends on spec B,
+            // and spec B (directly or indirectly) depends back on spec A.
+
+            // Set up mock files so the mock getAllDependencies function doesn't return empty sets
+            // due to non-existent files
+            mockFs.addFile(resolveSpecPath('a.req'));
+            mockFs.addFile(resolveSpecPath('b.req'));
+
+            // The mock dependency setup in getAllDependencies assumes:
+            // - 'a.req' depends on 'b.req'
+            // - 'b.req' depends on 'a.req'
+            // This creates a circular dependency: a.req -> b.req -> a.req
+
+            const specRef = 'a.req';  // Starting point for dependency traversal
+
+            // getAllDependencies recursively collects all dependencies of the given spec
+            // If a cycle is detected, the function should include the starting specRef
+            // in the returned set of dependencies
             const allDeps = getAllDependencies(specRef);
+
+            // Verify that the starting specRef ('a.req') is found in its own dependency tree,
+            // which indicates a circular dependency was detected
             Assert.equal(allDeps.has(specRef), true);
         });
 
@@ -192,5 +217,36 @@ This references @foo.req[extra] and @bar.design.md
             const filtered = allRefs.filter(ref => !(currentPhase === 'req' && ref.endsWith('.design')));
             Assert.deepEqual(filtered, ['foo.req']);
         });
+
+        // SpecFileProcessor method tests
+        it('should update metadata correctly', async () => {
+            const filePath = await createSpec('specs/requirements/foo.req.md', '---\nartifact: foo\nphase: wrong\nlast-updated: 2000-01-01\n---');
+            await processor.updateMetadata(filePath);
+            const content = await fs.readFile(filePath, 'utf-8');
+            const parsed = parser.parse(content);
+            Assert.equal(parsed.metadata.phase, 'requirement');
+            Assert.ok(parsed.metadata.lastUpdated);
+            Assert.ok(parsed.metadata.lastUpdated !== '2000-01-01');
+        });
+
+        it('should convert overspecified references to mentions', async () => {
+            const filePath = await createSpec('specs/requirements/foo.req.md', '---\nartifact: foo\nphase: requirement\n---', 'This references foo.req.md and bar.design.md');
+            await processor.convertOverspecifiedReferences(filePath);
+            const content = await fs.readFile(filePath, 'utf-8');
+            Assert.ok(content.includes('@foo.req'));
+            Assert.ok(content.includes('@bar.design'));
+            Assert.ok(!content.includes('foo.req.md'));
+            Assert.ok(!content.includes('bar.design.md'));
+        });
+
+        it('should validate references and return errors', async () => {
+            const filePath = await createSpec('specs/requirements/foo.req.md', '---\nartifact: foo\nphase: requirement\ndepends-on: [nonexistent.req]\nreferences: [invalid.ref]\n---', 'This mentions @missing.req');
+            const errors = await processor.validateReferences(filePath);
+            Assert.ok(errors.length > 0);
+            Assert.ok(errors.some(e => e.message.includes('not found')));
+        });
     });
+
+    await runner.run();
+    runner.printSummary();
 }
