@@ -1,3 +1,6 @@
+Last Updated: 2025-12-18
+Last Commit: 7398ff9
+
 # PromptPress
 
 Prompt-Driven Development Tool - A VS Code Extension
