@@ -1,0 +1,7 @@
+{
+  "search.exclude": {
+    "**/*.baseline": true,
+    ".promptpress/**": true,
+    "templates/**": true
+  }
+}

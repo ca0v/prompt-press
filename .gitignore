@@ -4,3 +4,7 @@ out
 *.vsix
 .promptpress
 logs/*.log
+
+# PromptPress cache files
+*.baseline
+.promptpress/
