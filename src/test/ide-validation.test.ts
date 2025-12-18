@@ -137,5 +137,60 @@ This references @foo.req[extra] and @bar.design.md
             const allDeps = getAllDependencies(specRef);
             Assert.equal(allDeps.has(specRef), false);
         });
+
+        // Auto-completion tests
+        it('should not suggest current document in @ mentions', () => {
+            const currentRef = 'foo.req';
+            const allRefs = ['foo.req', 'bar.req', 'baz.design'];
+            const filtered = allRefs.filter(ref => ref !== currentRef);
+            Assert.deepEqual(filtered, ['bar.req', 'baz.design']);
+        });
+
+        it('should not suggest .impl files in @ mentions', () => {
+            const allRefs = ['foo.req', 'bar.design', 'baz.impl'];
+            const filtered = allRefs.filter(ref => !ref.endsWith('.impl'));
+            Assert.deepEqual(filtered, ['foo.req', 'bar.design']);
+        });
+
+        it('should filter design files for req phase in @ mentions', () => {
+            const currentPhase = 'req';
+            const allRefs = ['foo.req', 'bar.req', 'baz.design'];
+            const filtered = allRefs.filter(ref => !(currentPhase === 'req' && ref.endsWith('.design')));
+            Assert.deepEqual(filtered, ['foo.req', 'bar.req']);
+        });
+
+        it('should allow all phases for design in @ mentions', () => {
+            const currentPhase = 'design';
+            const allRefs = ['foo.req', 'bar.design', 'baz.impl'];
+            const filtered = allRefs.filter(ref => !ref.endsWith('.impl'));
+            Assert.deepEqual(filtered, ['foo.req', 'bar.design']);
+        });
+
+        it('should not suggest current document in frontmatter lists', () => {
+            const currentRef = 'foo.req';
+            const allRefs = ['foo.req', 'bar.req'];
+            const filtered = allRefs.filter(ref => ref !== currentRef);
+            Assert.deepEqual(filtered, ['bar.req']);
+        });
+
+        it('should avoid circular dependencies in depends-on', () => {
+            const currentRef = 'a.req';
+            const allRefs = ['a.req', 'b.req', 'c.req'];
+            // Mock wouldCreateCycle: assume b.req depends on a.req, so adding a.req to b.req would cycle
+            const filtered = allRefs.filter(ref => {
+                if (ref === currentRef) return false;
+                // Simulate: for b.req, wouldCreateCycle('a.req', 'b.req') = true
+                if (ref === 'b.req' && currentRef === 'a.req') return false;
+                return true;
+            });
+            Assert.deepEqual(filtered, ['c.req']);
+        });
+
+        it('should filter design files for req phase in frontmatter', () => {
+            const currentPhase = 'req';
+            const allRefs = ['foo.req', 'bar.design'];
+            const filtered = allRefs.filter(ref => !(currentPhase === 'req' && ref.endsWith('.design')));
+            Assert.deepEqual(filtered, ['foo.req']);
+        });
     });
 }

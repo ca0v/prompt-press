@@ -151,22 +151,126 @@ export function activate(context: vscode.ExtensionContext) {
         return refs;
     }
 
+    // Function to get all dependencies of a spec
+    function getAllDependencies(specRef: string, workspaceRoot: string, visited: Set<string> = new Set()): Set<string> {
+        if (visited.has(specRef)) {
+            return new Set();
+        }
+        visited.add(specRef);
+        const filePath = resolveSpecPath(specRef, workspaceRoot);
+        if (!fs.existsSync(filePath)) {
+            return new Set();
+        }
+        const deps = new Set<string>();
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+            if (frontmatterMatch) {
+                const yaml = frontmatterMatch[1];
+                const dependsOnMatch = yaml.match(/depends-on:\s*\[([^\]]*)\]/);
+                if (dependsOnMatch) {
+                    const depsStr = dependsOnMatch[1];
+                    const depRefs = depsStr.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                    for (const d of depRefs) {
+                        if (d && !visited.has(d)) {
+                            deps.add(d);
+                            const sub = getAllDependencies(d, workspaceRoot, new Set(visited));
+                            sub.forEach(sd => deps.add(sd));
+                        }
+                    }
+                }
+            }
+        } catch {}
+        return deps;
+    }
+
+    // Function to check if adding dep would create cycle
+    function wouldCreateCycle(dep: string, currentRef: string, workspaceRoot: string): boolean {
+        const allDeps = getAllDependencies(dep, workspaceRoot);
+        return allDeps.has(currentRef);
+    }
+
     // Register completion provider for @ mentions
     const completionProvider = vscode.languages.registerCompletionItemProvider(
         { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md}' },
         {
             provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {
-                const linePrefix = document.lineAt(position).text.substr(0, position.character);
-                if (!linePrefix.endsWith('@')) {
-                    return [];
+                const filePath = document.uri.fsPath;
+                const fileName = path.basename(filePath);
+                const currentRefMatch = fileName.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
+                if (!currentRefMatch) return [];
+                const currentRef = `${currentRefMatch[1]}.${currentRefMatch[2]}`;
+                let currentPhase = currentRefMatch[2];
+
+                const line = document.lineAt(position).text;
+                const linePrefix = line.substr(0, position.character);
+
+                // Check if @ mention
+                if (linePrefix.includes('@')) {
+                    const atIndex = line.lastIndexOf('@');
+                    const afterAt = line.substr(atIndex + 1, position.character - atIndex - 1);
+                    
+                    const allRefs = getAllSpecRefs(workspaceRoot);
+                    let allowedRefs = allRefs.filter(ref => {
+                        if (ref.endsWith('.impl')) return false; // don't show .impl
+                        if (currentPhase === 'req' && ref.endsWith('.design')) return false;
+                        if (ref === currentRef) return false; // don't show current
+                        return ref.startsWith(afterAt);
+                    });
+                    
+                    return allowedRefs.map(ref => {
+                        const item = new vscode.CompletionItem(ref, vscode.CompletionItemKind.Reference);
+                        item.insertText = ref.substr(afterAt.length);
+                        item.documentation = `Reference to ${ref}`;
+                        return item;
+                    });
                 }
-                const refs = getAllSpecRefs(workspaceRoot);
-                return refs.map(ref => {
-                    const item = new vscode.CompletionItem(`@${ref}`, vscode.CompletionItemKind.Reference);
-                    item.insertText = ref;
-                    item.documentation = `Reference to ${ref}`;
-                    return item;
-                });
+
+                // Check if in frontmatter list
+                const lines = document.getText().split('\n');
+                let frontmatterStart = -1;
+                let frontmatterEnd = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].trim() === '---') {
+                        if (frontmatterStart === -1) {
+                            frontmatterStart = i;
+                        } else {
+                            frontmatterEnd = i;
+                            break;
+                        }
+                    }
+                }
+                if (position.line > frontmatterStart && position.line < frontmatterEnd && line.trim().startsWith('- ')) {
+                    // In frontmatter list, check if depends-on or references
+                    let isDependsOn = false;
+                    for (let i = position.line - 1; i >= frontmatterStart; i--) {
+                        if (lines[i].includes('depends-on:')) {
+                            isDependsOn = true;
+                            break;
+                        }
+                        if (lines[i].includes('references:')) {
+                            break;
+                        }
+                    }
+                    
+                    const allRefs = getAllSpecRefs(workspaceRoot);
+                    let allowedRefs = allRefs.filter(ref => {
+                        if (ref.endsWith('.impl')) return false; // don't show .impl
+                        if (currentPhase === 'req' && ref.endsWith('.design')) return false;
+                        if (ref === currentRef) return false; // don't show current
+                        if (isDependsOn && wouldCreateCycle(ref, currentRef, workspaceRoot)) return false; // no circular
+                        return true;
+                    });
+                    
+                    return allowedRefs.map(ref => {
+                        const item = new vscode.CompletionItem(ref, vscode.CompletionItemKind.Reference);
+                        item.insertText = ref;
+                        item.documentation = `Reference to ${ref}`;
+                        return item;
+                    });
+                }
+
+                return [];
             }
         },
         '@' // trigger character
