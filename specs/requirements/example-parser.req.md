@@ -4,14 +4,17 @@ phase: requirement
 depends-on: []
 references: []
 version: 1.0.0
-last-updated: 2025-12-15
+last-updated: 2025-12-18
 ---
 
 # Example Parser - Requirements
 
 ## Overview
-A simple parser that extracts structured data from text files.
 
+## Overview  
+  The example-parser.req.md requirement specifies a simple parser artifact within PromptPress that extracts structured data from text files, demonstrating prompt-driven development in practice. This artifact supports the SDLC workflow by allowing developers to define parser requirements in Markdown, refine them iteratively with AI (e.g., specifying input formats and extraction rules), generate design specs for data structures, and produce implementation code (e.g., in Python or JavaScript). Operations include developer-authored specs in the `specs/` directory, AI-assisted refinement for clarity (e.g., handling edge cases like malformed text), cascading updates to design and implementation phases, and code regeneration upon changes. User roles involve developers monitoring files and triggering commands; interfaces include VS Code for editing, Git for versioning, and AI APIs for refinement. Constraints include AI token limits for complex specs and assumptions of reliable text file access. Success is measured by accurate data extraction rates (>95%) and reproducibility across regenerations. This aligns with PromptPress's goal of shifting technical debt to maintainable specs, enabling easy adaptation for new data formats or languages.
+## Overview  
+  The example-parser.req.md requirement specifies a simple parser artifact within PromptPress that extracts structured data from text files, demonstrating prompt-driven development in practice. This artifact supports the SDLC workflow by allowing developers to define parser requirements in Markdown, refine them iteratively with AI (e.g., specifying input formats and extraction rules), generate design specs for data structures, and produce implementation code (e.g., in Python or JavaScript). Operations include developer-authored specs in the `specs/` directory, AI-assisted refinement for clarity (e.g., handling edge cases like malformed text), cascading updates to design and implementation phases, and code regeneration upon changes. User roles involve developers monitoring files and triggering commands; interfaces include VS Code for editing, Git for versioning, and AI APIs for refinement. Constraints include AI token limits for complex specs and assumptions of reliable text file access. Success is measured by accurate data extraction rates (>95%) and reproducibility across regenerations. This aligns with PromptPress's goal of shifting technical debt to maintainable specs, enabling easy adaptation for new data formats or languages.
 ## Functional Requirements
 - FR-1: Parse text files line by line
 - FR-2: Extract key-value pairs in format "key: value"

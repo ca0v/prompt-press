@@ -26,6 +26,10 @@ PromptPress is a VS Code extension that facilitates prompt-driven software devel
 - FR-11: The system shall provide artifact scaffolding commands (e.g., "Scaffold New Artifact") to initialize new projects or components with high-level descriptions, generating initial Requirements and Design specs via AI.
 - FR-12: The system shall support cascading updates across SDLC phases, where modifications to a higher-level spec (e.g., Requirements) propagate changes to lower-level specs (e.g., Design and Implementation) and regenerate code accordingly.
 - FR-13: The system shall ensure clear traceability from Requirements through Design to Implementation and generated code, using consistent naming conventions, folder structures, and metadata for linkage.
+- FR-14: The system shall initially support Node.js and web-based projects, integrating linting, compiling, and testing tools familiar to VS Code users for code validation.
+- FR-15: The system shall support extensibility to additional programming languages (e.g., Java, .NET, Rust) through modular integration of linters, compilers, and test runners to validate generated code.
+- FR-16: The system shall provide feedback from linting, compiling, and testing tools to the AI during code generation, enabling iterative refinement until the generated code compiles and passes tests.
+- FR-17: The system shall support test generation from Implementation specifications, allowing explicit listing of input values and expected outputs for test cases.
 
 ## Non-Functional Requirements
 - NFR-1: **Traceability**: The system shall maintain clear, consistent linkages between Requirements, Design, Implementation, and generated code using standardized naming conventions (e.g., artifact-type-artifact-name.md), folder hierarchies, and embedded references to support auditing and change impact analysis.
@@ -40,7 +44,11 @@ PromptPress is a VS Code extension that facilitates prompt-driven software devel
 - NFR-10: **Compatibility**: The system shall be compatible with VS Code Extension API, support multiple operating systems, and integrate seamlessly with external tools like Git and CI/CD pipelines, assuming reliable markdown parsing libraries and file system operations.
 
 ## Questions & Clarifications
-[AI-CLARIFY: The ConOps references "xAI API service" and mentions extensibility to other providers—should specific fallback providers (e.g., OpenAI, Anthropic) be prioritized or configured by default? Also, the initial programming language support is listed as JavaScript/Node.js; what exact languages/frameworks should be included in the first release, and how will extensibility be handled (e.g., via plugins)? For traceability, are there specific metadata fields (e.g., UUIDs or timestamps) required in each spec file beyond naming conventions? Clarify any constraints on spec file size or complexity to ensure AI context limits are not exceeded in practice.]
+Any API compatible with ChatGPT is supported, it is just a matter of modifying the API URL and pairing it with the correct access token.
+
+There is only explicit support for node and web-based projects initially because they can be linted and compiled and tested using tools any vscode user will be familar with, but they should be integrated in a modular fashion so new project types (java, dotnet, rust, etc.) can also lint and compile the generated source to confirm it is valid and run test cases.  Correctness should be a matter of clearly expressing intent in the markdown, but linters and compilers need to provide feedback to the AI as does the unit test so the AI can iterate until a solution is found that compiles and passes the tests.  Not explicitly mentioned yet, but test generation is also important and the specs should allow for explicitly listing input and expected output values for specific tests.
+
+Traceablility is overstated and managed by any change control system.
 
 ## Cross-References
 [Leave empty - references are documented in the metadata header]
