@@ -124,6 +124,40 @@ export function activate(context: vscode.ExtensionContext) {
                         links.push(new vscode.DocumentLink(range, uri));
                     }
                 }
+
+                // Handle frontmatter references in depends-on and references
+                const lines = text.split('\n');
+                let frontmatterStartLine = -1;
+                let frontmatterEndLine = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].trim() === '---') {
+                        if (frontmatterStartLine === -1) {
+                            frontmatterStartLine = i;
+                        } else {
+                            frontmatterEndLine = i;
+                            break;
+                        }
+                    }
+                }
+                if (frontmatterStartLine !== -1 && frontmatterEndLine !== -1) {
+                    const frontmatterStartPos = document.lineAt(frontmatterStartLine + 1).range.start;
+                    const frontmatterEndPos = document.lineAt(frontmatterEndLine).range.start;
+                    const frontmatterRange = new vscode.Range(frontmatterStartPos, frontmatterEndPos);
+                    const frontmatterText = document.getText(frontmatterRange);
+                    const refRegex = /([a-zA-Z0-9-]+\.(req|design|impl))/g;
+                    while ((match = refRegex.exec(frontmatterText)) !== null) {
+                        const ref = match[1];
+                        const startPos = document.positionAt(document.offsetAt(frontmatterRange.start) + match.index);
+                        const endPos = document.positionAt(document.offsetAt(startPos) + ref.length);
+                        const range = new vscode.Range(startPos, endPos);
+                        const filePath = resolveSpecPath(ref, workspaceRoot);
+                        if (fs.existsSync(filePath)) {
+                            const uri = vscode.Uri.file(filePath);
+                            links.push(new vscode.DocumentLink(range, uri));
+                        }
+                    }
+                }
+
                 return links;
             }
         }
