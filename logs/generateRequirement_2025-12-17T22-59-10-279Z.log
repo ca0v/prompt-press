@@ -1,0 +1,306 @@
+=== AI Response Log: generateRequirement ===
+Timestamp: 2025-12-17T22:59:10.279Z
+
+=== System Prompt ===
+You are an expert at writing formal software requirements. Generate a PromptPress requirement specification following this exact structure:
+
+```
+---
+artifact: geode-quartz
+phase: requirement
+depends-on: []
+references: ["faction.req", "fissure-cell.req"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# [Title] - Requirements
+
+## Overview
+[High-level description]
+
+## Functional Requirements
+- FR-1: [Requirement]
+- FR-2: [Requirement]
+...
+
+## Non-Functional Requirements
+- NFR-1: [Performance, security, scalability, etc.]
+...
+
+## Questions & Clarifications
+[AI-CLARIFY: Any ambiguities that need clarification?]
+
+## Cross-References
+[Leave empty - references are documented in the metadata header]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+```
+
+Generate a complete, well-structured requirement specification. Be specific and thorough.
+
+=== User Prompt ===
+Generate a requirement specification for:
+
+See @faction and @fissure-cell.req for explanations, but Quartz can move any number of spaces in any direction, subject to fissure rules.
+
+Concept of Operations:
+
+### Gap Analysis
+- **ConOps gaps**: The existing ConOps document covers the overall game concept, scenarios, and high-level geode powers (e.g., Pyrite's movement and role as erosion target), but it does not detail the specific powers and mechanics for other geodes like Amethyst (diagonal movement, purple lines) and Rose Quartz (enhanced capture abilities). These are now addressed in new requirement overviews (geode-amethyst.req.md and geode-rose-quartz.req.md), but the ConOps lacks references to them and does not incorporate their operational implications (e.g., how Amethyst's diagonal movement or Rose Quartz's capture rules affect turn-based strategies). Additionally, the ConOps assumes geode powers are fully detailed in faction.req.md, but faction.req.md provides a high-level overview without the granular mechanics now specified in the individual geode req.md files.
+- **Requirement gaps**: The requirement overviews provide detailed mechanics for individual geodes (e.g., Amethyst's purple lines and movement rules, Rose Quartz's capture enhancements), but the ConOps does not reflect these in its operational scenarios, traceability, or success criteria (e.g., no mention of balancing win rates with these specific powers). The ConOps references only a subset of the provided req.md files (missing geode-amethyst.req.md and geode-rose-quartz.req.md), leading to incomplete traceability. Some overviews (e.g., game-state-manager.req.md, rules-engine.req.md) emphasize integration and validation, but the ConOps could better detail how these support real-time play with the new geode mechanics. No major aspects are missing from the overviews themselves, but they could be inferred to require minor updates for consistency with the ConOps (e.g., ensuring faction.req.md cross-references the individual geode req.md).
+- **Completeness assessment**: The current requirements and ConOps are largely aligned for the core game mechanics (board, fissures, state management, rules, UI, and Pyrite), providing sufficient coverage for a functional web-based game. However, the addition of detailed geode-specific req.md (amethyst and rose quartz) fills previous gaps in strategic depth, making the overall set more complete. With updates to incorporate these, the requirements fully support the operational concept, including balanced gameplay, real-time interactions, and win conditions. The system is operationally ready for implementation, but the ConOps needs expansion for comprehensive documentation.
+
+### Recommended Updates
+- **ConOps updates**: Update the references to include geode-amethyst.req.md and geode-rose-quartz.req.md. Expand the Operational Scenarios section to detail how Amethyst's diagonal movement and purple lines, and Rose Quartz's capture abilities, integrate into gameplay (e.g., in Scenario 2: Turn-Based Gameplay and Strategy). Update Requirements Traceability to include the new files, describing their contributions to operations (e.g., Amethyst's strategic positioning, Rose Quartz's aggressive plays). Revise success criteria to mention balancing with these specific powers. Ensure all geode powers are briefly summarized in the Operational Concept for completeness.
+- **Requirement updates**: The provided requirement overviews are largely sufficient, but minor updates are recommended for consistency and cross-referencing to align with the updated ConOps and ensure all geode req.md are linked. Specifically:
+  - **File**: faction.req.md
+    - **Updated Overview**: This requirement specification outlines the design and implementation of a collection of 5 unique geodes, each possessing distinct special powers. The geodes are intended as collectible artifacts for use in the board game "petrified". Each geode must be visually distinct as each piece will have unique powers on the game board. The base faction consists of Pyrite (@geode-pyrite.req.md), Rose Quartz (@geode-rose-quartz.req.md), Calcite, Amethyst (@geode-amethyst.req.md) and Quartz and is collectively called **The Crystalline Guard**. Operationally, players control these geodes in web-based sessions, selecting and moving them strategically during turns, with Pyrite serving as the critical erosion target, under constraints like real-time validation and balanced win rates to promote user engagement.
+  - **File**: game-board.req.md
+    - **Updated Overview**: This requirement specification details the design and functionality of the game board for the board game "Petrified." "Petrified" is a turn-based strategy game involving piece placement on a grid, with the end result being to capture all of the opponents pieces. It is a two-player web-based game, where players access the board via standard web browsers and interact through a responsive UI to place, move, and rotate elements in real-time. The board is laid out as follows:
+
+      |   | 1 | 2 | 3 | 4 | 5 |
+      |---|---|---|---|---|---|
+      | 1 | Pyrite | Rose Quartz | Calcite | Amethyst | Quartz |
+      | 2 | Fissure | Fissure | Fissure | Fissure | Fissure |
+      | 3 | Fissure | Fissure | Center Fissure | Fissure | Fissure |
+      | 4 | Fissure | Fissure | Fissure | Fissure | Fissure |
+      | 5 | Pyrite | Rose Quartz | Calcite | Amethyst | Quartz |
+
+      The game board is a 5x5 grid structure that serves as the playing surface, where players interact with both game pieces and the board itself according to the game's rules. The board must visually represent the grid, support piece placement and movement, and provide feedback on game state. The physical board is composed of 25 "cells". Each player plays with a "faction" of 5 "geodes". Both players play with identical factions and each faction is composed of 5 distinct types of geode. Each geode has a different skill, allowing it to behave uniquely (see @geode-pyrite.req.md, @geode-rose-quartz.req.md, @geode-amethyst.req.md, and faction.req.md for details). The "cells" in rows 2-4 can be rotated to affect how the "geode" interacts with that cell. The cells in rows 1 and 5 are called "strata" and these are the home positions for each faction. The baseline faction is made of Pyrite, Rose Quartz, Calcite, Amethyst and Quartz. The cells in rows 2-4 can be rotated affecting movement characteristics of most geodes, allowing some to enter the cell and others to be blocked from entering. The goal of the game is to "Erode the other players Pyrite"; every faction must contain at least one piece Pyrite. Operationally, players alternate turns, with constraints such as browser-based responsiveness and no offline play, ensuring fair, interactive gameplay.
+  - **File**: rules-engine.req.md
+    - **Updated Overview**: The Game Rules Engine is a software component responsible for enforcing the core mechanics of Petrified. It manages turn sequencing to ensure fair play, validates all proposed moves for legality and adherence to game rules, handles capture mechanics for removing opponent pieces (including enhanced captures for geodes like Rose Quartz from @geode-rose-quartz.req.md), determines win/loss conditions based on game state, and applies any special rules including the effects of rotating fissures on the board and faction-specific rules for geodes (e.g., movement and abilities from @geode-pyrite.req.md, @geode-amethyst.req.md, and faction.req.md). This engine must integrate seamlessly with a game board state manager and user interface to provide a complete, rule-compliant gaming experience. The engine should be modular to support different games by configuration.
+  - **File**: ui-ux.req.md
+    - **Updated Overview**: This requirement specification details the web components, HTML structure, and CSS styling necessary to implement the user interface (UI) and user experience (UX) for the game board, faction pieces (geodes), and fissures in the web-based version of the board game "Petrified." It builds upon the game board layout and geode definitions from the referenced requirements (@game-board.req.md, @faction.req.md, @geode-pyrite.req.md, @geode-rose-quartz.req.md, @geode-amethyst.req.md), ensuring a responsive, interactive, and visually appealing web interface. The implementation must support a 5x5 grid layout, visually distinct geodes with hover and selection states, rotatable fissures in specific rows, and overall game state feedback. The UI should be built using modern web technologies, prioritizing accessibility, performance, and cross-browser compatibility. The goal of the game is to "Erode the other players Pyrite"; every faction must contain at least one piece Pyrite.
+
+      Five starter geodes have been identified and should be colored as follows:
+      pyrite (yellow), rose-quartz (pink), calcite (white/clear), amethyst (purple), quartz (white/clear)
+- **New requirements needed**: No new req.md documents are needed, as the provided set (including the newly added geode-amethyst.req.md and geode-rose-quartz.req.md) sufficiently covers all aspects. However, if future expansions (e.g., networking for multiplayer) are considered, a networking.req.md could be added, but it's not required for current completeness.
+
+### Updated Content
+Below is the complete updated ConOps.md content with all recommended changes incorporated. The document has been expanded to include references to geode-amethyst.req.md and geode-rose-quartz.req.md, updated operational scenarios to detail the new geode mechanics, revised traceability, and minor refinements for completeness and balance.
+
+---
+artifact: conops
+phase: concept
+depends-on: []
+references: [faction.req.md, fissure-cell.req.md, game-board.req.md, game-state-manager.req.md, geode-pyrite.req.md, geode-rose-quartz.req.md, geode-amethyst.req.md, rules-engine.req.md, ui-ux.req.md]
+version: 1.3.0
+last-updated: 2025-12-17
+---
+
+# Concept of Operations (ConOps)
+
+## Executive Summary
+Petrified is a two-player, turn-based strategy board game implemented as a web-based application. Players compete to erode the opponent's Pyrite geode by strategically placing and moving geodes on a 5x5 grid board featuring rotatable fissures. The game emphasizes strategic depth through unique geode powers (e.g., Pyrite's directional movement, Rose Quartz's enhanced captures, Amethyst's diagonal traversal and purple lines, with Calcite and Quartz powers to be detailed), fissure rotations affecting movement, and visual distinctions for immersive play. This ConOps outlines how the system supports gameplay in a web environment, ensuring fair, rule-compliant experiences for users.
+
+## Business Objectives
+- Provide an engaging, accessible web-based strategy game that promotes strategic thinking and competition.
+- Enable easy deployment and play in standard web browsers without requiring specialized hardware or software installations.
+- Deliver a complete gaming experience, from setup to win/loss determination, with real-time state management and feedback.
+- Success criteria: Achieve a user satisfaction rating of 80%+ via post-game surveys, with average game completion time under 15 minutes and win rates balanced (e.g., 50/50 for skilled players) through fair geode power designs, including specific mechanics like Pyrite's movement, Rose Quartz's capture enhancements, and Amethyst's strategic positioning to ensure equitable gameplay.
+- Value proposition: Offers a free, browser-based alternative to physical board games, combining collectible elements with dynamic strategy for casual and competitive players.
+
+## Stakeholders
+- **Players**: End-users (two per game session) who interact with the UI to place, move, and rotate elements, adhering to game rules. Responsibilities include turn-taking, strategic decision-making, and understanding geode powers (e.g., Pyrite as the erosion target, Rose Quartz for aggressive captures, Amethyst for diagonal mobility).
+- **Game Administrators/Developers**: Responsible for deploying and maintaining the web application, ensuring rules are enforced and UI is functional. They may handle future updates based on user feedback.
+- **External Systems/Interfaces**: Web browsers (e.g., Chrome, Firefox) for rendering the UI hosted on GitHub Pages or other CDN. Data persistence will be satisfied using https://jsonbin.io/; users must paste an API key into the browser to create a shared game.
+
+## Operational Concept
+### Current State
+Traditional board games require physical components, limiting accessibility and scalability. Players face challenges in setup, rule enforcement, and state tracking, leading to disputes or incomplete games. Web-based alternatives exist but often lack the tactile strategy of Petrified's rotatable fissures and unique geodes.
+
+### Proposed Solution
+The system operates as a web application where players access a responsive UI via browsers. The game board is a 5x5 grid with strata (home rows) and rotatable fissures. Players control identical factions of 5 geodes (Pyrite - yellow, erosion target with movement 1 cell in any direction; Rose Quartz - pink, enhanced capture (e.g., adjacent opponents); Amethyst - purple, diagonal movement any number of spaces and access to purple lines; Calcite - white/clear, movement boosts; Quartz - white/clear, fissure manipulation—details to be specified in faction.req.md and individual geode req.md). Turns involve placing/moving geodes, rotating fissures (which affect cell entry for certain geodes, e.g., blocking or allowing based on rotation and geode type), and capturing opponents. The rules engine validates actions, the state manager tracks changes, and the UI provides visual feedback with distinct colors and hover states. Play continues until one player's Pyrite is eroded (captured or unable to move).
+
+### Operational Scenarios
+- **Scenario 1: Game Setup and Initial Placement**: Players access the web app and select to start a new game. The board initializes with geodes in strata positions (e.g., Player 1's Pyrite in row 1, column 1) and fissures in neutral orientations. Player 1 places their first geode, rotating a fissure if desired (affecting future movement). The UI updates in real-time with visual distinctions (e.g., pyrite in yellow), and the state manager records positions. (Addresses initial user interaction and state initialization from game-state-manager.req.md and ui-ux.req.md.)
+- **Scenario 2: Turn-Based Gameplay and Strategy**: During a turn, a player selects a geode (e.g., Pyrite moves 1 cell in any direction, Rose Quartz captures adjacent opponents, Amethyst traverses diagonally or accesses purple lines on the center fissure), chooses a valid move (validated by rules-engine.req.md), and optionally rotates a fissure (determining which geodes can enter/traverse based on rotation and type, e.g., blocking some while permitting others). If a capture occurs (e.g., landing on an opponent via geode power like Rose Quartz's enhancements), the opponent's piece is removed. The UI highlights valid moves, provides feedback on game state, and shows fissure orientations. Play alternates until win conditions are met. (Covers turn sequencing, validation, captures, and fissure effects from rules-engine.req.md, game-board.req.md, fissure-cell.req.md, geode-pyrite.req.md, geode-rose-quartz.req.md, geode-amethyst.req.md, and faction.req.md.)
+- **Scenario 3: Endgame and Win Determination**: As pieces are captured, the state manager checks for the erosion of Pyrite (the sole win condition). The UI displays a win/loss message, allowing players to restart or exit. (Addresses win/loss logic from rules-engine.req.md and state tracking from game-state-manager.req.md.)
+
+## Functional Requirements Overview
+The system must support geode placement/movement (with unique powers for strategy, e.g., Pyrite's directional movement, Rose Quartz's capture enhancements, Amethyst's diagonal mobility and purple lines), fissure rotation (impacting cell access based on geode types), turn validation, captures, and win/loss checks focused on Pyrite erosion. It requires visual representation of the board, geodes (with specified colors), and fissures, with interactive UI elements for selection and feedback.
+
+## Non-Functional Requirements Overview
+- **Performance**: Real-time updates with <2-second latency for moves in standard web browsers.
+- **Security**: No sensitive data handling; basic input validation to prevent cheating.
+- **Usability**: Responsive design for desktop/mobile, with accessibility features (e.g., keyboard navigation, screen reader support) and visual distinctions for geodes and fissures.
+- **Scalability**: Support for single-session games; extensible to multiplayer if networked.
+
+## Constraints and Assumptions
+- **Technical Constraints**: Must run in modern web browsers (e.g., HTML5+ support); no offline mode; assumes stable internet for loading.
+- **Business Constraints**: Two-player only; no monetization or user accounts initially.
+- **Assumptions**: Players have basic web literacy; game rules are self-explanatory via UI tooltips; fissures' rotation effects are predefined and balanced; geode powers (including Pyrite's, Rose Quartz's, and Amethyst's specifics) are fair to ensure 50/50 win rates.
+
+## Risks and Mitigations
+- **Risk 1: Rule Misinterpretation Leading to Invalid Moves**: Mitigation - Robust validation in rules-engine.req.md and UI feedback.
+- **Risk 2: Browser Incompatibility Causing UI Issues**: Mitigation - Cross-browser testing and fallback CSS from ui-ux.req.md.
+- **Risk 3: State Loss During Play**: Mitigation - Client-side state persistence with warnings from game-state-manager.req.md.
+
+## Future Considerations
+Potential roadmap includes multiplayer over networks (requiring new networking.req.md), AI opponents, mobile app ports, and custom faction expansions for enhanced scalability and engagement.
+
+## Gap Analysis
+See the Gap Analysis section above in this document for details on alignment with requirements.
+
+## Recommended Updates
+See the Recommended Updates section above in this document for suggestions.
+
+## Requirements Traceability
+- **faction.req.md**: Addresses geode design, powers (e.g., unique abilities for movement and capture, such as Pyrite's directional movement and erosion role, Rose Quartz's enhanced captures, Amethyst's diagonal traversal), faction naming (The Crystalline Guard), and visual distinctions, supporting operational scenarios where players select and use geodes strategically (e.g., Pyrite as the key target; note: other powers like Calcite and Quartz need detailing for full workflows).
+- **fissure-cell.req.md**: Defines fissure cell design, rotation mechanics (altering orientations to block/permit geode entry based on types), and integration with state management, enabling operational workflows for turn-based rotation and movement impacts in gameplay scenarios.
+- **game-board.req.md**: Defines the board layout, mechanics (e.g., strata as home rows, fissure rows), and operational constraints (e.g., turn alternation, browser responsiveness), enabling workflows for piece placement, movement, and rotation.
+- **game-state-manager.req.md**: Manages real-time state (positions, turns, fissures), ensuring operational consistency in tracking changes during play.
+- **geode-pyrite.req.md**: Specifies Pyrite's movement (1 cell in any direction), capture rules as the erosion target, and visual aspects (yellow color), supporting endgame operational scenarios and win determination.
+- **geode-rose-quartz.req.md**: Details Rose Quartz's enhanced capture abilities (e.g., adjacent opponent removal), visual aspects (pink color), and integration with board and fissures, enabling aggressive strategic plays in turn-based scenarios to erode Pyrite.
+- **geode-amethyst.req.md**: Defines Amethyst's diagonal movement (any number of spaces), purple line access (on the center fissure), and visual aspects (purple color), supporting operational workflows for strategic positioning and traversal in gameplay.
+- **rules-engine.req.md**: Enforces turn sequencing, validations, win conditions (Pyrite erosion), and special rules (e.g., fissure effects, geode powers including those from geode-amethyst.req.md and geode-rose-quartz.req.md), critical for fair operational scenarios.
+- **ui-ux.req.md**: Provides the interactive web interface (grid layout, geode colors, hover states, fissure visuals), facilitating user interactions in all operational scenarios with feedback and responsiveness.
+
+Referenced artifacts (context):
+Artifact: faction
+
+Requirement (faction.req):
+---
+artifact: faction
+phase: requirement
+depends-on: []
+references: []
+last-updated: 2025-12-17
+---
+
+# Geodes Collection - Requirements
+
+## Overview
+
+This requirement specification outlines the design and implementation of a collection of 5 unique geodes, each possessing distinct special powers. The geodes are intended as collectible artifacts for use in the board game "petrified". Each geode must be visually distinct as each piece will have unique powers on the game board. The base faction consists of Pyrite, Rose Quartz, Calcite, Amethyst and Quartz and is collectively called **The Crystalline Guard**. Operationally, players control these geodes in web-based sessions, selecting and moving them strategically during turns, with Pyrite serving as the critical erosion target, under constraints like real-time validation and balanced win rates to promote user engagement.
+
+## Functional Requirements
+- FR-1: The collection shall consist of exactly 5 geodes.
+- FR-2: Each geode will be able to interact with the board in a distinct way.
+- FR-3: Each geode shall possess distinct special powers.
+- FR-4: Each geode shall be visually distinct.
+- FR-5: The geodes shall be usable as collectible artifacts in the board game "Petrified".
+- FR-6: The base faction shall consist of Pyrite, Rose Quartz, Calcite, Amethyst, and Quartz.
+- FR-7: The faction shall be collectively called "The Crystalline Guard".
+- FR-8: Pyrite shall have the special power to move one space in any direction, with fissures applying.
+- FR-9: Rose Quartz shall have the special power to move one space in any direction, with fissures not applying.
+- FR-10: Calcite shall have the special power to move any number of spaces in a vertical or horizontal direction, with fissures applying.
+- FR-11: Amethyst shall have the special power to move any number of spaces in a diagonal direction, with fissures applying.
+- FR-12: Quartz shall have the special power to move any number of spaces in any direction, with fissures applying.
+- FR-13: All factions in the game shall include a Pyrite piece, which shall be the target piece that needs to be captured to win the game.
+- FR-14: The geodes shall have no additional special powers beyond the movement abilities specified in FR-8 through FR-12.
+- FR-15: Players shall control the geodes in web-based game sessions.
+- FR-16: Players shall select and move geodes strategically during their turns.
+- FR-17: Movement of geodes shall be validated in real-time.
+
+## Non-Functional Requirements
+- NFR-1: Usability - Geode interactions shall be intuitive, with clear visual cues (e.g., glow effects for activation) and accessible controls for users with disabilities (e.g., keyboard navigation).
+- NFR-2: Maintainability - Geode capabilities shall be expressed as a configuration.
+- NFR-3: The game shall maintain balanced win rates to promote user engagement.
+
+## Cross-References
+None identified at this time. Potential future dependencies may include game engine specifications or lore documents.
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+---
+
+---
+
+Artifact: fissure-cell
+
+Requirement (fissure-cell.req):
+---
+artifact: fissure-cell
+phase: requirement
+depends-on: []
+references: ["game-board.req"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Fissure Cell - Requirements
+
+## Overview
+This requirement specification details the design, functionality, and behavior of "fissure" cells within the game board of "Petrified," a turn-based strategy board game. Fissure cells are special cells located in rows 2-4 of the 5x5 grid (20 cells total, with a distinct "center fissure" at row 3, column 3), as defined in @game-board.req. These cells are rotatable by players during their turns, altering their orientation to dynamically affect geode movement and interaction. Specifically, rotation determines which geodes (based on their types: Pyrite, Rose Quartz, Calcite, Amethyst, Quartz) can enter or traverse the cell, creating strategic depth by blocking or permitting access. Fissures are visually distinct from strata cells and must integrate seamlessly with the board's state management, ensuring real-time updates and rule enforcement. The goal is to enable tactical gameplay where fissure rotations influence piece mobility, contributing to the overarching objective of eroding the opponent's Pyrite geode. Operationally, fissures support turn-based interactions in a web-based environment.
+
+## Functional Requirements
+- FR-1: Fissure cells must be implemented as 20 distinct cells on the 5x5 grid (rows 2-4), each with a default neutral orientation at game start, and a special "center fissure" at row 3, column 3, which may have unique interaction rules (e.g., enhanced blocking or mandatory rotation effects) to be clarified in future geode-powers.req.md.
+- FR-2: Each fissure cell must support rotation by 45-degree increments (up to 8 orientations) when selected during a player's turn, with the rotation action consuming the turn.  A fissure cannot be manipulated during two consecutive turns, thereby giving the initiating player a potential monopoly on that fissure.
+- FR-3: Rotation of a fissure cell must alter movement rules for geodes attempting to enter or pass through it, such as: allowing entry for certain geode types (e.g., Quartz for fissure manipulation) while blocking others (e.g., Pyrite as a vulnerable target), based on the cell's current orientation and geode powers inferred from faction.req.md (e.g., Rose Quartz may bypass certain rotations).
+- FR-4: The system must validate fissure rotations in real-time against game rules, preventing invalid rotations (e.g., during opponent's turn or after move completion) and integrating with rules-engine.req.md for enforcement.
+- FR-5: Fissure cells must visually represent their rotation state through distinct icons, colors, or symbols (e.g., arrows indicating direction of openness/blockage), updating immediately upon rotation and persisting in the game state via game-state-manager.req.md.
+- FR-6: Fissure cells must interact with geode movement logic, such that attempted moves into a rotated cell are denied if the geode type is incompatible (e.g., blocked entry triggers a UI error and turn forfeit for invalid attempt), promoting strategic decision-making.
+- FR-7: The center fissure must have additional mechanics, such as mandatory rotation checks or amplified effects on surrounding cells, to differentiate it from standard fissures and enhance board centrality.
+- FR-8: Fissure cells must reset to neutral orientation at the start of each new game session, ensuring consistent initial conditions.
+- FR-9: The system must log all fissure rotations in the game state for auditing and replay purposes, including timestamp, player, and resulting orientation.
+- FR-10: Fissure rotations must be undoable within the same turn if no subsequent actions have been taken, allowing players to experiment without penalty.
+- FR-11: The center fissure must support a flip action that opens all pathways regardless of its current orientation, overriding standard rotation-based blocking or permitting rules.
+- FR-12: The center fissure must allow manipulation by sequential play, enabling rotation or flipping on consecutive turns by different players without the restriction applied to standard fissures.
+- FR-13: In the default orientation, each fissure cell must display as a "+" symbol and allow geode movement only in horizontal and vertical directions through the cell.
+- FR-14: When rotated, each fissure cell must display as an "X" symbol and allow geode movement only in diagonal directions through the cell.
+- FR-15: When flipped, the center fissure must display as a "*" symbol and allow geode movement in all directions (horizontal, vertical, and diagonal) through the cell.
+- FR-16: When a geode is occupying a fissure cell, the orientation of that fissure cell must not affect the geode's movement or interactions.
+- FR-17: Each round, a player must choose exactly one action: move a geode, turn a fissure, or flip a fissure.
+- FR-18: Standard fissure cells cannot be turned or flipped in two consecutive turns by the same player, except for the center fissure which allows sequential manipulation by different players.
+
+## Non-Functional Requirements
+- NFR-1: Fissure cell rotations must process and render updates within 200 milliseconds in standard web browsers to maintain responsive gameplay, minimizing latency for real-time strategy.
+- NFR-2: The visual representation of fissure orientations must be scalable and high-fidelity, supporting resolutions from 480px to 1920px width with clear differentiation between orientations, compliant with WCAG 2.1 AA for accessibility (e.g., alt-text for icons).
+- NFR-3: Fissure mechanics must be secure against tampering, with client-side validation backed by server-side checks (via jsonbin.io) to prevent unauthorized rotations or state manipulation.
+
+## Questions & Clarifications
+Geodes that have special interactions with a fissure will describe those interactions.
+
+## Cross-References
+[Leave empty - references are documented in the metadata header]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+=== AI Response ===
+---
+artifact: geode-quartz
+phase: requirement
+depends-on: []
+references: ["faction.req", "fissure-cell.req"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Quartz Geode - Requirements
+
+## Overview
+This requirement specification details the design, functionality, and behavior of the Quartz geode within the game "Petrified," a turn-based strategy board game. Quartz is one of the five base geodes in the faction known as "The Crystalline Guard," as defined in @faction.req. It is visually distinct as a white or clear piece, providing a versatile movement ability that allows it to traverse any number of spaces in any direction on the 5x5 grid board, subject to fissure rules from @fissure-cell.req (e.g., entry blocked or permitted based on fissure orientations). Additionally, Quartz possesses a special fissure manipulation power, enabling it to turn or flip fissure cells as part of its strategic capabilities, integrating with board mechanics to alter movement paths for all geodes. This geode promotes flexible positioning and control over the board's dynamic elements, contributing to the game's objective of eroding the opponent's Pyrite geode. Operationally, Quartz supports turn-based gameplay in a web-based environment, with real-time validation ensuring balanced engagement.
+
+## Functional Requirements
+- FR-1: Quartz shall be implemented as a visually distinct game piece colored white or clear, as specified in ui-ux.req.md, with optional glow effects for activation to enhance usability.
+- FR-2: Quartz shall have the ability to move any number of spaces in any direction (horizontal, vertical, or diagonal) on the 5x5 grid, provided the path adheres to fissure rules (e.g., blocked from entering cells with incompatible orientations, such as "+" symbol blocking diagonal entry or "X" symbol blocking horizontal/vertical entry, per @fissure-cell.req FR-13 and FR-14).
+- FR-3: Quartz shall be capable of entering or traversing fissure cells based on their current orientation, with no inherent restrictions beyond standard fissure mechanics (e.g., allowed in default "+" orientation for horizontal/vertical movement and rotated "X" orientation for diagonal movement).
+- FR-4: Quartz shall possess a special fissure manipulation power, allowing the controlling player to turn a standard fissure cell by 45-degree increments or flip the center fissure as a valid action during their turn, subject to the rules in @fissure-cell.req (e.g., cannot manipulate the same standard fissure in consecutive turns, but can flip the center fissure sequentially with opponents).
+- FR-5: The fissure manipulation action for Quartz shall consume the player's turn, preventing simultaneous movement of Quartz in the same turn, and must be validated in real-time by the rules engine to ensure compliance (e.g., no manipulation during opponent's turn or after another action).
+- FR-6: Quartz shall follow standard capture mechanics: it can capture opponent geodes by landing on their occupied cell, removing the opponent's piece from the board, unless overridden by specific geode powers (e.g., no special enhancements like Rose Quartz's).
+- FR-7: Quartz shall not serve as the erosion target; instead, it supports strategic plays to protect or erode the opponent's Pyrite geode, with win conditions tied to Pyrite's capture as per @faction.req FR-13.
+- FR-8: Quartz's movement and manipulation actions shall integrate with the game state manager for persistence, logging all actions (e.g., moves, rotations, flips) with timestamps and player details for auditing and potential replays.
+- FR-9: Quartz shall reset to its initial strata position (row 1 or 5, column 5) at the start of each new game session, ensuring consistent setup.
+- FR-10: Quartz shall support undo functionality for its actions within the same turn if no subsequent actions have been taken, allowing experimental plays without penalty.
+
+## Non-Functional Requirements
+- NFR-1: Performance - Quartz's movement calculations and fissure manipulations must complete within 200 milliseconds in standard web browsers to maintain responsive turn-based gameplay.
+- NFR-2: Usability - Interactions with Quartz shall be intuitive, with hover states and tooltips explaining its movement range, fissure manipulation options, and visual cues for valid actions, compliant with WCAG 2.1 AA for accessibility (e.g., keyboard navigation for selection and actions).
+- NFR-3: Maintainability - Quartz's powers and behaviors shall be configurable (e.g., via JSON or modular code) to allow easy updates without redeploying the entire system.
+- NFR-4: Security - Client-side validation for Quartz's actions shall prevent cheating, with server-side checks (via jsonbin.io) to ensure fissure manipulations do not alter game state improperly.
+- NFR-5: Scalability - Quartz's mechanics shall support seamless integration in single-session games, with extensibility for future multiplayer features without performance degradation.
+
+## Questions & Clarifications
+[AI-CLARIFY: Confirm if Quartz's fissure manipulation power allows it to bypass the standard turn action limitation (e.g., can it move and manipulate in the same turn, or is manipulation exclusive)? Also, clarify if Quartz has any additional visual or audio feedback for successful manipulations, and how it interacts with the center fissure's "*" symbol state.]
+
+## Cross-References
+[Leave empty - references are documented in the metadata header]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+=== End Log ===

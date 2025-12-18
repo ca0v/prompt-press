@@ -1,0 +1,347 @@
+=== AI Response Log: generateImplementation ===
+Timestamp: 2025-12-17T22:29:36.074Z
+
+=== System Prompt ===
+You are an expert software engineer. Generate a PromptPress implementation specification following this exact structure:
+
+```
+---
+artifact: geode-amethyst
+phase: implementation
+depends-on: []
+references: ["geode-amethyst.req", "geode-amethyst.design"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Geode Amethyst - Implementation
+
+## Overview
+[High-level implementation summary]
+
+## File Structure
+```
+artifact-name/
+├── src/
+│   ├── index.ts
+│   └── ...
+└── tests/
+    └── ...
+```
+
+## Modules & Components
+### Module 1
+- Purpose: [What it does]
+- Exports: [Public API]
+- Dependencies: [What it uses]
+
+## Implementation Details
+### Component/Function 1
+- Signature: `function name(params): returnType`
+- Logic: [Step-by-step algorithm]
+- Edge cases: [Error handling, validation]
+
+## Data Structures
+```typescript
+interface Example {
+    // ...
+}
+```
+
+## Test Scenarios
+- Test 1: [What to test, expected behavior]
+- Test 2: [Edge case testing]
+
+## Dependencies
+- package1: [Why needed]
+- package2: [Purpose]
+
+## Configuration
+[Environment variables, config files, setup]
+
+## Deployment Notes
+[Build process, deployment steps]
+
+## Cross-References
+[Leave empty - references are documented in the metadata header above]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+```
+
+Generate a complete, precise implementation specification. Include exact function signatures, detailed logic, and comprehensive test scenarios.
+
+=== User Prompt ===
+Generate an implementation specification based on:
+
+**Requirements:**
+---
+artifact: geode-amethyst
+phase: requirement
+depends-on: []
+references: ["faction.req", "fissure-cell.req"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Amethyst Geode - Requirements
+
+## Overview
+This requirement specification details the design, functionality, behavior, and integration of the Amethyst geode within the "Petrified" board game, a two-player, turn-based strategy game implemented as a web-based application. Amethyst is one of the five geodes in the base faction "The Crystalline Guard," serving as a collectible artifact with unique movement powers that emphasize diagonal traversal and strategic positioning. As specified in faction.req, Amethyst allows movement any number of spaces in diagonal directions, subject to fissure constraints from fissure-cell.req. 
+
+Only Amethyst can be on purple lines. (The purple line is on the back of the Center Fissure). 
+
+Amethyst can move one space in any direction to get on purple lines.
+
+Amethyst is visually distinct (purple color) and integrates with the game board's 5x5 grid, fissure rotations, and state management to support gameplay mechanics like placement, movement, and captures, ultimately contributing to the objective of eroding the opponent's Pyrite geode. This specification ensures Amethyst's powers are balanced for fair play, with real-time validation, visual feedback, and accessibility features to enhance user engagement in web-based sessions.
+
+## Functional Requirements
+- FR-1: Amethyst shall be one of the five geodes in the "The Crystalline Guard" faction, as defined in faction.req (FR-6 and FR-7).
+- FR-2: Amethyst shall possess the special power to move any number of spaces in a diagonal direction (e.g., up-left, up-right, down-left, down-right), with fissures applying, as per faction.req (FR-11).
+- FR-3: Movement for Amethyst shall be validated in real-time by the rules engine (rules-engine.req.md), ensuring paths are unobstructed, within board boundaries, and compliant with fissure orientations from fissure-cell.req (e.g., blocked if the fissure's current orientation ( "+" for horizontal/vertical or "X" for diagonal) prevents diagonal entry into or through the cell).
+- FR-4: Amethyst shall not have any additional special powers beyond diagonal movement, as per faction.req (FR-14), and shall interact with fissures similarly to other geodes where fissures apply (e.g., unable to enter blocked cells based on rotation state).
+- FR-5: Amethyst shall be visually represented as a purple piece on the game board, with distinct styling (e.g., color, shape, or icon) to differentiate it from other geodes, supporting faction.req (FR-4) and ui-ux.req.md for immersive play.
+- FR-6: Amethyst shall integrate with fissure mechanics such that its diagonal movement is affected by fissure rotations: for standard fissures, diagonal movement may be permitted or blocked based on orientation (e.g., "X" allows diagonals, "+" blocks them), and for the center fissure, flipping to "*" allows all directions, as per fissure-cell.req (FR-3, FR-13, FR-14, FR-15).
+- FR-7: Players shall select and move Amethyst during their turns, with the action limited to one per turn (e.g., move Amethyst or perform another action like rotating a fissure), validated for strategic depth and balance as per game-board.req.md and rules-engine.req.md.
+- FR-8: Amethyst shall support capture mechanics: if an opposing geode lands on Amethyst's position via a valid move (considering its powers and fissures), Amethyst is removed from the board, contributing to the game's erosion objective focused on Pyrite.
+- FR-9: Amethyst shall reset to its initial stratum position (as defined in game-board.req.md) at the start of each new game, with its state tracked by game-state-manager.req.md.
+- FR-10: Amethyst's movement shall be undoable within the same turn if no subsequent actions have been taken, allowing experimental play without penalty, aligning with fissure-cell.req (FR-10) for consistency.
+- FR-11: Amethyst shall provide UI feedback during selection, such as highlighting valid diagonal paths on the board, hover states indicating fissure impacts, and error messages for invalid moves, ensuring intuitive interaction per ui-ux.req.md.
+- FR-12: Only Amethyst shall be allowed on purple lines, which are located on the back of the Center Fissure.
+- FR-13: Amethyst shall be able to move one space in any direction to access purple lines.
+- FR-14: Amethyst's diagonal movement shall be blocked by occupied cells; it cannot move through other geodes.
+- FR-15: Amethyst shall not have special interactions with the center fissure beyond standard rules; flipping to "*" allows all directions for all geodes, including Amethyst.
+- FR-16: During captures, Amethyst shall interact with other geodes' powers as per standard rules; if another geode moves onto its position via a valid move, Amethyst is captured.
+
+## Non-Functional Requirements
+- NFR-1: Performance - Amethyst movement calculations and validations shall complete within 200 milliseconds in standard web browsers to support real-time gameplay, aligning with fissure-cell.req (NFR-1).
+- NFR-2: Usability - Amethyst interactions shall be intuitive, with clear visual cues (e.g., purple glow effects for activation, tooltips explaining diagonal movement and fissure effects), keyboard navigation, and screen reader support for accessibility, compliant with WCAG 2.1 AA, as per faction.req (NFR-1) and ui-ux.req.md.
+- NFR-3: Security - Amethyst state and movements shall be validated client-side with server-side checks via jsonbin.io to prevent tampering, ensuring fair play without sensitive data exposure, per fissure-cell.req (NFR-3).
+- NFR-4: Maintainability - Amethyst's capabilities (e.g., movement rules, visual properties) shall be configurable in code for easy updates, supporting faction.req (NFR-2).
+- NFR-5: Scalability - Amethyst shall support single-session games in web browsers, with potential for future expansions (e.g., custom factions) without performance degradation.
+
+## Cross-References
+[Leave empty - references are documented in the metadata header]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+**Design:**
+---
+artifact: geode-amethyst
+phase: design
+depends-on: []
+references: ["geode-amethyst.req", "faction.req", "faction.design", "fissure-cell.req", "fissure-cell.design"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Amethyst Geode - Design
+
+## Overview
+The design for the Amethyst geode adopts a component-based approach within the broader faction architecture from faction.design, focusing on its unique diagonal movement capability as a specialized extension of the Piece class. Amethyst is modeled as a stateless piece with movement logic integrated into the MoveValidator and TurnEngine from faction.design, ensuring real-time validation against board constraints, fissure orientations from fissure-cell.design, and capture rules. The design emphasizes modularity for maintainability (aligning with NFR-4 from geode-amethyst.req), usability through visual distinctions (purple styling and glow effects), and performance via optimized pathfinding algorithms. No additional powers exist beyond diagonal movement, with fissures applying standard blocking/permission rules (e.g., "+" orientation blocks diagonals, "X" permits them). Integration with the web-based UI ensures responsive feedback, and state persistence leverages jsonbin.io for tracking Amethyst's position without custom schemas.
+
+## Architecture
+Building on the tabletop gameplay model from faction.design, Amethyst is implemented as an instance of the Piece component, with movement logic encapsulated in a DiagonalMoveHandler submodule. The architecture layers as follows:
+
+- **Presentation Layer**: Extends the UI renderer from faction.design to apply purple visual styling (e.g., SVG icon with diagonal patterns) and hover effects (e.g., highlighting diagonal paths). Integrates with fissure-cell.design's Fissure Renderer for combined visual updates.
+- **Logic Layer**: 
+  - **DiagonalMoveHandler Submodule**: Validates and computes diagonal paths, querying fissure states via isFissureBlockedForGeode from fissure-cell.design.
+  - **AmethystValidator Submodule**: Extends MoveValidator to enforce diagonal-only directions and unlimited steps until obstructed, integrating with TurnEngine for turn-based execution.
+- **Data Layer**: Amethyst's state is part of the ExtendedBoardState from fissure-cell.design, with no additional persistence beyond piece position and faction metadata.
+
+This layered design ensures Amethyst's mechanics are decoupled from other geodes, promoting scalability and adherence to FR-2 and FR-3 from geode-amethyst.req.
+
+## API Contracts
+Contracts extend those in faction.design and fissure-cell.design, using language-agnostic interfaces for web-based integration. All methods are asynchronous where state persistence is involved.
+
+- **Extended IPiece for Amethyst** (inherits from faction.design):
+  - `getMovementProfile(): DiagonalMovementProfile` — Returns profile specific to Amethyst: { directions: ['diagonal'], maxStep: 'unlimited' }.
+  - `canMoveTo(from: Coord, to: Coord, board: Board): Promise<boolean>` — Validates diagonal path, checking fissures via fissure-cell.design's isFissureBlockedForGeode.
+
+- **DiagonalMoveHandler Interface**:
+  - `computeDiagonalPath(from: Coord, to: Coord, board: Board): Array<Coord>` — Calculates unobstructed diagonal steps; returns empty if invalid.
+  - `isPathClear(path: Array<Coord>, board: Board): boolean` — Iterates path, checking for pieces, bounds, and fissure compatibility.
+
+- **Data Structures**:
+  - `DiagonalMovementProfile`: { directions: string[], maxStep: string } (e.g., 'unlimited' for continuous movement).
+  - `AmethystState`: { position: Coord, faction: 'The Crystalline Guard', visual: { color: 'purple', icon: 'diagonal-cross' } } — Extends PieceObject from faction.design.
+
+Integration: Amethyst APIs hook into TurnEngine.applyMove, ensuring diagonal moves consume turns and trigger captures if landing on opponents.
+
+## Data Model
+Amethyst's data is embedded in the ExtendedBoardState from fissure-cell.design, with no separate schema. In-memory: Each Amethyst piece has an AmethystState object linked to its grid position. Persistent: Serialized as part of the grid array in JSON via jsonbin.io, with encryption for security (NFR-3). Relationships: Amethyst's position relates to fissures via orientation checks; no external dependencies. Configuration for movement is hard-coded in DiagonalMovementProfile for simplicity, satisfying NFR-4.
+
+## Algorithms & Logic
+- **Diagonal Movement Algorithm**: On move attempt → Compute path using computeDiagonalPath (BFS along diagonals, stopping at obstructions such as occupied cells or board bounds) → Validate with isPathClear (checks each step for empty cells, bounds, and fissure compatibility: e.g., if "+" orientation, block diagonal entry; if "X", permit; if center flipped to "*", allow all directions) → If valid and destination is empty or occupied by an opponent, apply move via TurnEngine, triggering capture (remove opponent piece) if landing on an opponent; Amethyst cannot pass through occupied cells and must stop short of its own faction's pieces or capture opponents at the destination. If invalid, notify UI with error.
+- **Fissure Interaction Logic**: For standard fissures, if orientation is "X" (diagonal-permissive), allow entry; if "+", block diagonals (permits orthogonal entry only). For center fissure flipped to "*", allow all directions. Decision flow: Path check → Query fissure state → Deny if blocked, notify UI with error.
+- **Turn Integration**: Moves are undoable within turn (aligning with FR-10); consumes turn action, with UI highlighting diagonals on selection.
+- **No Additional Powers**: Strictly adheres to FR-4; no interactions beyond movement and standard captures.
+
+## Dependencies
+- **Third-Party Libraries**: None; relies on browser-native features for rendering and logic.
+- **External Services**: jsonbin.io for state persistence, integrated via game-state-manager.design.
+
+## Cross-References
+[Leave empty - references are documented in the metadata header above]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+=== AI Response ===
+---
+artifact: geode-amethyst
+phase: implementation
+depends-on: []
+references: ["geode-amethyst.req", "geode-amethyst.design"]
+version: 1.0.0
+last-updated: 2025-12-17
+---
+
+# Geode Amethyst - Implementation
+
+## Overview
+This implementation specification details the TypeScript-based realization of the Amethyst geode as a component in the "Petrified" web-based board game. Amethyst extends the base Piece class from faction.design, implementing diagonal movement logic via a DiagonalMoveHandler submodule. The implementation ensures real-time validation against fissures (from fissure-cell.design), supports purple-line restrictions, integrates with UI for visual feedback (purple styling, diagonal path highlighting), and handles captures. Performance optimizations include BFS for path computation to meet NFR-1 (under 200ms). The code is modular, stateless where possible, and uses async methods for state persistence via jsonbin.io. Amethyst's logic adheres strictly to FR-2 through FR-16, with no additional powers beyond diagonal movement.
+
+## File Structure
+```
+geode-amethyst/
+├── src/
+│   ├── index.ts                 # Main entry point exporting AmethystPiece and related modules
+│   ├── AmethystPiece.ts         # Core Amethyst class extending Piece
+│   ├── DiagonalMoveHandler.ts   # Submodule for diagonal movement logic
+│   ├── AmethystValidator.ts     # Validator extending MoveValidator for Amethyst-specific rules
+│   ├── types.ts                 # TypeScript interfaces and types
+│   └── utils/
+│       └── pathUtils.ts         # Utility functions for path calculations and fissure checks
+└── tests/
+    ├── AmethystPiece.test.ts    # Unit tests for AmethystPiece
+    ├── DiagonalMoveHandler.test.ts # Unit tests for DiagonalMoveHandler
+    ├── AmethystValidator.test.ts # Unit tests for AmethystValidator
+    └── integration.test.ts      # Integration tests with board and fissures
+```
+
+## Modules & Components
+### AmethystPiece Module
+- Purpose: Defines the AmethystPiece class, which represents the Amethyst geode on the board, handling its state, movement, and visual properties. It integrates diagonal movement and purple-line restrictions.
+- Exports: AmethystPiece class, AmethystState interface.
+- Dependencies: Piece class (from faction.design), DiagonalMoveHandler, AmethystValidator, Board and FissureState (from fissure-cell.design).
+
+### DiagonalMoveHandler Module
+- Purpose: Encapsulates logic for computing and validating diagonal paths, including fissure interactions.
+- Exports: DiagonalMoveHandler class with computeDiagonalPath and isPathClear methods.
+- Dependencies: Board and Coord types (from game-board.design), isFissureBlockedForGeode (from fissure-cell.design).
+
+### AmethystValidator Module
+- Purpose: Extends MoveValidator to enforce Amethyst-specific rules, such as diagonal-only movement and purple-line access.
+- Exports: AmethystValidator class with canMoveTo and validatePurpleLine methods.
+- Dependencies: MoveValidator (from faction.design), DiagonalMoveHandler, Board state.
+
+### Types Module
+- Purpose: Defines TypeScript interfaces for Amethyst-related data structures.
+- Exports: DiagonalMovementProfile, AmethystState, Coord (re-exported from shared types).
+- Dependencies: None (shared types from game-board.design).
+
+## Implementation Details
+### AmethystPiece Class
+- Signature: `class AmethystPiece extends Piece`
+- Logic: 
+  1. Constructor initializes with position, sets visual properties (purple color, diagonal-cross icon), and links to DiagonalMoveHandler and AmethystValidator.
+  2. getMovementProfile() returns a DiagonalMovementProfile with directions ['diagonal'] and maxStep 'unlimited'.
+  3. canMoveTo(from: Coord, to: Coord, board: Board): Promise<boolean> – Delegates to AmethystValidator, checks diagonal path, purple-line rules, and persists state via jsonbin.io if valid.
+  4. On move, triggers UI updates (highlight diagonals, show errors), integrates with TurnEngine for turn consumption and undoability.
+- Edge cases: Invalid moves (e.g., non-diagonal, obstructed path) throw ValidationError; purple-line violations prevent placement; captures remove opponent pieces at destination.
+
+### DiagonalMoveHandler.computeDiagonalPath
+- Signature: `computeDiagonalPath(from: Coord, to: Coord, board: Board): Coord[]`
+- Logic: 
+  1. Check if 'to' is diagonally aligned (x-diff == y-diff, or x-diff == -y-diff).
+  2. If aligned, use BFS to traverse diagonal steps from 'from' towards 'to', collecting all intermediate Coords.
+  3. Stop if board bounds exceeded or occupied cell encountered (cannot pass through pieces).
+  4. Return path array if 'to' reachable; empty array otherwise.
+- Edge cases: If 'to' is same as 'from', return empty (no move); if path blocked mid-way, return empty; ignores orthogonal directions.
+
+### DiagonalMoveHandler.isPathClear
+- Signature: `isPathClear(path: Coord[], board: Board): boolean`
+- Logic: 
+  1. For each Coord in path, check if within board bounds (0-4 for 5x5 grid).
+  2. Verify cell is empty (no piece present).
+  3. Query fissure state via isFissureBlockedForGeode: if standard fissure "+" orientation, block diagonal; if "X", allow; if center "*", allow all.
+  4. Return true if all checks pass; false otherwise.
+- Edge cases: Path includes 'from' and 'to'; if center fissure at path Coord and flipped to "*", bypass all blocks; error if path empty.
+
+### AmethystValidator.canMoveTo
+- Signature: `canMoveTo(from: Coord, to: Coord, board: Board): Promise<boolean>`
+- Logic: 
+  1. Compute path using DiagonalMoveHandler.computeDiagonalPath.
+  2. If path empty, return false.
+  3. Check isPathClear on the path.
+  4. Validate purple-line rule: if destination on purple line (back of center fissure), allow; else, if moving one space in any direction, allow access.
+  5. If destination occupied by opponent, prepare for capture; if by same faction, block.
+  6. If all pass, apply move (update board state, persist async to jsonbin.io), return true.
+- Edge cases: One-space any-direction move to purple lines overrides diagonal-only for access; invalid if no purple line at destination and not a one-space move; undoable if no other turn actions.
+
+### AmethystValidator.validatePurpleLine
+- Signature: `validatePurpleLine(to: Coord, board: Board): boolean`
+- Logic: 
+  1. Check if 'to' is on purple lines (hard-coded as specific Coords on back of center fissure, e.g., based on board design).
+  2. If yes, return true.
+  3. If moving exactly one space in any direction (orthogonal or diagonal) to reach purple line, return true.
+  4. Else, return false.
+- Edge cases: Purple lines are exclusive to Amethyst; violation prevents move with UI error.
+
+## Data Structures
+```typescript
+interface DiagonalMovementProfile {
+    directions: string[];  // ['diagonal']
+    maxStep: string;       // 'unlimited'
+}
+
+interface AmethystState extends PieceObject {
+    position: Coord;
+    faction: 'The Crystalline Guard';
+    visual: {
+        color: 'purple';
+        icon: 'diagonal-cross';
+    };
+}
+
+interface Coord {
+    x: number;
+    y: number;
+}
+```
+
+## Test Scenarios
+- Test 1: Valid diagonal move on open path – Compute path from (0,0) to (2,2), expect Coords [(0,0),(1,1),(2,2)]; isPathClear true; canMoveTo true, state updated.
+- Test 2: Blocked by fissure – Path through "+" oriented fissure, expect isPathClear false, canMoveTo false, UI error shown.
+- Test 3: Purple line access via one-space orthogonal – From adjacent cell, move to purple line Coord, expect validatePurpleLine true, move succeeds despite non-diagonal.
+- Test 4: Capture opponent – Move to occupied opponent Coord on diagonal, expect opponent removed, Amethyst placed.
+- Test 5: Invalid non-diagonal – Attempt orthogonal move, expect computeDiagonalPath empty, canMoveTo false.
+- Test 6: Obstructed path – Path with occupied cell mid-way, expect isPathClear false.
+- Test 7: Center fissure "*" – Path through center, expect all directions allowed, move succeeds.
+- Test 8: Undo within turn – After valid move, undo if no other actions, state reverts.
+- Test 9: Performance – 1000 move validations under 200ms in browser environment.
+- Test 10: Edge case: Board bounds – Attempt move beyond 5x5, expect path empty.
+
+## Dependencies
+- @types/node: For TypeScript compilation and Node.js types.
+- jsonbin.io SDK: For async state persistence and security validation (NFR-3).
+- Browser-native APIs: For UI rendering and performance timing (no third-party libraries).
+
+## Configuration
+- Environment variables: JSONBIN_API_KEY for persistence; BOARD_SIZE=5 for grid validation.
+- Config files: amethyst-config.json with visual properties (e.g., purple hex color #800080) and purple line Coords.
+- Setup: Import AmethystPiece in main game app; initialize with board state; ensure fissure-cell.design modules loaded.
+
+## Deployment Notes
+- Build process: Use TypeScript compiler (tsc) to transpile src/ to dist/; bundle with Webpack for web deployment.
+- Deployment steps: Host dist/ on web server; integrate with game-state-manager for jsonbin.io; test in browsers for performance; enable CORS for client-server sync.
+
+## Cross-References
+[Leave empty - references are documented in the metadata header above]
+
+## AI Interaction Log
+<!-- Auto-maintained by PromptPress extension -->
+
+=== End Log ===

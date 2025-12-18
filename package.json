@@ -34,6 +34,10 @@
         "title": "PromptPress: Generate Code from Implementation"
       },
       {
+        "command": "promptpress.generateImplementation",
+        "title": "PromptPress: Generate Implementation Spec"
+      },
+      {
         "command": "promptpress.validateSpec",
         "title": "PromptPress: Validate Specification"
       },
