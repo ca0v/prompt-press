@@ -166,43 +166,89 @@ export class SpecFileWatcher implements vscode.Disposable {
             const content = await fs.readFile(filePath, 'utf-8');
             const parsed = this.parser.parse(content);
 
-            // Validate depends-on (format: artifact.phase)
+            const fileName = path.basename(filePath);
+            const specRef = fileName.replace(/\.(req|design|impl)\.md$/, '.$1');
+
+            // Validate depends-on
             if (parsed.metadata.dependsOn) {
                 for (const dep of parsed.metadata.dependsOn) {
-                    if (!await this.fileExists(this.resolveSpecPath(dep))) {
-                        const range = this.findMetadataRange(content, 'depends-on', dep);
+                    const range = this.findMetadataRange(content, 'depends-on', dep);
+                    
+                    // Check over-specification
+                    if (!/^[a-zA-Z0-9-]+\.(req|design|impl)$/.test(dep)) {
                         diagnostics.push(new vscode.Diagnostic(
                             range,
-                            `Dependency '${dep}' not found`,
-                            vscode.DiagnosticSeverity.Error
+                            `Depends-on '${dep}' is over-specified`,
+                            vscode.DiagnosticSeverity.Warning
                         ));
+                    } else {
+                        // Check existence
+                        if (!await this.fileExists(this.resolveSpecPath(dep))) {
+                            diagnostics.push(new vscode.Diagnostic(
+                                range,
+                                `Dependency '${dep}' not found`,
+                                vscode.DiagnosticSeverity.Warning
+                            ));
+                        } else {
+                            // Check circular dependency
+                            const allDeps = await this.getAllDependencies(dep);
+                            if (allDeps.has(specRef)) {
+                                diagnostics.push(new vscode.Diagnostic(
+                                    range,
+                                    `Dependency '${dep}' creates a circular dependency`,
+                                    vscode.DiagnosticSeverity.Warning
+                                ));
+                            }
+                        }
                     }
                 }
             }
 
-            // Validate references (format: artifact.phase)
+            // Validate references
             if (parsed.metadata.references) {
                 for (const ref of parsed.metadata.references) {
-                    if (!await this.fileExists(this.resolveSpecPath(ref))) {
-                        const range = this.findMetadataRange(content, 'references', ref);
+                    const range = this.findMetadataRange(content, 'references', ref);
+                    
+                    // Check over-specification
+                    if (!/^[a-zA-Z0-9-]+\.(req|design|impl)$/.test(ref)) {
                         diagnostics.push(new vscode.Diagnostic(
                             range,
-                            `Reference '${ref}' not found`,
-                            vscode.DiagnosticSeverity.Error
+                            `Reference '${ref}' is over-specified`,
+                            vscode.DiagnosticSeverity.Warning
                         ));
+                    } else {
+                        // Check existence
+                        if (!await this.fileExists(this.resolveSpecPath(ref))) {
+                            diagnostics.push(new vscode.Diagnostic(
+                                range,
+                                `Reference '${ref}' not found`,
+                                vscode.DiagnosticSeverity.Warning
+                            ));
+                        }
                     }
                 }
             }
 
-            // Validate content references (@ref:artifact.phase)
+            // Validate content references
             for (const ref of parsed.references) {
-                if (!await this.fileExists(this.resolveSpecPath(ref))) {
-                    const range = this.findContentReferenceRange(content, ref);
+                const range = this.findContentReferenceRange(content, ref);
+                
+                // Check over-specification
+                if (!/^[a-zA-Z0-9-]+\.(req|design|impl)$/.test(ref)) {
                     diagnostics.push(new vscode.Diagnostic(
                         range,
-                        `Reference '${ref}' not found`,
-                        vscode.DiagnosticSeverity.Error
+                        `Mention '${ref}' is over-specified`,
+                        vscode.DiagnosticSeverity.Warning
                     ));
+                } else {
+                    // Check existence
+                    if (!await this.fileExists(this.resolveSpecPath(ref))) {
+                        diagnostics.push(new vscode.Diagnostic(
+                            range,
+                            `Mention '${ref}' not found`,
+                            vscode.DiagnosticSeverity.Warning
+                        ));
+                    }
                 }
             }
         } catch (error) {
@@ -245,12 +291,13 @@ export class SpecFileWatcher implements vscode.Disposable {
 
     private findContentReferenceRange(content: string, ref: string): vscode.Range {
         const lines = content.split('\n');
-        const regex = new RegExp(`@ref:${ref.replace('.', '\\.')}`, 'g');
+        const escapedRef = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`@${escapedRef}`, 'g');
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             if (regex.test(line)) {
-                const index = line.indexOf(`@ref:${ref}`);
-                return new vscode.Range(i, index, i, index + `@ref:${ref}`.length);
+                const index = line.indexOf(`@${ref}`);
+                return new vscode.Range(i, index, i, index + `@${ref}`.length);
             }
         }
         // Fallback
@@ -289,6 +336,38 @@ export class SpecFileWatcher implements vscode.Disposable {
 
     public async validateFile(filePath: string): Promise<void> {
         await this.validateReferences(filePath);
+    }
+
+    private async getAllDependencies(specRef: string, visited: Set<string> = new Set()): Promise<Set<string>> {
+        if (visited.has(specRef)) {
+            return new Set(); // Cycle detected, but return empty to avoid infinite
+        }
+        visited.add(specRef);
+
+        const filePath = this.resolveSpecPath(specRef);
+        if (!await this.fileExists(filePath)) {
+            return new Set();
+        }
+
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            const parsed = this.parser.parse(content);
+            const deps = new Set<string>();
+
+            if (parsed.metadata.dependsOn) {
+                for (const dep of parsed.metadata.dependsOn) {
+                    if (!visited.has(dep)) {
+                        deps.add(dep);
+                        const subDeps = await this.getAllDependencies(dep, new Set(visited));
+                        subDeps.forEach(d => deps.add(d));
+                    }
+                }
+            }
+
+            return deps;
+        } catch {
+            return new Set();
+        }
     }
 
     public dispose() {

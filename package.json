@@ -128,6 +128,7 @@
     "test:cascade": "node ./out/test/runner.js cascade",
     "test:all": "node ./out/test/runner.js all",
     "test:parser": "node ./out/test/runner.js parser",
+    "test:ide": "node ./out/test/runner.js ide",
     "package": "vsce package",
     "install-deps": "npm install"
   },

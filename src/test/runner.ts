@@ -15,6 +15,7 @@ import { runScaffoldIntegrationTest } from './scaffold-integration.test';
 import { runCascadeServiceTest } from './cascadeService.test';
 import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test';
 import { runImplParserTest } from './implParser.test';
+import { runIdeValidationTests } from './ide-validation.test';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -23,6 +24,7 @@ async function main() {
     const runConOpsTest = args.includes('conops');
     const runAllTests = args.includes('all');
     const runParserTest = args.includes('parser');
+    const runIdeTest = args.includes('ide');
     
     console.log('🚀 PromptPress Test Suite\n');
     console.log('Running tests...\n');
@@ -39,6 +41,9 @@ async function main() {
             
             console.log('\n5️⃣  ImplParser Tests\n');
             await runImplParserTest();
+            
+            console.log('\n6️⃣  IDE Validation Tests\n');
+            await runIdeValidationTests();
             
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();
@@ -57,6 +62,9 @@ async function main() {
         } else if (runParserTest) {
             console.log('📦 Running ImplParser Test\n');
             await runImplParserTest();
+        } else if (runIdeTest) {
+            console.log('📦 Running IDE Validation Tests\n');
+            await runIdeValidationTests();
         } else {
             console.log('📦 Running Standard Tests\n');
             await runXAIClientTests();
