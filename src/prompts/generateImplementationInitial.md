@@ -19,7 +19,7 @@ last-updated: {last_updated}
 
 ## File Structure
 ```
-artifact-name/
+{artifact_name}/
 ├── src/
 │   ├── index.ts
 │   └── ...

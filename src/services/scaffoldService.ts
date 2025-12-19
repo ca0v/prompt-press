@@ -624,7 +624,6 @@ export class ScaffoldService {
             'specs/design',
             'specs/implementation',
             'artifacts',
-            'templates',
             'tools/generators',
             'tools/validators',
             'tools/utilities',
@@ -635,31 +634,8 @@ export class ScaffoldService {
             await fs.mkdir(path.join(workspaceRoot, dir), { recursive: true });
         }
 
-        // Create ConOps.md from template
-        const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
-        const conopsContent = await fs.readFile(conopsTemplatePath, 'utf-8');
-        const conopsWithDate = conopsContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
-        await fs.writeFile(path.join(workspaceRoot, 'specs', 'ConOps.md'), conopsWithDate, 'utf-8');
-
         // Set up configuration files (.gitignore, VS Code settings)
         await this.setupConfigurationFiles(workspaceRoot);
-
-        // Copy templates
-        const templateSource = path.join(__dirname, '../../templates');
-        const templateDest = path.join(workspaceRoot, 'templates');
-
-        try {
-            // Copy template files from extension to workspace
-            const templates = ['requirement.template.md', 'design.template.md', 'implementation.template.md'];
-            for (const template of templates) {
-                const srcPath = path.join(templateSource, template);
-                const destPath = path.join(templateDest, template);
-                const content = await fs.readFile(srcPath, 'utf-8');
-                await fs.writeFile(destPath, content, 'utf-8');
-            }
-        } catch (error) {
-            console.warn('Could not copy templates:', error);
-        }
 
         vscode.window.showInformationMessage(
             '✅ PromptPress project structure created! Use "Scaffold Artifact" to create your first spec.'
@@ -910,76 +886,6 @@ export class ScaffoldService {
     }
 
     /**
-     * Populate the ConOps template with AI-generated content
-     */
-    private populateConOpsTemplate(templateContent: string, aiContent: string): string {
-        // Split the AI content by sections (assuming it uses ## or ### headers)
-        const aiSections: { [key: string]: string } = {};
-        const aiLines = aiContent.split('\n');
-        let currentSection = '';
-        let currentContent: string[] = [];
-
-        for (const line of aiLines) {
-            if (line.startsWith('### ')) {
-                // Save previous section
-                if (currentSection && currentContent.length > 0) {
-                    aiSections[currentSection] = currentContent.join('\n').trim();
-                }
-                // Start new section (remove the ### prefix)
-                currentSection = line.substring(4).trim();
-                currentContent = [];
-            } else if (line.startsWith('## ')) {
-                // Save previous section
-                if (currentSection && currentContent.length > 0) {
-                    aiSections[currentSection] = currentContent.join('\n').trim();
-                }
-                // Start new section (remove the ## prefix)
-                currentSection = line.substring(3).trim();
-                currentContent = [];
-            } else if (currentSection) {
-                currentContent.push(line);
-            }
-        }
-        
-        // Save the last section
-        if (currentSection && currentContent.length > 0) {
-            aiSections[currentSection] = currentContent.join('\n').trim();
-        }
-
-        // Replace template sections with AI content
-        let populatedTemplate = templateContent;
-
-        // Map AI sections to template sections
-        const sectionMappings: { [key: string]: string[] } = {
-            'Executive Summary': ['Executive Summary'],
-            'Business Objectives': ['Business Objectives'],
-            'Stakeholders': ['Stakeholders'],
-            'Operational Concept': ['Operational Concept', 'Current State', 'Proposed Solution', 'Operational Scenarios'],
-            'Functional Requirements Overview': ['Functional Requirements Overview', 'Requirements Overview'],
-            'Non-Functional Requirements Overview': ['Non-Functional Requirements Overview', 'Requirements Overview'],
-            'Constraints and Assumptions': ['Constraints and Assumptions', 'Constraints'],
-            'Risks and Mitigations': ['Risks and Mitigations', 'Risks'],
-            'Future Considerations': ['Future Considerations'],
-            'Gap Analysis': ['Gap Analysis'],
-            'Recommended Updates': ['Recommended Updates'],
-            'Requirements Traceability': ['Requirements Traceability']
-        };
-
-        for (const [templateSection, aiSectionNames] of Object.entries(sectionMappings)) {
-            for (const aiSectionName of aiSectionNames) {
-                if (aiSections[aiSectionName]) {
-                    // Replace placeholder content in template section
-                    const sectionRegex = new RegExp(`(## ${templateSection}\\s*\\n)\\[.*?\\]`, 's');
-                    populatedTemplate = populatedTemplate.replace(sectionRegex, `$1${aiSections[aiSectionName]}`);
-                    break; // Use the first matching AI section
-                }
-            }
-        }
-
-        return populatedTemplate;
-    }
-
-    /**
      * Log AI responses to files for analysis
      */
     private async logAiResponse(operation: string, systemPrompt: string, userPrompt: string, aiResponse: string): Promise<void> {
@@ -1024,38 +930,9 @@ ${aiResponse}
         let finalContent = aiResponse;
         
         if (!conopsExists) {
-            // For new ConOps, try to use the template structure but include all analysis
-            const conopsTemplatePath = path.join(__dirname, '../../templates', 'ConOps.template.md');
-            const templateContent = await fs.readFile(conopsTemplatePath, 'utf-8');
-            const templateWithDate = templateContent.replace('YYYY-MM-DD', new Date().toISOString().split('T')[0]);
-            
-            // Try to extract and populate structured content, but also append the full analysis
-            const updatedContentMatch = aiResponse.match(/### Updated Content\s*\n([\s\S]*?)(?=\n## |\n### |\n$)/);
-            if (updatedContentMatch) {
-                const updatedConOps = updatedContentMatch[1].trim();
-                let structuredContent = this.populateConOpsTemplate(templateWithDate, updatedConOps);
-                
-                // Append the Gap Analysis and Recommended Updates at the end
-                const gapAnalysisMatch = aiResponse.match(/### Gap Analysis\s*\n([\s\S]*?)(?=\n### |\n$)/);
-                const recommendedUpdatesMatch = aiResponse.match(/### Recommended Updates\s*\n([\s\S]*?)(?=\n### |\n$)/);
-                
-                if (gapAnalysisMatch || recommendedUpdatesMatch) {
-                    structuredContent += '\n\n## Analysis and Recommendations\n\n';
-                    if (gapAnalysisMatch) {
-                        structuredContent += '### Gap Analysis\n' + gapAnalysisMatch[1].trim() + '\n\n';
-                    }
-                    if (recommendedUpdatesMatch) {
-                        structuredContent += '### Recommended Updates\n' + recommendedUpdatesMatch[1].trim() + '\n\n';
-                    }
-                }
-                
-                finalContent = structuredContent;
-                this.outputChannel.appendLine('[UpdateConOps] Created structured ConOps with analysis sections');
-            } else {
-                // If no clear content section, include the full analysis in the template
-                finalContent = this.populateConOpsTemplate(templateWithDate, aiResponse);
-                this.outputChannel.appendLine('[UpdateConOps] Populated ConOps template with full AI response');
-            }
+            // For new ConOps, use the AI-generated content directly
+            // The updateConOps prompt generates a complete, structured ConOps document
+            this.outputChannel.appendLine('[UpdateConOps] Created new ConOps from AI response');
         }
         // For existing ConOps, replace the entire content with the full AI response (includes all analysis)
         
