@@ -85,9 +85,9 @@ src/
 ### Commands
 
 Registered VS Code commands:
-- `promptpress.scaffoldArtifact` - AI-generate req + design specs
+- `promptpress.createRequirementSpec` - AI-generate req + design specs
 - `promptpress.openChat` - Open chat panel
-- `promptpress.generateCode` - Generate code (stub for future)
+- `promptpress.syncCodeWithSpec` - Generate code (stub for future)
 - `promptpress.validateSpec` - Validate spec (stub for future)
 - `promptpress.toggleMonitoring` - Toggle file monitoring
 

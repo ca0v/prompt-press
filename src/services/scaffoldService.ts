@@ -114,7 +114,7 @@ export class ScaffoldService {
     /**
      * Scaffold a new PromptPress artifact
      */
-    public async scaffoldArtifact(): Promise<void> {
+    public async createRequirementSpec(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             vscode.window.showErrorMessage('No workspace folder open');
@@ -353,7 +353,7 @@ export class ScaffoldService {
     /**
      * Generate implementation spec from existing requirement and design specs
      */
-    public async generateImplementationSpec(): Promise<void> {
+    public async syncImplementationSpecSpec(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             vscode.window.showErrorMessage('No workspace folder open');
@@ -438,7 +438,7 @@ export class ScaffoldService {
                     const designContent = await fs.readFile(designPath, 'utf-8');
 
                     this.outputChannel.appendLine(`[Generate] Generating implementation spec with AI...`);
-                    const implSpec = await this.generateImplementation(
+                    const implSpec = await this.syncImplementationSpec(
                         artifactName,
                         requirementContent,
                         designContent
@@ -468,7 +468,7 @@ export class ScaffoldService {
     /**
      * Generate implementation specification using AI
      */
-    private async generateImplementation(
+    private async syncImplementationSpec(
         artifactName: string,
         requirementSpec: string,
         designSpec: string
@@ -477,7 +477,7 @@ export class ScaffoldService {
 
         const artifactTitle = artifactName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         // Load prompt template
-        const prompts = await this.loadPrompt('generateImplementationInitial.md');
+        const prompts = await this.loadPrompt('syncImplementationSpecInitial.md');
         const today = new Date().toISOString().split('T')[0];
         const systemPrompt = prompts.system
             .replace(/{artifact_name}/g, artifactName)
@@ -497,7 +497,7 @@ export class ScaffoldService {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
             
             // Log the AI response to file
-            await this.logAiResponse('generateImplementation', systemPrompt, userPrompt, response);
+            await this.logAiResponse('syncImplementationSpec', systemPrompt, userPrompt, response);
             
             return response;
         } catch (error: any) {
@@ -597,10 +597,10 @@ export class ScaffoldService {
     private async stageChanges(workspaceRoot: string): Promise<void> {
         try {
             await GitHelper.stageChanges(workspaceRoot);
-            this.outputChannel.appendLine('[UpdateConOps] Successfully staged all changes');
+            this.outputChannel.appendLine('[syncConOps] Successfully staged all changes');
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : String(error);
-            this.outputChannel.appendLine(`[UpdateConOps] Warning: Failed to stage changes: ${errorMsg}`);
+            this.outputChannel.appendLine(`[syncConOps] Warning: Failed to stage changes: ${errorMsg}`);
             // Don't throw - allow cascade to continue even if staging fails
         }
     }
@@ -632,7 +632,7 @@ export class ScaffoldService {
                 };
             } else {
                 // No git history
-                this.outputChannel.appendLine('[UpdateConOps] No git history found, treating as new changes');
+                this.outputChannel.appendLine('[syncConOps] No git history found, treating as new changes');
                 return {
                     hasChanges: true,
                     summary: 'New or significantly modified ConOps',
@@ -648,7 +648,7 @@ export class ScaffoldService {
     /**
      * Update ConOps based on requirement overviews
      */
-    public async updateConOps(): Promise<void> {
+    public async syncConOps(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             vscode.window.showErrorMessage('No workspace folder open');
@@ -715,7 +715,7 @@ export class ScaffoldService {
                     const readmePath = path.join(workspaceRoot, 'README.md');
                     try {
                         readmeContent = await fs.readFile(readmePath, 'utf-8');
-                        this.outputChannel.appendLine('[UpdateConOps] Using README.md as context since no requirements found');
+                        this.outputChannel.appendLine('[syncConOps] Using README.md as context since no requirements found');
                     } catch {
                         vscode.window.showErrorMessage('No requirement files or README.md found to analyze.');
                         return;
@@ -752,8 +752,8 @@ export class ScaffoldService {
                     // Detect changes in ConOps
                     conopsChanges = await this.detectConOpsChanges(workspaceRoot, conopsPath, conopsContent);
                     if (conopsChanges.hasChanges) {
-                        this.outputChannel.appendLine(`[UpdateConOps] Detected changes: ${conopsChanges.summary}`);
-                        this.outputChannel.appendLine(`[UpdateConOps] Modified sections: ${conopsChanges.modifiedSections.join(', ')}`);
+                        this.outputChannel.appendLine(`[syncConOps] Detected changes: ${conopsChanges.summary}`);
+                        this.outputChannel.appendLine(`[syncConOps] Modified sections: ${conopsChanges.modifiedSections.join(', ')}`);
                     }
                 }
 
@@ -811,7 +811,7 @@ export class ScaffoldService {
      */
     private async generateConOpsUpdates(conopsSection: string, contextContent: string): Promise<string> {
         // Load prompt template
-        const prompts = await this.loadPrompt('updateConOps.md');
+        const prompts = await this.loadPrompt('syncConOps.md');
         const systemPrompt = prompts.system;
         const userPrompt = prompts.user
             .replace('{conops_section}', conopsSection)
@@ -822,22 +822,22 @@ export class ScaffoldService {
             { role: 'user', content: userPrompt }
         ];
 
-        this.outputChannel.appendLine('[UpdateConOps] Sending analysis to AI');
-        this.outputChannel.appendLine('[UpdateConOps] System Prompt:');
+        this.outputChannel.appendLine('[syncConOps] Sending analysis to AI');
+        this.outputChannel.appendLine('[syncConOps] System Prompt:');
         this.outputChannel.appendLine(systemPrompt);
-        this.outputChannel.appendLine('[UpdateConOps] User Prompt:');
+        this.outputChannel.appendLine('[syncConOps] User Prompt:');
         this.outputChannel.appendLine(userPrompt);
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 6000 });
-            this.outputChannel.appendLine('[UpdateConOps] AI Response:');
+            this.outputChannel.appendLine('[syncConOps] AI Response:');
             this.outputChannel.appendLine(response);
             
             // Log the AI response to file
-            await this.logAiResponse('updateConOps', systemPrompt, userPrompt, response);
+            await this.logAiResponse('syncConOps', systemPrompt, userPrompt, response);
             
             return response;
         } catch (error: any) {
-            this.outputChannel.appendLine(`[UpdateConOps] Error: ${error.message}`);
+            this.outputChannel.appendLine(`[syncConOps] Error: ${error.message}`);
             throw error;
         }
     }
@@ -879,8 +879,8 @@ ${aiResponse}
     private async applyConOpsUpdates(workspaceRoot: string, aiResponse: string, conopsExists: boolean): Promise<void> {
         const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
 
-        this.outputChannel.appendLine('[UpdateConOps] Applying updates from AI response');
-        this.outputChannel.appendLine('[UpdateConOps] Full AI Response:');
+        this.outputChannel.appendLine('[syncConOps] Applying updates from AI response');
+        this.outputChannel.appendLine('[syncConOps] Full AI Response:');
         this.outputChannel.appendLine(aiResponse);
 
         // Ensure the specs directory exists
@@ -891,13 +891,13 @@ ${aiResponse}
         
         if (!conopsExists) {
             // For new ConOps, use the AI-generated content directly
-            // The updateConOps prompt generates a complete, structured ConOps document
-            this.outputChannel.appendLine('[UpdateConOps] Created new ConOps from AI response');
+            // The syncConOps prompt generates a complete, structured ConOps document
+            this.outputChannel.appendLine('[syncConOps] Created new ConOps from AI response');
         }
         // For existing ConOps, replace the entire content with the full AI response (includes all analysis)
         
         await fs.writeFile(conopsPath, finalContent, 'utf-8');
-        this.outputChannel.appendLine('[UpdateConOps] Updated ConOps.md');
+        this.outputChannel.appendLine('[syncConOps] Updated ConOps.md');
 
         // Look for requirement updates in the AI response
         // Handle both the expected format and the actual AI response format
@@ -933,7 +933,7 @@ ${aiResponse}
                     lines.splice(overviewIndex + 1, endIndex - overviewIndex - 1, '', ...updatedOverview.split('\n'));
                     content = lines.join('\n');
                     await fs.writeFile(reqPath, content, 'utf-8');
-                    this.outputChannel.appendLine(`[UpdateConOps] Updated overview in ${fileName}`);
+                    this.outputChannel.appendLine(`[syncConOps] Updated overview in ${fileName}`);
                 }
             } catch (error) {
                 console.warn(`Failed to update ${fileName}:`, error);

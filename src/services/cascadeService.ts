@@ -28,7 +28,7 @@ export class CascadeServiceCommands {
      * Main entry point for applying changes
      * Detects changes in the current file and cascades through dependent phases
      */
-    async applyChanges(filePath: string) {
+    async refactorSpec(filePath: string) {
         const ui: CascadeUI = {
             confirmGitStatus: async (hasUnstaged: boolean) => {
                 if (!hasUnstaged) {
@@ -62,7 +62,7 @@ export class CascadeServiceCommands {
             notifyError: (msg: string) => vscode.window.showErrorMessage(msg)
         };
 
-        return await this.core.applyChanges(filePath, ui);
+        return await this.core.refactorSpec(filePath, ui);
     }
 
 }

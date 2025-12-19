@@ -221,7 +221,7 @@ Extension
 ### Error Handling Chain
 ```
 User runs scaffold command
-  └── ScaffoldService.scaffoldArtifact()
+  └── ScaffoldService.createRequirementSpec()
       └── ScaffoldService.generateRequirement()
           └── XAIClient.chat()
               ├── Success: returns generated spec

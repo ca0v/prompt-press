@@ -22,36 +22,36 @@
   "contributes": {
     "commands": [
       {
-        "command": "promptpress.scaffoldArtifact",
-        "title": "PromptPress: Scaffold New Artifact"
+        "command": "promptpress.createRequirementSpec",
+        "title": "PromptPress: Create Requirement Spec"
       },
       {
         "command": "promptpress.openChat",
         "title": "PromptPress: Open Chat"
       },
       {
-        "command": "promptpress.generateCode",
-        "title": "PromptPress: Generate Code from Implementation"
+        "command": "promptpress.syncCodeWithSpec",
+        "title": "PromptPress: Sync Code with Implementation Spec"
       },
       {
-        "command": "promptpress.generateImplementation",
-        "title": "PromptPress: Generate Implementation Spec"
+        "command": "promptpress.syncImplementationSpec",
+        "title": "PromptPress: Sync Implementation Spec with Design Spec"
       },
       {
         "command": "promptpress.validateSpec",
-        "title": "PromptPress: Validate Specification"
+        "title": "PromptPress: Validate Spec"
       },
       {
         "command": "promptpress.toggleMonitoring",
         "title": "PromptPress: Toggle File Monitoring"
       },
       {
-        "command": "promptpress.applyChanges",
-        "title": "PromptPress: Apply Changes"
+        "command": "promptpress.refactorSpec",
+        "title": "PromptPress: Refactor Spec"
       },
       {
-        "command": "promptpress.updateConOps",
-        "title": "PromptPress: Update ConOps"
+        "command": "promptpress.syncConOps",
+        "title": "PromptPress: Sync Concept Document (ConOps.md)"
       }
     ],
     "configuration": {

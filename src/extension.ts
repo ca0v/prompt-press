@@ -332,7 +332,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('promptpress.generateCode', async () => {
+        vscode.commands.registerCommand('promptpress.syncCodeWithSpec', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showErrorMessage('No active editor');
@@ -392,13 +392,13 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('promptpress.scaffoldArtifact', async () => {
-            await scaffoldService.scaffoldArtifact();
+        vscode.commands.registerCommand('promptpress.createRequirementSpec', async () => {
+            await scaffoldService.createRequirementSpec();
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('promptpress.applyChanges', async () => {
+        vscode.commands.registerCommand('promptpress.refactorSpec', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showErrorMessage('No active editor. Please open a spec file.');
@@ -419,21 +419,21 @@ export function activate(context: vscode.ExtensionContext) {
                     cancellable: false
                 },
                 async () => {
-                    await cascadeService.applyChanges(filePath);
+                    await cascadeService.refactorSpec(filePath);
                 }
             );
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('promptpress.generateImplementation', async () => {
-            await scaffoldService.generateImplementationSpec();
+        vscode.commands.registerCommand('promptpress.syncImplementationSpec', async () => {
+            await scaffoldService.syncImplementationSpecSpec();
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('promptpress.updateConOps', async () => {
-            await scaffoldService.updateConOps();
+        vscode.commands.registerCommand('promptpress.syncConOps', async () => {
+            await scaffoldService.syncConOps();
         })
     );
 

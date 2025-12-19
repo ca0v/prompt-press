@@ -1,3 +1,10 @@
+---
+artifact: code-generation
+phase: design
+depends-on: []
+references: []
+last-updated: 2025-12-19
+---
 ```
 ---
 artifact: code-generation
@@ -37,12 +44,12 @@ The architecture is event-driven, with file changes or commands initiating workf
 Interfaces are defined using TypeScript for type safety within the VS Code extension. Key contracts include:
 
 - **VS Code Extension APIs**:
-  - `vscode.commands.registerCommand(commandId: string, handler: Function)`: Registers commands like `promptpress.scaffoldArtifact` (params: { name: string, description: string }) and `promptpress.applyChanges` (params: { artifactPath: string }).
+  - `vscode.commands.registerCommand(commandId: string, handler: Function)`: Registers commands like `promptpress.createRequirementSpec` (params: { name: string, description: string }) and `promptpress.refactorSpec` (params: { artifactPath: string }).
   - `vscode.workspace.onDidChangeTextDocument(listener: Function)`: For file monitoring, passing change events with file path, type (create/modify/delete), and content diffs.
   - `vscode.window.createChatParticipant(id: string, handler: Function)`: For optional chat interface, handling messages with context (e.g., { message: string, artifactRefs: string[] }).
 
 - **AI Service Interface**:
-  - `interface AIProvider { refineSpec(content: string, context: Map<string, string>, options: { model: string, maxTokens: number }): Promise<{ refinedContent: string, clarifications: string[] }>; generateCode(spec: ImplementationSpec): Promise<{ code: string, language: string }>; }`
+  - `interface AIProvider { refineSpec(content: string, context: Map<string, string>, options: { model: string, maxTokens: number }): Promise<{ refinedContent: string, clarifications: string[] }>; syncCodeWithSpec(spec: ImplementationSpec): Promise<{ code: string, language: string }>; }`
   - Implementations: `XAIProvider` (primary, with rate limit handling via exponential backoff), extensible `OpenAIProvider`, `AnthropicProvider` via factory pattern.
 
 - **Spec Management Interface**:
@@ -97,7 +104,7 @@ Key algorithms focus on workflow orchestration, AI context management, and deter
   2. If over limit, truncate least relevant sections (e.g., prioritize current phase, summarize historical versions).
   3. Use summarization prompts for large chains; cache summaries for reuse.
 
-- **Code Generation Logic** (Algorithm: GenerateCodeFromSpec):
+- **Code Generation Logic** (Algorithm: syncCodeWithSpecFromSpec):
   1. Parse implementation Markdown for code hints (e.g., function signatures, data structures).
   2. Map to language-specific AST builders (e.g., for JS, use recast library to emit code).
   3. Ensure determinism: Hash spec content to seed random elements if any; validate output against schema.

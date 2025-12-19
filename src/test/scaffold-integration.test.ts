@@ -248,7 +248,7 @@ export async function runScaffoldIntegrationTest(): Promise<void> {
 
             // Test 3: Generate Implementation Specification
             console.log('\n[Test] Step 3: Generating implementation specification...');
-            const implResponse = await generateImplementation(client, reqResponse, designResponse, testOutputDir);
+            const implResponse = await syncImplementationSpec(client, reqResponse, designResponse, testOutputDir);
             console.log('[Test] ✅ Implementation generated:', implResponse.length, 'characters');
 
             // Validate implementation structure
@@ -390,7 +390,7 @@ export async function runScaffoldIntegrationTest(): Promise<void> {
 
             // Step 4: Regenerate implementation with updated design
             console.log('\n[Test] Regenerating implementation based on updated design...');
-            const updatedImplResponse = await generateImplementationWithModification(
+            const updatedImplResponse = await syncImplementationSpecWithModification(
                 client,
                 updatedReqContent,
                 updatedDesignResponse,
@@ -541,7 +541,7 @@ ${requirement.substring(0, 2000)}...`;
     return await client.chat(messages);
 }
 
-async function generateImplementation(client: CachedXAIClient, requirement: string, design: string, outputDir: string): Promise<string> {
+async function syncImplementationSpec(client: CachedXAIClient, requirement: string, design: string, outputDir: string): Promise<string> {
     const systemPrompt = `You are an expert at writing precise implementation specifications. Generate a PromptPress implementation specification.
 
 Structure:
@@ -632,7 +632,7 @@ Focus on how ${newFeature} integrates with the existing architecture.`;
     return await client.chat(messages);
 }
 
-async function generateImplementationWithModification(client: CachedXAIClient, requirement: string, design: string, newFeature: string, outputDir: string): Promise<string> {
+async function syncImplementationSpecWithModification(client: CachedXAIClient, requirement: string, design: string, newFeature: string, outputDir: string): Promise<string> {
     const systemPrompt = `You are an expert at writing precise implementation specifications. Generate an UPDATED PromptPress implementation specification.
 
 IMPORTANT: The design has been updated to include ${newFeature}. Your implementation MUST include precise instructions for implementing this feature.
@@ -862,9 +862,9 @@ The data storage system must provide analytics capabilities for user behavior tr
             
             // Read the AI response from the log file
             const logFiles = await fs.readdir(path.join(__dirname, '../../logs'));
-            const updateLogFile = logFiles.find(f => f.startsWith('test_updateConOps_'));
+            const updateLogFile = logFiles.find(f => f.startsWith('test_syncConOps_'));
             if (!updateLogFile) {
-                throw new Error('No updateConOps log file found');
+                throw new Error('No syncConOps log file found');
             }
             
             const logContent = await fs.readFile(path.join(__dirname, '../../logs', updateLogFile), 'utf-8');

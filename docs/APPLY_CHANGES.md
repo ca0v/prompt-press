@@ -17,12 +17,11 @@ When working with PromptPress specs, requirements evolve. Rather than manually r
 
 ### Change Detection
 
-The service uses **baseline caching** to detect changes:
+The service uses **git** to detect changes:
 
-1. **First Time**: When you first use Apply Changes on a file, it creates a baseline in `.promptpress/cache/<filename>.baseline`
-2. **Subsequent Uses**: Compares current file content with baseline to detect changes
-3. **Fallback**: If no baseline exists, attempts to use `git diff` against HEAD
-4. **Section-Level Detection**: Identifies which markdown sections (## headings) were modified
+1. **Change Detection**: Compares current file content with the last committed version using `git diff`
+2. **Section-Level Detection**: Identifies which markdown sections (## headings) were modified
+3. **Requirement**: Files must be tracked in git to detect changes
 
 ### Cascading Logic
 
@@ -105,7 +104,6 @@ These prompts ensure the AI focuses on integrating changes while preserving exis
 4. **Output**:
    - Updated design file (if exists)
    - Updated implementation file (if exists)
-   - Baseline cache updated
    - Files open in editor for review
 
 ### Example Workflow
@@ -136,20 +134,6 @@ These prompts ensure the AI focuses on integrating changes while preserving exis
 
 5. **Review Changes**: All files updated, structure preserved, multiplayer integrated
 
-## File Structure
-
-The service creates a cache directory for change tracking:
-
-```
-.promptpress/
-└── cache/
-    ├── game-of-life.req.md.baseline
-    ├── game-of-life.design.md.baseline
-    └── game-of-life.impl.md.baseline
-```
-
-**Note**: Add `.promptpress/cache/` to `.gitignore` - these are local working files.
-
 ## Output Channel Logs
 
 All operations are logged to the "PromptPress" output channel:
@@ -168,7 +152,6 @@ All operations are logged to the "PromptPress" output channel:
 [XAI] Sending chat completion request: model=grok-code-fast-1, messages=2
 [XAI] Received response: finishReason=stop, promptTokens=833, completionTokens=2430
 [Cascade] ✅ Updated game-of-life.impl.md
-[Cascade] Updated baseline cache for game-of-life.req.md
 ```
 
 ## Configuration
@@ -206,10 +189,9 @@ Uses existing PromptPress settings:
 
 ### Known Issues
 
-1. **First-Run Behavior**: If no baseline exists and not in git:
-   - Treats entire file as changes
-   - May generate verbose "what changed" prompts
-   - Workaround: Run Apply Changes once to establish baseline
+1. **Git Required**: Files must be committed to git to detect changes
+   - If no git history exists, no changes will be detected
+   - Workaround: Commit files before making changes
 
 2. **Large Changes**: If many sections modified:
    - AI may not emphasize all changes equally
@@ -244,7 +226,7 @@ The Apply Changes feature uses the same prompt engineering as the integration te
 
 - **Test**: [src/test/scaffold-integration.test.ts](../src/test/scaffold-integration.test.ts) - `"should cascade requirement changes through design and implementation"`
 - **Service**: [src/services/cascadeService.ts](../src/services/cascadeService.ts)
-- **Helpers**: `generateDesignWithModification()`, `generateImplementationWithModification()`
+- **Helpers**: `generateDesignWithModification()`, `syncImplementationSpecWithModification()`
 
 This ensures consistency between test validation and production behavior.
 
@@ -261,21 +243,16 @@ This ensures consistency between test validation and production behavior.
    - Cascade changes across multiple related artifacts
    - Example: Update core-lib.req → cascade to all dependent apps
 
-3. **Smart Baseline Management**:
-   - Auto-update baseline after successful cascade
-   - Provide "Reset Baseline" command
-   - Sync baselines across team via git
-
-4. **Change Analytics**:
+3. **Change Analytics**:
    - Track which sections change most frequently
    - Identify unstable requirements
    - Generate change reports
 
-5. **Undo/Redo**:
+4. **Undo/Redo**:
    - Maintain local history of cascaded changes
    - Provide "Revert Last Cascade" command
 
-6. **Partial Cascade**:
+5. **Partial Cascade**:
    - Cascade to design only (skip implementation)
    - Cascade specific sections only
    - Ask before each phase
@@ -284,10 +261,10 @@ This ensures consistency between test validation and production behavior.
 
 ### "No changes detected"
 
-**Cause**: Current content matches baseline
+**Cause**: Current content matches last committed version in git
 **Solution**: 
 - Make substantive changes to markdown sections
-- Or run with fresh baseline: Delete `.promptpress/cache/<file>.baseline`
+- Commit changes to git before running Apply Changes
 
 ### "Cannot cascade from design without requirement file"
 
@@ -344,7 +321,7 @@ constructor(
 
 **Main Method**:
 ```typescript
-async applyChanges(filePath: string): Promise<CascadeResult>
+async refactorSpec(filePath: string): Promise<CascadeResult>
 ```
 
 **Result**:
@@ -359,7 +336,7 @@ interface CascadeResult {
 ### Change Detection
 
 **Internal Methods**:
-- `detectChanges()` - Compare with baseline or git
+- `detectChanges()` - Compare with git history
 - `compareContent()` - Section-level diff
 - `findModifiedSections()` - Extract changed markdown sections
 - `generateChangeSummary()` - Create human-readable summary
@@ -369,7 +346,7 @@ interface CascadeResult {
 - `cascadeFromRequirement()` - Req → Design → Impl
 - `cascadeFromDesign()` - Design → Impl
 - `generateDesignWithModification()` - AI call for design
-- `generateImplementationWithModification()` - AI call for impl
+- `syncImplementationSpecWithModification()` - AI call for impl
 
 ## Summary
 
@@ -379,7 +356,7 @@ The Apply Changes feature brings the power of the cascade integration test to ev
 ✅ **Smart**: Section-level change detection
 ✅ **Fast**: 30-60 seconds vs 5-10 minutes manual
 ✅ **Consistent**: Uses proven prompt engineering from tests
-✅ **Traceable**: Logs all operations, updates baselines
+✅ **Traceable**: Logs all operations
 ✅ **Structure-Preserving**: Maintains YAML frontmatter and phases
 
 Use Apply Changes whenever you modify requirements or design specs to keep your entire artifact hierarchy synchronized!

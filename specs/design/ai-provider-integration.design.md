@@ -36,7 +36,7 @@ The design defines the following key interfaces and contracts for internal and e
 - **IProvider Interface**: Abstract contract for all provider adapters.
   - `initialize(config: ProviderConfig): Promise<void>` - Initializes the provider with API keys, endpoints, and settings.
   - `refinePrompt(prompt: MarkdownSpec, context: ContextWindow): Promise<RefinedSpec>` - Refines a prompt spec, handling token limits.
-  - `generateCode(spec: ImplementationSpec): Promise<GeneratedCode>` - Generates code from implementation specs.
+  - `syncCodeWithSpec(spec: ImplementationSpec): Promise<GeneratedCode>` - Generates code from implementation specs.
   - `healthCheck(): Promise<HealthStatus>` - Performs a health check, returning status (e.g., { available: boolean, latency: number }).
   - `switchTo(): void` - Prepares for activation during fallback.
 

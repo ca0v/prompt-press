@@ -28,7 +28,7 @@ Regenerates design specification with explicit focus on new feature:
 - Prompts AI to update architecture, components, and APIs
 - Returns updated design specification
 
-### `generateImplementationWithModification()`
+### `syncImplementationSpecWithModification()`
 Regenerates implementation specification with feature emphasis:
 - Takes requirement, design, and new feature name
 - Emphasizes feature implementation in system prompt

@@ -14,7 +14,7 @@ import { DiffHelper, ChangeDetectionResult } from './diffHelper';
 const PROMPTS = {
     refineDocument: path.join(__dirname, '../prompts/refineDocument.md'),
     generateDesign: path.join(__dirname, '../prompts/generateDesign.md'),
-    generateImplementation: path.join(__dirname, '../prompts/generateImplementation.md')
+    syncImplementationSpec: path.join(__dirname, '../prompts/syncImplementationSpec.md')
 };
 
 export interface CascadeResult {
@@ -42,7 +42,6 @@ export interface ReferencedArtifact {
 
 export class CascadeCore {
     private parser: MarkdownParser;
-    private cacheDir: string;
     private promptCache: Map<string, { system: string; user: string }> = new Map();
 
     constructor(
@@ -51,7 +50,6 @@ export class CascadeCore {
         private logger: Logger = console
     ) {
         this.parser = new MarkdownParser();
-        this.cacheDir = path.join(workspaceRoot, '.promptpress', 'cache');
     }
 
     private async loadPrompts(promptKey: string): Promise<{ system: string; user: string }> {
@@ -171,7 +169,7 @@ export class CascadeCore {
         }).join('\n\n---\n\n');
     }
 
-    async applyChanges(
+    async refactorSpec(
         filePath: string,
         ui: CascadeUI
     ): Promise<CascadeResult> {
@@ -199,8 +197,6 @@ export class CascadeCore {
                 }
                 // 'continue' or 'stage' falls through
             }
-
-            await fs.mkdir(this.cacheDir, { recursive: true });
 
             const currentContent = await fs.readFile(filePath, 'utf-8');
             const parsed = this.parser.parse(currentContent);
@@ -235,8 +231,6 @@ export class CascadeCore {
                 result.errors.push('Can only cascade changes from requirement or design phases');
                 return result;
             }
-
-            await this.updateCache(filePath, currentContent);
 
             result.success = result.errors.length === 0;
             if (result.success) {
@@ -332,26 +326,19 @@ export class CascadeCore {
     }
 
     private async detectChanges(filePath: string, currentContent: string): Promise<ChangeDetectionResult> {
-        const cacheFile = path.join(this.cacheDir, `${path.basename(filePath)}.baseline`);
-        try {
-            const cachedContent = await fs.readFile(cacheFile, 'utf-8');
-            return DiffHelper.compareContent(cachedContent, currentContent);
-        } catch {
-            // No cache, try git
-            const oldContent = await GitHelper.getLastCommittedContent(this.workspaceRoot, filePath);
-            if (oldContent) {
-                return DiffHelper.compareContent(oldContent, currentContent);
-            } else {
-                // No git history, treat as all changes
-                this.logger.log('[Cascade] No git history found; treating all content as changes');
-                return {
-                    hasChanges: true,
-                    modifiedSections: ['All sections'],
-                    summary: 'New or significantly modified file',
-                    oldContent: '',
-                    newContent: currentContent
-                };
-            }
+        const oldContent = await GitHelper.getLastCommittedContent(this.workspaceRoot, filePath);
+        if (oldContent) {
+            return DiffHelper.compareContent(oldContent, currentContent);
+        } else {
+            // No git history, treat as no changes (since we can't determine what changed)
+            this.logger.log('[Cascade] No git history found; cannot detect changes');
+            return {
+                hasChanges: false,
+                modifiedSections: [],
+                summary: 'No git history available for change detection',
+                oldContent: '',
+                newContent: currentContent
+            };
         }
     }
 
@@ -397,7 +384,7 @@ export class CascadeCore {
                 const implExists = await this.fileExists(implFile);
                 if (implExists) {
                     this.logger.log('[Cascade] Regenerating implementation specification...');
-                    const newImpl = await this.generateImplementationWithModification(
+                    const newImpl = await this.syncImplementationSpecWithModification(
                         currentContent,
                         newDesign,
                         changes.modifiedSections,
@@ -449,7 +436,7 @@ export class CascadeCore {
 
             if (implExists) {
                 this.logger.log('[Cascade] Regenerating implementation specification...');
-                const newImpl = await this.generateImplementationWithModification(
+                const newImpl = await this.syncImplementationSpecWithModification(
                     requirement,
                     currentContent,
                     changes.modifiedSections,
@@ -505,7 +492,7 @@ export class CascadeCore {
         return response;
     }
 
-    private async generateImplementationWithModification(
+    private async syncImplementationSpecWithModification(
         requirement: string,
         design: string,
         modifiedSections: string[],
@@ -516,7 +503,7 @@ export class CascadeCore {
         const artifactName = metadata?.artifact || 'artifact';
         const artifactTitle = artifactName.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-        const prompts = await this.loadPrompts('generateImplementation');
+        const prompts = await this.loadPrompts('syncImplementationSpec');
         
         // Format system prompt with context
         const systemPrompt = prompts.system
@@ -541,12 +528,6 @@ export class CascadeCore {
         this.logger.log('[Cascade] Calling AI to generate updated implementation...');
         const response = await this.xaiClient.chat(messages, { maxTokens: 4000 });
         return response;
-    }
-
-    private async updateCache(filePath: string, content: string): Promise<void> {
-        const cacheFile = path.join(this.cacheDir, `${path.basename(filePath)}.baseline`);
-        await fs.writeFile(cacheFile, content, 'utf-8');
-        this.logger.log(`[Cascade] Updated baseline cache for ${path.basename(filePath)}`);
     }
 
     private async fileExists(filePath: string): Promise<boolean> {

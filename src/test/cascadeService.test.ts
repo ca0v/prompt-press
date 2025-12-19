@@ -187,7 +187,7 @@ Original overview text with NEW FEATURE added.
             await fs.writeFile(reqFile, updatedContent, 'utf-8');
 
             // Apply changes (should detect differences)
-            const result = await cascadeService.applyChanges(reqFile, testUi);
+            const result = await cascadeService.refactorSpec(reqFile, testUi);
 
             Assert.equal(result.success, true);
             Assert.ok(mockOutput.lines.some(line => line.includes('Changes detected')));
@@ -233,7 +233,7 @@ Old architecture.`;
             await fs.writeFile(designFile, oldDesignContent, 'utf-8');
 
             // No baseline exists, so entire file treated as changes
-            const result = await cascadeService.applyChanges(reqFile, testUi);
+            const result = await cascadeService.refactorSpec(reqFile, testUi);
 
             Assert.equal(result.success, true);
             Assert.ok(result.updatedFiles.includes(designFile));
@@ -298,7 +298,7 @@ version: 1.0.0
 Old implementation.`, 'utf-8');
 
             // Apply changes
-            const result = await cascadeService.applyChanges(reqFile, testUi);
+            const result = await cascadeService.refactorSpec(reqFile, testUi);
 
             Assert.equal(result.success, true);
             Assert.ok(result.updatedFiles.includes(designFile));
@@ -340,7 +340,7 @@ Unchanged content.`;
                 'utf-8'
             );
 
-            const result = await cascadeService.applyChanges(reqFile, testUi);
+            const result = await cascadeService.refactorSpec(reqFile, testUi);
 
             Assert.equal(result.success, true);
             Assert.equal(result.updatedFiles.length, 0);
@@ -376,7 +376,7 @@ version: 1.0.0
 # Old Design`, 'utf-8');
 
             // Apply changes
-            await cascadeService.applyChanges(reqFile, testUi);
+            await cascadeService.refactorSpec(reqFile, testUi);
 
             // Verify baseline was created/updated
             const baselineFile = path.join(
@@ -415,7 +415,7 @@ version: 1.0.0
 Content for missing design test.`, 'utf-8');
 
             // No design file exists
-            const result = await cascadeService.applyChanges(reqFile, testUi);
+            const result = await cascadeService.refactorSpec(reqFile, testUi);
 
             Assert.equal(result.success, true);
             // May have 1 file (reqFile) if self-refinement occurred, or 0 if skipped
@@ -442,7 +442,7 @@ version: 1.0.0
 ## Architecture Overview
 Design without requirement.`, 'utf-8');
 
-            const result = await cascadeService.applyChanges(designFile, testUi);
+            const result = await cascadeService.refactorSpec(designFile, testUi);
 
             Assert.equal(result.success, false);
             Assert.ok(result.errors.some(err => 
@@ -496,7 +496,7 @@ version: 1.0.0
 
 # Old Design`, 'utf-8');
 
-            await cascadeService.applyChanges(reqFile, testUi);
+            await cascadeService.refactorSpec(reqFile, testUi);
 
             // Check that AI was called and received the requirement content
             Assert.ok(mockClient.callCount > 0, 'AI should have been called');
