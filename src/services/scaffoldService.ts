@@ -813,7 +813,7 @@ export class ScaffoldService {
      */
     private async generateConOpsUpdates(conopsSection: string, contextContent: string): Promise<string> {
         // Load prompt template
-        const prompts = await this.loadPrompt('syncConOps.md');
+        const prompts = await this.loadPrompt('updateConOps.md');
         const systemPrompt = prompts.system;
         const userPrompt = prompts.user
             .replace('{conops_section}', conopsSection)
