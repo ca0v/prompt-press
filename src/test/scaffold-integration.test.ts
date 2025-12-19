@@ -7,6 +7,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { TestRunner, it } from './framework';
 import { Assert } from "./Assert";
+import { XAIClient } from '../ai/xaiClient';
 
 // Simple cache implementation
 class ResponseCache {
@@ -78,7 +79,6 @@ class CachedXAIClient {
         this.cache = cache;
         // Only create real client if we have API key
         if (apiKey) {
-            const { XAIClient } = require('../ai/xaiClient');
             this.realClient = new XAIClient(apiKey, config, outputChannel);
         }
     }

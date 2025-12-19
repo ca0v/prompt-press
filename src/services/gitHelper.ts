@@ -1,4 +1,5 @@
 import * as child_process from 'child_process';
+import * as path from 'path';
 
 export class GitHelper {
     /**
@@ -43,7 +44,7 @@ export class GitHelper {
      */
     public static async getLastCommittedContent(workspaceRoot: string, filePath: string): Promise<string | null> {
         try {
-            const relativePath = require('path').relative(workspaceRoot, filePath);
+            const relativePath = path.relative(workspaceRoot, filePath);
             return child_process.execSync(`git show HEAD:"${relativePath}"`, {
                 cwd: workspaceRoot,
                 encoding: 'utf-8'

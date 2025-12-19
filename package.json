@@ -18,6 +18,7 @@
   "activationEvents": [
     "workspaceContains:**/specs/**/*.md"
   ],
+  "type": "module",
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
