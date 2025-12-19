@@ -73,11 +73,6 @@ export class SpecFileWatcher implements vscode.Disposable {
 
         // Determine spec type or if it's ConOps
         const specType = this.getSpecType(fileName);
-        const isConOps = fileName === 'ConOps.md';
-
-        if (!specType && !isConOps) {
-            return;
-        }
 
         // On create: validate references
         if (changeType === 'created') {
