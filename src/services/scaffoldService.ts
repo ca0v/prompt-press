@@ -144,7 +144,7 @@ export class ScaffoldService {
 
         // Step 2: Get description
         const description = await vscode.window.showInputBox({
-            prompt: 'High-level description (or "see README.md" to use workspace README)',
+            prompt: 'High-level description',
             placeHolder: 'A feature that does X, Y, and Z...',
             validateInput: (value) => {
                 if (!value) {
@@ -158,25 +158,16 @@ export class ScaffoldService {
             return;
         }
 
-        // Step 3: Check if we need to read README
+        // Step 3: Build context with ConOps
         let contextDescription = description;
-        if (description.toLowerCase().includes('readme')) {
-            const readmePath = path.join(workspaceRoot, 'README.md');
-            try {
-                const readmeContent = await fs.readFile(readmePath, 'utf-8');
-                contextDescription = `Project Context from README:\n\n${readmeContent}\n\nArtifact: ${artifactName}`;
-            } catch (error) {
-                vscode.window.showWarningMessage('Could not read README.md, using description as-is');
-            }
-        }
-
-        // Include ConOps if it exists
+        
+        // Always include ConOps if it exists
         const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
         try {
             const conopsContent = await fs.readFile(conopsPath, 'utf-8');
             contextDescription += `\n\nConcept of Operations:\n\n${conopsContent}`;
         } catch {
-            // ConOps doesn't exist, skip
+            vscode.window.showWarningMessage('ConOps.md not found. Consider running "Update ConOps" first for better context.');
         }
 
         // Step 4: Collect referenced artifacts mentioned via @artifact-name
