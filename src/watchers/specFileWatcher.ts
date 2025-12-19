@@ -74,8 +74,11 @@ export class SpecFileWatcher implements vscode.Disposable {
         // Determine spec type or if it's ConOps
         const specType = this.getSpecType(fileName);
 
-        // On create: validate references
+        // On create: update metadata and validate references
         if (changeType === 'created') {
+            if (specType) {
+                await this.processor!.updateMetadata(filePath);
+            }
             await this.processor!.convertOverspecifiedReferences(filePath);
             const errors = await this.processor!.validateReferences(filePath);
             const diagnostics = errors.map(error => new vscode.Diagnostic(

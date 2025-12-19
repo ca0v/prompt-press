@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { MarkdownParser, SpecMetadata } from '../parsers/markdownParser.js';
+import { MarkdownParser, SpecMetadata, ParsedSpec } from '../parsers/markdownParser.js';
 
 export interface ValidationError {
   message: string;
@@ -42,6 +42,9 @@ export class SpecFileProcessor {
           parsed.metadata.artifact = artifactName;
         }
 
+        // Sync references with mentions
+        await this.syncReferencesWithMentions(filePath, parsed);
+
         // Reconstruct frontmatter with updated metadata
         const updatedContent = this.updateFrontmatter(content, parsed.metadata);
         // Only write if changed
@@ -52,6 +55,28 @@ export class SpecFileProcessor {
       }
     } catch (error) {
       console.warn(`PromptPress: Could not update metadata for ${path.basename(filePath)}: ${error}`);
+    }
+  }
+
+  async syncReferencesWithMentions(filePath: string, parsed?: ParsedSpec): Promise<void> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const spec = parsed || this.parser.parse(content);
+      
+      // Get unique mentions (references from content)
+      const mentions = new Set(spec.references);
+      
+      // Update metadata references to match mentions
+      spec.metadata.references = Array.from(mentions).sort();
+      
+      // Reconstruct frontmatter with synced references
+      const updatedContent = this.updateFrontmatter(content, spec.metadata);
+      if (updatedContent !== content) {
+        await fs.writeFile(filePath, updatedContent, 'utf-8');
+        console.log(`PromptPress: Synced references with mentions in ${path.basename(filePath)}`);
+      }
+    } catch (error) {
+      console.warn(`PromptPress: Could not sync references for ${path.basename(filePath)}: ${error}`);
     }
   }
 
@@ -244,6 +269,37 @@ export class SpecFileProcessor {
             // ConOps can only reference .req files
             errors.push({
               message: `ConOps can only reference requirement files`,
+              line: range.line,
+              column: range.column,
+              length: range.length
+            });
+          }
+        }
+      }
+
+      // New validation: references list must match mentions
+      const mentionedRefs = new Set(parsed.references);
+      if (parsed.metadata.references) {
+        for (const ref of parsed.metadata.references) {
+          if (!mentionedRefs.has(ref)) {
+            const range = this.findMetadataRange(content, 'references', ref);
+            errors.push({
+              message: `Reference '${ref}' is listed but not mentioned in content`,
+              line: range.line,
+              column: range.column,
+              length: range.length
+            });
+          }
+        }
+      }
+
+      // New validation: depends-on must have corresponding mentions
+      if (parsed.metadata.dependsOn) {
+        for (const dep of parsed.metadata.dependsOn) {
+          if (!mentionedRefs.has(dep)) {
+            const range = this.findMetadataRange(content, 'depends-on', dep);
+            errors.push({
+              message: `Depends-on '${dep}' has no corresponding mention in content`,
               line: range.line,
               column: range.column,
               length: range.length
