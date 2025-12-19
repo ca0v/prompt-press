@@ -15,7 +15,6 @@ A Concept of Operations document should describe:
 - **Operational Scenarios**: Key use cases and workflows
 - **System Interfaces**: How the system interacts with users and other systems
 - **Operational Constraints**: Limitations and requirements for operation
-- **Success Criteria**: How to measure operational success
 - **Requirements Traceability**: Reference to specific req.md documents and briefly describe what operations each addresses
 
 ## Output Format:
