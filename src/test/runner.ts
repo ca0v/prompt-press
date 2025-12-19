@@ -17,6 +17,7 @@ import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test.js';
 import { runImplParserTest } from './implParser.test.js';
 import { runIdeValidationTests } from './ide-validation.test.js';
 import { runMarkdownFormatterTests } from './markdownFormatter.test.js';
+import { runMarkdownParserTest } from './markdownParser.test.js';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -43,6 +44,9 @@ async function main() {
             console.log('\n5️⃣  ImplParser Tests\n');
             await runImplParserTest();
             
+            console.log('\n6️⃣  MarkdownParser Tests\n');
+            await runMarkdownParserTest();
+            
             console.log('\n7️⃣  MarkdownFormatter Tests\n');
             await runMarkdownFormatterTests();
             
@@ -68,7 +72,10 @@ async function main() {
             console.log('1️⃣  ImplParser Tests\n');
             await runImplParserTest();
             
-            console.log('\n2️⃣  MarkdownFormatter Tests\n');
+            console.log('\n2️⃣  MarkdownParser Tests\n');
+            await runMarkdownParserTest();
+            
+            console.log('\n3️⃣  MarkdownFormatter Tests\n');
             await runMarkdownFormatterTests();
         } else if (runIdeTest) {
             console.log('📦 Running IDE Validation Tests\n');
@@ -77,6 +84,7 @@ async function main() {
             console.log('📦 Running Standard Tests\n');
             await runXAIClientTests();
             await runImplParserTest();
+            await runMarkdownParserTest();
             
             console.log('\n💡 Tips:');
             console.log('  - Run "node out/test/runner.js scaffold" for scaffold integration tests');
