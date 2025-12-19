@@ -955,7 +955,7 @@ ${aiResponse}
         const workspaceRoot = workspaceFolders[0].uri.fsPath;
 
         const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
-        const tocPath = path.join(workspaceRoot, 'TOC.md');
+        const tocPath = path.join(workspaceRoot, 'specs', 'TOC.md');
         const readmePath = path.join(workspaceRoot, 'README.md');
 
         // Read ConOps

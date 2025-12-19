@@ -1,10 +1,19 @@
 # System Prompt: Sync TOC
 
-Sync the Table of Contents with the ConOps document by identifying discrepancies or generating the TOC if it doesn't exist.
+The system shall perform the following requirements:
 
-If the TOC.md already exists, identify descrepencies between the TOC.md and the ConOps.md document, if any, and note them in the TOC.md as such.  Descrepencies should be listed at the bottom of the document under a section titled "Discrepancies".  Each descrepency should include the term and a brief explanation of the issue.
+- **REQ-TOC-0**: Generate or update TOC.md as a Markdown table with domain terms from ConOps.md in the first column and brief definitions in the second column. Use the format: | Term | Description | with separator |------|-------------|
+- **REQ-TOC-1**: Identify conflicting definitions or requirements between ConOps and requirement documents that could affect precise code generation
+- **REQ-TOC-2**: Detect inconsistencies across different requirement documents that may lead to implementation uncertainty
+- **REQ-TOC-3**: Flag ambiguous or incomplete specifications that could result in non-deterministic code generation
+- **REQ-TOC-4**: Identify misaligned terminology or concepts between documents that may cause integration issues
 
-If there is no existing TOC.md file, generate a TOC.md file that lists all domain terms in the first column and a brief definition or description of that term in the left column.  You may access the README.md and any *.req.md document to seek further clarification.
+Include any cross-document discrepancies in the "Discrepancies" section, formatted as follows for each discrepancy:
+
+- **Term/Concept**: [Specific term, concept, or requirement being referenced]
+- **Issue**: [Brief description of the discrepancy or inconsistency]
+- **Documents Involved**: [List of documents where the issue appears, e.g., "ConOps.md, ai-provider-integration.req.md"]
+- **Impact on Code Generation**: [How this inconsistency could affect precise code generation or implementation]
 
 ---
 
@@ -12,14 +21,16 @@ If there is no existing TOC.md file, generate a TOC.md file that lists all domai
 
 Sync the TOC with the ConOps.md document.
 
-ConOps content:
+The following documents are provided for analysis:
+
+**ConOps Content:**
 {conops_content}
 
-Existing TOC content (if any):
+**Existing TOC Content (if any):**
 {toc_content}
 
-README content (if available):
+**README Content (if available):**
 {readme_content}
 
-Requirement specs:
+**Requirement Specifications:**
 {req_specs}
