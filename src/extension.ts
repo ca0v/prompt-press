@@ -11,6 +11,7 @@ import { CascadeServiceCommands } from './services/cascadeService.js';
 import { ImplParser } from './services/implParser.js';
 import { FileStructureParser } from './services/fileStructureParser.js';
 import { MarkdownParser } from './parsers/markdownParser.js';
+import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -71,162 +72,16 @@ export function activate(context: vscode.ExtensionContext) {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
     const cascadeService = new CascadeServiceCommands(aiClient, outputChannel, workspaceRoot);
     
-    // Initialize UI
-    const chatPanelProvider = new ChatPanelProvider(
-        context.extensionUri,
-        aiClient,
-        conversationManager,
-        contextBuilder
+    // Initialize spec provider
+    const specProvider = new SpecCompletionProvider(workspaceRoot);
+    
+    // Register spec completion and link providers
+    context.subscriptions.push(
+        vscode.languages.registerDocumentLinkProvider(
+            { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md,md}' },
+            specProvider
+        )
     );
-
-    // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
-    const specsWatcher = new SpecFileWatcher(
-        config.get<boolean>('autoMonitor', true),
-        workspaceRoot,
-        diagnosticCollection
-    );
-
-    // Function to resolve spec path
-    function resolveSpecPath(specRef: string, workspaceRoot: string): string {
-        const [artifact, phase] = specRef.split('.');
-        let subdir = '';
-        if (phase === 'req') {
-            subdir = 'requirements';
-        } else if (phase === 'design') {
-            subdir = 'design';
-        } else if (phase === 'impl') {
-            subdir = 'implementation';
-        }
-        if (subdir) {
-            return path.join(workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
-        } else {
-            return path.join(workspaceRoot, 'specs', `${artifact}.${phase}.md`);
-        }
-    }
-
-    // Register document link provider for valid spec mentions
-    const linkProvider = vscode.languages.registerDocumentLinkProvider(
-        { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md,md}' },
-        {
-            provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
-                const links: vscode.DocumentLink[] = [];
-                const text = document.getText();
-                const regex = /@([a-zA-Z0-9-]+\.(req|design|impl))/g; // Only valid format mentions
-                let match;
-                while ((match = regex.exec(text)) !== null) {
-                    const ref = match[1];
-                    const startPos = document.positionAt(match.index);
-                    const endPos = document.positionAt(match.index + match[0].length);
-                    const range = new vscode.Range(startPos, endPos);
-                    const filePath = resolveSpecPath(ref, workspaceRoot);
-                    if (fs.existsSync(filePath)) {
-                        const uri = vscode.Uri.file(filePath);
-                        links.push(new vscode.DocumentLink(range, uri));
-                    }
-                }
-
-                // Handle frontmatter references in depends-on and references
-                const lines = text.split('\n');
-                let frontmatterStartLine = -1;
-                let frontmatterEndLine = -1;
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].trim() === '---') {
-                        if (frontmatterStartLine === -1) {
-                            frontmatterStartLine = i;
-                        } else {
-                            frontmatterEndLine = i;
-                            break;
-                        }
-                    }
-                }
-                if (frontmatterStartLine !== -1 && frontmatterEndLine !== -1) {
-                    const frontmatterStartPos = document.lineAt(frontmatterStartLine + 1).range.start;
-                    const frontmatterEndPos = document.lineAt(frontmatterEndLine).range.start;
-                    const frontmatterRange = new vscode.Range(frontmatterStartPos, frontmatterEndPos);
-                    const frontmatterText = document.getText(frontmatterRange);
-                    const refRegex = /([a-zA-Z0-9-]+\.(req|design|impl))/g;
-                    while ((match = refRegex.exec(frontmatterText)) !== null) {
-                        const ref = match[1];
-                        const startPos = document.positionAt(document.offsetAt(frontmatterRange.start) + match.index);
-                        const endPos = document.positionAt(document.offsetAt(startPos) + ref.length);
-                        const range = new vscode.Range(startPos, endPos);
-                        const filePath = resolveSpecPath(ref, workspaceRoot);
-                        if (fs.existsSync(filePath)) {
-                            const uri = vscode.Uri.file(filePath);
-                            links.push(new vscode.DocumentLink(range, uri));
-                        }
-                    }
-                }
-
-                return links;
-            }
-        }
-    );
-    context.subscriptions.push(linkProvider);
-
-    // Function to get all spec refs
-    function getAllSpecRefs(workspaceRoot: string): string[] {
-        const refs: string[] = [];
-        const specsDir = path.join(workspaceRoot, 'specs');
-        if (!fs.existsSync(specsDir)) return refs;
-        const subdirs = ['requirements', 'design', 'implementation'];
-        for (const subdir of subdirs) {
-            const dir = path.join(specsDir, subdir);
-            if (fs.existsSync(dir)) {
-                const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
-                for (const file of files) {
-                    const match = file.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
-                    if (match) {
-                        refs.push(`${match[1]}.${match[2]}`);
-                    }
-                }
-            }
-        }
-        // Add ConOps
-        if (fs.existsSync(path.join(specsDir, 'ConOps.md'))) {
-            refs.push('ConOps');
-        }
-        return refs;
-    }
-
-    // Function to get all dependencies of a spec
-    function getAllDependencies(specRef: string, workspaceRoot: string, visited: Set<string> = new Set()): Set<string> {
-        if (visited.has(specRef)) {
-            return new Set();
-        }
-        visited.add(specRef);
-        const filePath = resolveSpecPath(specRef, workspaceRoot);
-        if (!fs.existsSync(filePath)) {
-            return new Set();
-        }
-        const deps = new Set<string>();
-        try {
-            const content = fs.readFileSync(filePath, 'utf-8');
-            const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-            if (frontmatterMatch) {
-                const yaml = frontmatterMatch[1];
-                const dependsOnMatch = yaml.match(/depends-on:\s*\[([^\]]*)\]/);
-                if (dependsOnMatch) {
-                    const depsStr = dependsOnMatch[1];
-                    const depRefs = depsStr.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
-                    for (const d of depRefs) {
-                        if (d && !visited.has(d)) {
-                            deps.add(d);
-                            const sub = getAllDependencies(d, workspaceRoot, new Set(visited));
-                            sub.forEach(sd => deps.add(sd));
-                        }
-                    }
-                }
-            }
-        } catch {}
-        return deps;
-    }
-
-    // Function to check if adding dep would create cycle
-    function wouldCreateCycle(dep: string, currentRef: string, workspaceRoot: string): boolean {
-        const allDeps = getAllDependencies(dep, workspaceRoot);
-        return allDeps.has(currentRef);
-    }
 
     // Register completion provider for @ mentions
     const completionProvider = vscode.languages.registerCompletionItemProvider(
@@ -323,6 +178,109 @@ export function activate(context: vscode.ExtensionContext) {
         '@' // trigger character
     );
     context.subscriptions.push(completionProvider);
+
+    // Initialize UI
+    const chatPanelProvider = new ChatPanelProvider(
+        context.extensionUri,
+        aiClient,
+        conversationManager,
+        contextBuilder
+    );
+
+    // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
+    const specsWatcher = new SpecFileWatcher(
+        config.get<boolean>('autoMonitor', true),
+        workspaceRoot,
+        diagnosticCollection
+    );
+
+    // Function to resolve spec path
+    function resolveSpecPath(specRef: string, workspaceRoot: string): string {
+        const parts = specRef.split('.');
+        const artifact = parts[0];
+        const phase = parts[1];
+        let subdir = '';
+        if (phase === 'req') {
+            subdir = 'requirements';
+        } else if (phase === 'design') {
+            subdir = 'design';
+        } else if (phase === 'impl') {
+            subdir = 'implementation';
+        }
+        if (subdir) {
+            return path.join(workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
+        } else {
+            return path.join(workspaceRoot, 'specs', phase ? `${artifact}.${phase}.md` : `${artifact}.md`);
+        }
+    }
+
+
+
+    // Function to get all spec refs
+    function getAllSpecRefs(workspaceRoot: string): string[] {
+        const refs: string[] = [];
+        const specsDir = path.join(workspaceRoot, 'specs');
+        if (!fs.existsSync(specsDir)) return refs;
+        const subdirs = ['requirements', 'design', 'implementation'];
+        for (const subdir of subdirs) {
+            const dir = path.join(specsDir, subdir);
+            if (fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+                for (const file of files) {
+                    const match = file.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
+                    if (match) {
+                        refs.push(`${match[1]}.${match[2]}`);
+                    }
+                }
+            }
+        }
+        // Add ConOps
+        if (fs.existsSync(path.join(specsDir, 'ConOps.md'))) {
+            refs.push('ConOps');
+        }
+        return refs;
+    }
+
+    // Function to get all dependencies of a spec
+    function getAllDependencies(specRef: string, workspaceRoot: string, visited: Set<string> = new Set()): Set<string> {
+        if (visited.has(specRef)) {
+            return new Set();
+        }
+        visited.add(specRef);
+        const filePath = resolveSpecPath(specRef, workspaceRoot);
+        if (!fs.existsSync(filePath)) {
+            return new Set();
+        }
+        const deps = new Set<string>();
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+            if (frontmatterMatch) {
+                const yaml = frontmatterMatch[1];
+                const dependsOnMatch = yaml.match(/depends-on:\s*\[([^\]]*)\]/);
+                if (dependsOnMatch) {
+                    const depsStr = dependsOnMatch[1];
+                    const depRefs = depsStr.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                    for (const d of depRefs) {
+                        if (d && !visited.has(d)) {
+                            deps.add(d);
+                            const sub = getAllDependencies(d, workspaceRoot, new Set(visited));
+                            sub.forEach(sd => deps.add(sd));
+                        }
+                    }
+                }
+            }
+        } catch {}
+        return deps;
+    }
+
+    // Function to check if adding dep would create cycle
+    function wouldCreateCycle(dep: string, currentRef: string, workspaceRoot: string): boolean {
+        const allDeps = getAllDependencies(dep, workspaceRoot);
+        return allDeps.has(currentRef);
+    }
+
+
 
     // Register commands
     context.subscriptions.push(
