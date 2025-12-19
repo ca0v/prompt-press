@@ -234,7 +234,7 @@ export class SpecFileProcessor {
         const range = this.findContentReferenceRange(content, ref);
 
         // Check over-specification: allow punctuation but not . followed by letter
-        if (!/^[a-zA-Z0-9-]+\.(req|design|impl)([^.]|.[^\w])*$/.test(ref)) {
+        if (!/^[a-zA-Z0-9-]+\.(req|design|impl)[^\w]*$/.test(ref)) {
           errors.push({
             message: `Mention '${ref}' is over-specified`,
             line: range.line,
