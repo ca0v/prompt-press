@@ -5,6 +5,7 @@ import { XAIClient, ChatMessage } from '../ai/xaiClient.js';
 import { GitHelper } from './gitHelper.js';
 import { DiffHelper } from './diffHelper.js';
 import { __dirname } from '../utils/dirname.js';
+import { MarkdownFormatter } from '../utils/markdownFormatter.js';
 
 type ReferencedArtifact = {
     name: string;
@@ -1020,8 +1021,17 @@ ${aiResponse}
                 progress.report({ message: 'Generating TOC...', increment: 50 });
                 const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
 
-                // Write to TOC.md
-                await fs.writeFile(tocPath, response, 'utf-8');
+                // Format the markdown response
+                let formattedResponse = response;
+                try {
+                    formattedResponse = MarkdownFormatter.format(response);
+                    this.outputChannel.appendLine('[syncTOC] Markdown formatting applied successfully');
+                } catch (formatError: any) {
+                    this.outputChannel.appendLine(`[syncTOC] Markdown formatting failed: ${formatError.message}, saving unformatted response`);
+                }
+
+                // Write to TOC.md (always save, even if formatting failed)
+                await fs.writeFile(tocPath, formattedResponse, 'utf-8');
                 this.outputChannel.appendLine(`[syncTOC] Updated TOC.md`);
 
                 progress.report({ message: 'TOC synced successfully', increment: 50 });
@@ -1032,4 +1042,5 @@ ${aiResponse}
             }
         });
     }
+
 }

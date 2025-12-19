@@ -16,6 +16,7 @@ import { runCascadeServiceTest } from './cascadeService.test.js';
 import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test.js';
 import { runImplParserTest } from './implParser.test.js';
 import { runIdeValidationTests } from './ide-validation.test.js';
+import { runMarkdownFormatterTests } from './markdownFormatter.test.js';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -42,7 +43,10 @@ async function main() {
             console.log('\n5️⃣  ImplParser Tests\n');
             await runImplParserTest();
             
-            console.log('\n6️⃣  IDE Validation Tests\n');
+            console.log('\n7️⃣  MarkdownFormatter Tests\n');
+            await runMarkdownFormatterTests();
+            
+            console.log('\n8️⃣  IDE Validation Tests\n');
             await runIdeValidationTests();
             
             console.log('\n3️⃣  Scaffold Integration Tests\n');
@@ -60,8 +64,12 @@ async function main() {
             console.log('📦 Running ConOps Update Integration Test\n');
             await runConOpsUpdateIntegrationTest();
         } else if (runParserTest) {
-            console.log('📦 Running ImplParser Test\n');
+            console.log('📦 Running Parser Tests\n');
+            console.log('1️⃣  ImplParser Tests\n');
             await runImplParserTest();
+            
+            console.log('\n2️⃣  MarkdownFormatter Tests\n');
+            await runMarkdownFormatterTests();
         } else if (runIdeTest) {
             console.log('📦 Running IDE Validation Tests\n');
             await runIdeValidationTests();
