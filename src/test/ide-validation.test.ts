@@ -245,6 +245,14 @@ This references @foo.req[extra] and @bar.design.md
             Assert.ok(errors.length > 0);
             Assert.ok(errors.some(e => e.message.includes('not found')));
         });
+
+        it('should detect self-references as errors', async () => {
+            const filePath = await createSpec('specs/requirements/foo.req.md', '---\nartifact: foo\nphase: requirement\ndepends-on: [foo.req]\nreferences: [foo.req]\n---', 'This mentions @foo.req');
+            const errors = await processor.validateReferences(filePath);
+            Assert.ok(errors.length >= 3); // depends-on, references, and content
+            Assert.ok(errors.some(e => e.message.includes('Cannot depend on itself')));
+            Assert.ok(errors.some(e => e.message.includes('Cannot reference itself')));
+        });
     });
 
     await runner.run();

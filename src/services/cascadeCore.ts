@@ -183,22 +183,6 @@ export class CascadeCore {
         try {
             this.logger.log(`[Cascade] Starting change detection for ${path.basename(filePath)}`);
 
-            // Check git status for unstaged changes
-            const hasUnstaged = await this.checkGitStatus();
-            if (hasUnstaged) {
-                const gitAction = await ui.confirmGitStatus(hasUnstaged);
-                if (gitAction === 'cancel') {
-                    this.logger.log('[Cascade] User cancelled due to unstaged changes');
-                    result.success = true;
-                    return result;
-                } else if (gitAction === 'stage') {
-                    await this.stageChanges();
-                    this.logger.log('[Cascade] Staged changes, proceeding with cascade');
-                    // 'stage' falls through to continue
-                }
-                // 'continue' or 'stage' falls through
-            }
-
             const currentContent = await fs.readFile(filePath, 'utf-8');
             const parsed = this.parser.parse(currentContent);
             const metadata = parsed.metadata;
@@ -219,6 +203,22 @@ export class CascadeCore {
 
             this.logger.log(`[Cascade] Changes detected in sections: ${changes.modifiedSections.join(', ')}`);
             this.logger.log(`[Cascade] Summary: ${changes.summary}`);
+
+            // Check git status for unstaged changes
+            const hasUnstaged = await this.checkGitStatus();
+            if (hasUnstaged) {
+                const gitAction = await ui.confirmGitStatus(hasUnstaged);
+                if (gitAction === 'cancel') {
+                    this.logger.log('[Cascade] User cancelled due to unstaged changes');
+                    result.success = true;
+                    return result;
+                } else if (gitAction === 'stage') {
+                    await this.stageChanges();
+                    this.logger.log('[Cascade] Staged changes, proceeding with cascade');
+                    // 'stage' falls through to continue
+                }
+                // 'continue' or 'stage' falls through
+            }
 
             // Refine source document first
             await this.refineSourceDocument(filePath, currentContent, changes, result);
@@ -327,16 +327,23 @@ export class CascadeCore {
     }
 
     private async detectChanges(filePath: string, currentContent: string): Promise<ChangeDetectionResult> {
-        const oldContent = await GitHelper.getLastCommittedContent(this.workspaceRoot, filePath);
+        // First try to get last committed content
+        let oldContent = await GitHelper.getLastCommittedContent(this.workspaceRoot, filePath);
+        
+        // If no committed content, try to get staged content (for new files that are staged)
+        if (!oldContent) {
+            oldContent = await GitHelper.getStagedContent(this.workspaceRoot, filePath);
+        }
+        
         if (oldContent) {
             return DiffHelper.compareContent(oldContent, currentContent);
         } else {
-            // No git history, treat as no changes (since we can't determine what changed)
-            this.logger.log('[Cascade] No git history found; cannot detect changes');
+            // No git history or staged content, treat as no changes (since we can't determine what changed)
+            this.logger.log('[Cascade] No git history or staged content found; cannot detect changes');
             return {
                 hasChanges: false,
                 modifiedSections: [],
-                summary: 'No git history available for change detection',
+                summary: 'No git history or staged content available for change detection',
                 oldContent: '',
                 newContent: currentContent
             };

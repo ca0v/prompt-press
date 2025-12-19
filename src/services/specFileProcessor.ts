@@ -101,6 +101,17 @@ export class SpecFileProcessor {
         for (const dep of parsed.metadata.dependsOn) {
           const range = this.findMetadataRange(content, 'depends-on', dep);
 
+          // Check for self-reference
+          if (dep === specRef) {
+            errors.push({
+              message: `Cannot depend on itself`,
+              line: range.line,
+              column: range.column,
+              length: range.length
+            });
+            continue;
+          }
+
           // For ConOps, warn if it has any dependencies
           if (isConOps) {
             errors.push({
@@ -150,6 +161,17 @@ export class SpecFileProcessor {
         for (const ref of parsed.metadata.references) {
           const range = this.findMetadataRange(content, 'references', ref);
 
+          // Check for self-reference
+          if (ref === specRef) {
+            errors.push({
+              message: `Cannot reference itself`,
+              line: range.line,
+              column: range.column,
+              length: range.length
+            });
+            continue;
+          }
+
           // Check over-specification
           if (!/^[a-zA-Z0-9-]+\.(req|design|impl)$/.test(ref)) {
             errors.push({
@@ -198,6 +220,17 @@ export class SpecFileProcessor {
           // Extract base ref for existence and type checks
           const baseRefMatch = ref.match(/^([a-zA-Z0-9-]+\.(req|design|impl))/);
           const baseRef = baseRefMatch ? baseRefMatch[1] : ref;
+
+          // Check for self-reference
+          if (baseRef === specRef) {
+            errors.push({
+              message: `Cannot reference itself`,
+              line: range.line,
+              column: range.column,
+              length: range.length
+            });
+            continue;
+          }
 
           // Check existence
           if (!await this.fileExists(this.resolveSpecPath(baseRef))) {

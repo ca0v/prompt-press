@@ -1,7 +1,7 @@
 ---
 artifact: foo
 phase: requirement
-depends-on: [nonexistent.req]
-references: [invalid.ref]
+depends-on: [foo.req]
+references: [foo.req]
 ---
-This mentions @missing.req
+This mentions @foo.req

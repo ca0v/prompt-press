@@ -53,4 +53,19 @@ export class GitHelper {
             return null;
         }
     }
+
+    /**
+     * Get the staged version of a file from git
+     */
+    public static async getStagedContent(workspaceRoot: string, filePath: string): Promise<string | null> {
+        try {
+            const relativePath = path.relative(workspaceRoot, filePath);
+            return child_process.execSync(`git show :"${relativePath}"`, {
+                cwd: workspaceRoot,
+                encoding: 'utf-8'
+            });
+        } catch {
+            return null;
+        }
+    }
 }
