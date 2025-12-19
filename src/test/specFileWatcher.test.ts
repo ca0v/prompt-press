@@ -1,10 +1,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { SpecFileWatcher } from '../watchers/specFileWatcher';
-import { MarkdownParser } from '../parsers/markdownParser';
-import { TestRunner, it } from './framework';
-import { Assert } from "./Assert";
-
+import { SpecFileWatcher } from '../watchers/specFileWatcher.js';
+import { MarkdownParser } from '../parsers/markdownParser.js';
+import { TestRunner, it } from './framework.js';
+import { Assert } from "./Assert.js";
+import { __dirname } from '../utils/dirname.js';
 const tmpDir = path.join(__dirname, '../../test-output/specFileWatcher');
 const parser = new MarkdownParser();
 

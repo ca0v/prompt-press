@@ -3,7 +3,7 @@
  * Lightweight testing without heavy dependencies
  */
 
-import { Assert } from "./Assert";
+import { Assert } from "./Assert.js";
 
 export interface TestResult {
     name: string;

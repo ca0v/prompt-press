@@ -1,6 +1,6 @@
-import { SpecFileWatcher } from '../watchers/specFileWatcher';
-import { TestRunner, it } from './framework';
-import { Assert } from "./Assert";
+import { SpecFileWatcher } from '../watchers/specFileWatcher.js';
+import { TestRunner, it } from './framework.js';
+import { Assert } from "./Assert.js";
 import * as path from 'path';
 
 const workspaceRoot = '/workspace';

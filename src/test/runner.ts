@@ -10,12 +10,12 @@
 
 // Removed vscode module interception; tests avoid vscode dependencies now.
 
-import { runXAIClientTests } from './xaiClient.test';
-import { runScaffoldIntegrationTest } from './scaffold-integration.test';
-import { runCascadeServiceTest } from './cascadeService.test';
-import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test';
-import { runImplParserTest } from './implParser.test';
-import { runIdeValidationTests } from './ide-validation.test';
+import { runXAIClientTests } from './xaiClient.test.js';
+import { runScaffoldIntegrationTest } from './scaffold-integration.test.js';
+import { runCascadeServiceTest } from './cascadeService.test.js';
+import { runConOpsUpdateIntegrationTest } from './scaffold-integration.test.js';
+import { runImplParserTest } from './implParser.test.js';
+import { runIdeValidationTests } from './ide-validation.test.js';
 
 async function main() {
     const args = process.argv.slice(2);

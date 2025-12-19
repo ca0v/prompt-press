@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { MarkdownParser, SpecMetadata } from '../parsers/markdownParser';
+import { MarkdownParser, SpecMetadata } from '../parsers/markdownParser.js';
 
 export interface ValidationError {
   message: string;

@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { SpecFileWatcher } from './watchers/specFileWatcher';
-import { XAIClient } from './ai/xaiClient';
-import { ChatPanelProvider } from './ui/chatPanelProvider';
-import { ConversationManager } from './services/conversationManager';
-import { ContextBuilder } from './services/contextBuilder';
-import { ScaffoldService } from './services/scaffoldService';
-import { CascadeServiceCommands } from './services/cascadeService';
-import { ImplParser } from './services/implParser';
-import { FileStructureParser } from './services/fileStructureParser';
-import { MarkdownParser } from './parsers/markdownParser';
+import { SpecFileWatcher } from './watchers/specFileWatcher.js';
+import { XAIClient } from './ai/xaiClient.js';
+import { ChatPanelProvider } from './ui/chatPanelProvider.js';
+import { ConversationManager } from './services/conversationManager.js';
+import { ContextBuilder } from './services/contextBuilder.js';
+import { ScaffoldService } from './services/scaffoldService.js';
+import { CascadeServiceCommands } from './services/cascadeService.js';
+import { ImplParser } from './services/implParser.js';
+import { FileStructureParser } from './services/fileStructureParser.js';
+import { MarkdownParser } from './parsers/markdownParser.js';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -434,6 +434,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.syncConOps', async () => {
             await scaffoldService.syncConOps();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.syncTOC', async () => {
+            await scaffoldService.syncTOC();
         })
     );
 

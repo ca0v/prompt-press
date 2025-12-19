@@ -5,10 +5,11 @@
 
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { XAIClient, ChatMessage } from '../ai/xaiClient';
-import { MarkdownParser } from '../parsers/markdownParser';
-import { GitHelper } from './gitHelper';
-import { DiffHelper, ChangeDetectionResult } from './diffHelper';
+import { XAIClient, ChatMessage } from '../ai/xaiClient.js';
+import { MarkdownParser } from '../parsers/markdownParser.js';
+import { GitHelper } from './gitHelper.js';
+import { DiffHelper, ChangeDetectionResult } from './diffHelper.js';
+import { __dirname } from '../utils/dirname.js';
 
 // Prompt file paths
 const PROMPTS = {

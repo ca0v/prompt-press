@@ -3,8 +3,8 @@
  */
 
 import * as vscode from 'vscode';
-import { XAIClient } from '../ai/xaiClient';
-import { CascadeCore, CascadeUI, Logger } from './cascadeCore';
+import { XAIClient } from '../ai/xaiClient.js';
+import { CascadeCore, CascadeUI, Logger } from './cascadeCore.js';
 
 export class CascadeServiceCommands {
     private core: CascadeCore;

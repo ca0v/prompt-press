@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { XAIClient, ChatMessage } from '../ai/xaiClient';
-import { GitHelper } from './gitHelper';
-import { DiffHelper } from './diffHelper';
+import { XAIClient, ChatMessage } from '../ai/xaiClient.js';
+import { GitHelper } from './gitHelper.js';
+import { DiffHelper } from './diffHelper.js';
+import { __dirname } from '../utils/dirname.js';
 
 type ReferencedArtifact = {
     name: string;
@@ -939,5 +940,96 @@ ${aiResponse}
                 console.warn(`Failed to update ${fileName}:`, error);
             }
         }
+    }
+
+    /**
+     * Sync TOC with ConOps document
+     */
+    public async syncTOC(): Promise<void> {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath;
+
+        const conopsPath = path.join(workspaceRoot, 'specs', 'ConOps.md');
+        const tocPath = path.join(workspaceRoot, 'TOC.md');
+        const readmePath = path.join(workspaceRoot, 'README.md');
+
+        // Read ConOps
+        let conopsContent = '';
+        try {
+            conopsContent = await fs.readFile(conopsPath, 'utf-8');
+        } catch {
+            vscode.window.showErrorMessage('ConOps.md not found. Please create ConOps.md first.');
+            return;
+        }
+
+        // Read existing TOC if exists
+        let tocContent = '';
+        const tocExists = await fs.access(tocPath).then(() => true).catch(() => false);
+        if (tocExists) {
+            tocContent = await fs.readFile(tocPath, 'utf-8');
+        }
+
+        // Read README if exists
+        let readmeContent = '';
+        try {
+            readmeContent = await fs.readFile(readmePath, 'utf-8');
+        } catch {
+            // Ignore if not found
+        }
+
+        // Read all req specs
+        let reqSpecs = '';
+        const reqDir = path.join(workspaceRoot, 'specs', 'requirements');
+        try {
+            const files = await fs.readdir(reqDir);
+            for (const file of files) {
+                if (file.endsWith('.req.md')) {
+                    const content = await fs.readFile(path.join(reqDir, file), 'utf-8');
+                    reqSpecs += `\n\n${file}:\n${content}`;
+                }
+            }
+        } catch {
+            // Ignore if dir not found
+        }
+
+        // Load prompt
+        const prompts = await this.loadPrompt('syncTOC.md');
+
+        const userPrompt = prompts.user
+            .replace('{conops_content}', conopsContent)
+            .replace('{toc_content}', tocContent)
+            .replace('{readme_content}', readmeContent)
+            .replace('{req_specs}', reqSpecs);
+
+        const messages: ChatMessage[] = [
+            { role: 'system', content: prompts.system },
+            { role: 'user', content: userPrompt }
+        ];
+
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Syncing TOC...',
+            cancellable: false
+        }, async (progress) => {
+            try {
+                progress.report({ message: 'Generating TOC...', increment: 50 });
+                const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+
+                // Write to TOC.md
+                await fs.writeFile(tocPath, response, 'utf-8');
+                this.outputChannel.appendLine(`[syncTOC] Updated TOC.md`);
+
+                progress.report({ message: 'TOC synced successfully', increment: 50 });
+                vscode.window.showInformationMessage('TOC synced successfully!');
+            } catch (error: any) {
+                this.outputChannel.appendLine(`[syncTOC] Error: ${error.message}`);
+                vscode.window.showErrorMessage(`Failed to sync TOC: ${error.message}`);
+            }
+        });
     }
 }

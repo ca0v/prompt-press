@@ -1,9 +1,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { MarkdownParser } from '../parsers/markdownParser';
-import { XAIClient } from '../ai/xaiClient';
-import { FileStructureParser } from './fileStructureParser';
+import { MarkdownParser } from '../parsers/markdownParser.js';
+import { XAIClient } from '../ai/xaiClient.js';
+import { FileStructureParser } from './fileStructureParser.js';
 
 export interface FileInfo {
     path: string;

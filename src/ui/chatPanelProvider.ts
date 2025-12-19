@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { XAIClient, ChatMessage } from '../ai/xaiClient';
-import { ConversationManager } from '../services/conversationManager';
-import { ContextBuilder } from '../services/contextBuilder';
+import { XAIClient, ChatMessage } from '../ai/xaiClient.js';
+import { ConversationManager } from '../services/conversationManager.js';
+import { ContextBuilder } from '../services/contextBuilder.js';
 
 export class ChatPanelProvider implements vscode.Disposable {
     private panel: vscode.WebviewPanel | undefined;

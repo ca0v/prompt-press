@@ -1,10 +1,11 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { TestRunner, it } from './framework';
-import { Assert } from "./Assert";
-import { ImplParser } from '../services/implParser';
-import { FileStructureParser } from '../services/fileStructureParser';
-import { MarkdownParser } from '../parsers/markdownParser';
+import { TestRunner, it } from './framework.js';
+import { Assert } from "./Assert.js";
+import { ImplParser } from '../services/implParser.js';
+import { FileStructureParser } from '../services/fileStructureParser.js';
+import { MarkdownParser } from '../parsers/markdownParser.js';
+import { __dirname } from '../utils/dirname.js';
 
 // Mock XAIClient
 class MockXAIClient {

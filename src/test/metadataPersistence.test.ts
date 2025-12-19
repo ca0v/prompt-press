@@ -1,9 +1,9 @@
-import { TestRunner, it } from './framework';
-import { Assert } from "./Assert";
+import { TestRunner, it } from './framework.js';
+import { Assert } from "./Assert.js";
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { MarkdownParser } from '../parsers/markdownParser';
-import { SpecFileWatcher } from '../watchers/specFileWatcher';
+import { MarkdownParser } from '../parsers/markdownParser.js';
+import { SpecFileWatcher } from '../watchers/specFileWatcher.js';
 
 const runner = new TestRunner();
 

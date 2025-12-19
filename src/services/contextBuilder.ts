@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { MarkdownParser, ParsedSpec } from '../parsers/markdownParser';
+import { MarkdownParser, ParsedSpec } from '../parsers/markdownParser.js';
 
 export interface ContextItem {
     filePath: string;

@@ -5,9 +5,9 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { TestRunner, it } from './framework';
-import { Assert } from "./Assert";
-import { XAIClient } from '../ai/xaiClient';
+import { TestRunner, it } from './framework.js';
+import { Assert } from "./Assert.js";
+import { XAIClient } from '../ai/xaiClient.js';
 
 // Simple cache implementation
 class ResponseCache {

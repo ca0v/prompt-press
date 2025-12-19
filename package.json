@@ -53,6 +53,10 @@
       {
         "command": "promptpress.syncConOps",
         "title": "PromptPress: Sync Concept Document (ConOps.md)"
+      },
+      {
+        "command": "promptpress.syncTOC",
+        "title": "PromptPress: Sync TOC"
       }
     ],
     "configuration": {
