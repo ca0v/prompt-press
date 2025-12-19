@@ -376,9 +376,9 @@ export class CascadeCore {
         }
 
         const artifactName = metadata.artifact;
-        const baseDir = path.dirname(filePath);
-        const designFile = path.join(baseDir, `${artifactName}.design.md`);
-        const implFile = path.join(baseDir, `${artifactName}.impl.md`);
+        const specsDir = path.dirname(path.dirname(filePath));
+        const designFile = path.join(specsDir, 'design', `${artifactName}.design.md`);
+        const implFile = path.join(specsDir, 'implementation', `${artifactName}.impl.md`);
 
         try {
             const designExists = await this.fileExists(designFile);
@@ -389,6 +389,7 @@ export class CascadeCore {
                     changes.modifiedSections,
                     changes.summary
                 );
+                await fs.mkdir(path.dirname(designFile), { recursive: true });
                 await fs.writeFile(designFile, newDesign, 'utf-8');
                 result.updatedFiles.push(designFile);
                 this.logger.log(`[Cascade] ✅ Updated ${path.basename(designFile)}`);
@@ -402,6 +403,7 @@ export class CascadeCore {
                         changes.modifiedSections,
                         changes.summary
                     );
+                    await fs.mkdir(path.dirname(implFile), { recursive: true });
                     await fs.writeFile(implFile, newImpl, 'utf-8');
                     result.updatedFiles.push(implFile);
                     this.logger.log(`[Cascade] ✅ Updated ${path.basename(implFile)}`);
@@ -430,9 +432,9 @@ export class CascadeCore {
         }
 
         const artifactName = metadata.artifact;
-        const baseDir = path.dirname(filePath);
-        const reqFile = path.join(baseDir, `${artifactName}.req.md`);
-        const implFile = path.join(baseDir, `${artifactName}.impl.md`);
+        const specsDir = path.dirname(path.dirname(filePath));
+        const reqFile = path.join(specsDir, 'requirements', `${artifactName}.req.md`);
+        const implFile = path.join(specsDir, 'implementation', `${artifactName}.impl.md`);
 
         try {
             const implExists = await this.fileExists(implFile);
@@ -453,6 +455,7 @@ export class CascadeCore {
                     changes.modifiedSections,
                     changes.summary
                 );
+                await fs.mkdir(path.dirname(implFile), { recursive: true });
                 await fs.writeFile(implFile, newImpl, 'utf-8');
                 result.updatedFiles.push(implFile);
                 this.logger.log(`[Cascade] ✅ Updated ${path.basename(implFile)}`);

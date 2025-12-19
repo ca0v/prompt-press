@@ -85,7 +85,6 @@ src/
 ### Commands
 
 Registered VS Code commands:
-- `promptpress.scaffoldProject` - Create complete project structure
 - `promptpress.scaffoldArtifact` - AI-generate req + design specs
 - `promptpress.openChat` - Open chat panel
 - `promptpress.generateCode` - Generate code (stub for future)

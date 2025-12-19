@@ -398,12 +398,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('promptpress.scaffoldProject', async () => {
-            await scaffoldService.scaffoldProject();
-        })
-    );
-
-    context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.applyChanges', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {

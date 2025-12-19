@@ -584,55 +584,6 @@ export class ScaffoldService {
         }
     }
 
-    public async scaffoldProject(): Promise<void> {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
-            vscode.window.showErrorMessage('No workspace folder open');
-            return;
-        }
-
-        const workspaceRoot = workspaceFolders[0].uri.fsPath;
-
-        // Check if already has PromptPress structure
-        const specsDir = path.join(workspaceRoot, 'specs');
-        try {
-            await fs.access(specsDir);
-            const response = await vscode.window.showWarningMessage(
-                'This workspace already has a specs/ directory. Continue anyway?',
-                'Yes',
-                'No'
-            );
-            if (response !== 'Yes') {
-                return;
-            }
-        } catch {
-            // Directory doesn't exist, good to go
-        }
-
-        // Create directory structure
-        const dirs = [
-            'specs/requirements',
-            'specs/design',
-            'specs/implementation',
-            'artifacts',
-            'tools/generators',
-            'tools/validators',
-            'tools/utilities',
-            'docs'
-        ];
-
-        for (const dir of dirs) {
-            await fs.mkdir(path.join(workspaceRoot, dir), { recursive: true });
-        }
-
-        // Set up configuration files (.gitignore, VS Code settings)
-        await this.setupConfigurationFiles(workspaceRoot);
-
-        vscode.window.showInformationMessage(
-            '✅ PromptPress project structure created! Use "Scaffold Artifact" to create your first spec.'
-        );
-    }
-
     /**
      * Check git status for unstaged changes
      */
@@ -724,6 +675,9 @@ export class ScaffoldService {
             try {
                 progress.report({ message: 'Collecting requirement overviews...', increment: 25 });
 
+                // Ensure requirements directory exists
+                await fs.mkdir(reqDir, { recursive: true });
+
                 // Collect all req.md files
                 const reqFiles: string[] = [];
                 try {
@@ -738,11 +692,10 @@ export class ScaffoldService {
                 }
 
                 if (reqFiles.length === 0) {
-                    vscode.window.showErrorMessage('No requirement files found to analyze.');
-                    return;
+                    vscode.window.showWarningMessage('No requirement files found to analyze. Will use README.md as context if available.');
                 }
 
-                // Extract overviews
+                // Extract overviews from requirements
                 const overviews: string[] = [];
                 for (const reqFile of reqFiles) {
                     try {
@@ -756,9 +709,17 @@ export class ScaffoldService {
                     }
                 }
 
+                // If no requirement overviews, try to use README.md as context
+                let readmeContent = '';
                 if (overviews.length === 0) {
-                    vscode.window.showErrorMessage('No overview sections found in requirement files.');
-                    return;
+                    const readmePath = path.join(workspaceRoot, 'README.md');
+                    try {
+                        readmeContent = await fs.readFile(readmePath, 'utf-8');
+                        this.outputChannel.appendLine('[UpdateConOps] Using README.md as context since no requirements found');
+                    } catch {
+                        vscode.window.showErrorMessage('No requirement files or README.md found to analyze.');
+                        return;
+                    }
                 }
 
                 progress.report({ message: 'Reading ConOps...', increment: 25 });
@@ -805,8 +766,13 @@ export class ScaffoldService {
                     
                 const conopsSection = conopsExists 
                     ? `Current ConOps.md:${changeContext}\n\n${conopsContent}`
-                    : 'ConOps.md does not exist - generate a new one based on the requirement overviews.';
-                const updates = await this.generateConOpsUpdates(conopsSection, overviews.join('\n\n---\n\n'));
+                    : `ConOps.md does not exist - generate a new one based on the ${overviews.length > 0 ? 'requirement overviews' : 'project README'}.`;
+                
+                const contextContent = overviews.length > 0 
+                    ? overviews.join('\n\n---\n\n')
+                    : `Project README.md:\n\n${readmeContent}`;
+                    
+                const updates = await this.generateConOpsUpdates(conopsSection, contextContent);
                 
                 // Apply the updates
                 await this.applyConOpsUpdates(workspaceRoot, updates, conopsExists);
@@ -843,13 +809,13 @@ export class ScaffoldService {
     /**
      * Generate ConOps updates using AI
      */
-    private async generateConOpsUpdates(conopsSection: string, requirementOverviews: string): Promise<string> {
+    private async generateConOpsUpdates(conopsSection: string, contextContent: string): Promise<string> {
         // Load prompt template
         const prompts = await this.loadPrompt('updateConOps.md');
         const systemPrompt = prompts.system;
         const userPrompt = prompts.user
             .replace('{conops_section}', conopsSection)
-            .replace('{requirement_overviews}', requirementOverviews);
+            .replace('{requirement_overviews}', contextContent);
 
         const messages: ChatMessage[] = [
             { role: 'system', content: systemPrompt },
@@ -916,6 +882,9 @@ ${aiResponse}
         this.outputChannel.appendLine('[UpdateConOps] Applying updates from AI response');
         this.outputChannel.appendLine('[UpdateConOps] Full AI Response:');
         this.outputChannel.appendLine(aiResponse);
+
+        // Ensure the specs directory exists
+        await fs.mkdir(path.dirname(conopsPath), { recursive: true });
 
         // Include the full AI response content, which contains valuable analysis
         let finalContent = aiResponse;

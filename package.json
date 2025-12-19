@@ -22,10 +22,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "promptpress.scaffoldProject",
-        "title": "PromptPress: Scaffold New Project"
-      },
-      {
         "command": "promptpress.scaffoldArtifact",
         "title": "PromptPress: Scaffold New Artifact"
       },
