@@ -324,6 +324,43 @@ export class CascadeCore {
                 return result;
             }
 
+            // Load all dependent documents (documents that depend on the source)
+            const dependentDocs: { filename: string; content: string }[] = [];
+            const sourceArtifact = metadata.artifact;
+
+            // Scan all spec files to find dependents
+            const phaseDirs = ['requirements', 'design', 'implementation'];
+            for (const phaseDir of phaseDirs) {
+                const dirPath = path.join(specsDir, phaseDir);
+                if (await this.fileExists(dirPath)) {
+                    const files = await fs.readdir(dirPath);
+                    for (const file of files) {
+                        if (file.endsWith('.md')) {
+                            const filePath = path.join(dirPath, file);
+                            try {
+                                const content = await fs.readFile(filePath, 'utf-8');
+                                const parsed = this.parser.parse(content);
+                                if (parsed.metadata.dependsOn && parsed.metadata.dependsOn.includes(sourceArtifact)) {
+                                    dependentDocs.push({ filename: file.replace('.md', ''), content });
+                                }
+                            } catch (error) {
+                                this.logger.log(`[Tersify] Error reading potential dependent file ${filePath}: ${error}`);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Filter out dependent documents that are already in referenced documents
+            const referencedFilenames = new Set(referencedDocs.map(doc => doc.filename));
+            const filteredDependentDocs = dependentDocs.filter(doc => {
+                if (referencedFilenames.has(doc.filename)) {
+                    this.logger.log(`[Tersify] Warning: Document ${doc.filename} is both referenced and dependent on ${sourceArtifact}. Excluding from dependents.`);
+                    return false;
+                }
+                return true;
+            });
+
             // Check git status
             const hasUnstaged = await this.checkGitStatus();
             if (hasUnstaged) {
@@ -346,10 +383,15 @@ export class CascadeCore {
                 `## ${doc.filename}.md\n\n${doc.content}`
             ).join('\n\n---\n\n');
 
+            const dependentText = filteredDependentDocs.map(doc => 
+                `## ${doc.filename}.md\n\n${doc.content}`
+            ).join('\n\n---\n\n');
+
             const userPrompt = prompts.user
                 .replace('{source_filename}', sourceFilename)
                 .replace('{content}', sourceContent)
-                .replace('{referenced_documents}', referencedText);
+                .replace('{referenced_documents}', referencedText)
+                .replace('{dependent_documents}', dependentText);
 
             const messages: ChatMessage[] = [
                 { role: 'system', content: prompts.system },

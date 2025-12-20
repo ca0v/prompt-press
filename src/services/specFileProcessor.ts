@@ -215,6 +215,17 @@ export class SpecFileProcessor {
                 length: range.length
               });
             } else {
+              // Check if referenced document depends on this document
+              const refDeps = await this.getAllDependencies(ref);
+              if (refDeps.has(specRef)) {
+                errors.push({
+                  message: `Cannot reference '${ref}' which depends on this document`,
+                  line: range.line,
+                  column: range.column,
+                  length: range.length
+                });
+              }
+
               // For ConOps, check that references are only .req
               if (isConOps && !ref.endsWith('.req')) {
                 errors.push({
@@ -265,14 +276,27 @@ export class SpecFileProcessor {
               column: range.column,
               length: range.length
             });
-          } else if (isConOps && !baseRef.endsWith('.req')) {
-            // ConOps can only reference .req files
-            errors.push({
-              message: `ConOps can only reference requirement files`,
-              line: range.line,
-              column: range.column,
-              length: range.length
-            });
+          } else {
+            // Check if mentioned document depends on this document
+            const refDeps = await this.getAllDependencies(baseRef);
+            if (refDeps.has(specRef)) {
+              errors.push({
+                message: `Cannot reference '${ref}' which depends on this document`,
+                line: range.line,
+                column: range.column,
+                length: range.length
+              });
+            }
+
+            if (isConOps && !baseRef.endsWith('.req')) {
+              // ConOps can only reference .req files
+              errors.push({
+                message: `ConOps can only reference requirement files`,
+                line: range.line,
+                column: range.column,
+                length: range.length
+              });
+            }
           }
         }
       }

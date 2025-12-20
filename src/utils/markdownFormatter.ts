@@ -20,9 +20,46 @@ export class MarkdownFormatter {
         const formattedLines: string[] = [];
         let inTable = false;
         let tableHeaders: string[] = [];
+        let inCode = false;
+        let lastBlockType = '';
 
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
+
+            // Handle code blocks
+            if (line.trim().startsWith('```')) {
+                inCode = !inCode;
+            }
+
+            if (inCode) {
+                formattedLines.push(line);
+                continue;
+            }
+
+            // Determine block type
+            let blockType = 'paragraph';
+            if (!line.trim()) {
+                blockType = 'blank';
+            } else if (line.match(/^#{1,6}[^#]/)) {
+                blockType = 'header';
+            } else if (line.match(/^[\s]*[-*+]/) || line.match(/^[\s]*\d+\./)) {
+                blockType = 'list';
+            } else if (line.includes('|') && !line.startsWith('```')) {
+                // Check if table
+                const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
+                if (cells.length >= 2 && i + 1 < lines.length) {
+                    const nextLine = lines[i + 1];
+                    if (nextLine.includes('|') && /^[\s|:-]+$/.test(nextLine.replace(/\s/g, ''))) {
+                        blockType = 'table';
+                    }
+                }
+            }
+
+            // Add blank line between different blocks
+            if (blockType !== 'blank' && lastBlockType !== '' && lastBlockType !== 'blank' && blockType !== lastBlockType) {
+                formattedLines.push('');
+            }
+            lastBlockType = blockType;
 
             // Handle table detection and formatting
             if (line.includes('|') && !line.startsWith('```')) {
@@ -59,6 +96,17 @@ export class MarkdownFormatter {
             } else if (inTable) {
                 // End of table
                 inTable = false;
+            }
+
+            // Normalize indentation for lists
+            if (blockType === 'list') {
+                const match = line.match(/^(\s*)(.*)$/);
+                if (match) {
+                    const indent = match[1];
+                    const level = Math.floor(indent.length / 2);
+                    const newIndent = '  '.repeat(level);
+                    line = newIndent + match[2];
+                }
             }
 
             // Handle headers - ensure space after # symbols

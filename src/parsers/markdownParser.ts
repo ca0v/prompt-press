@@ -307,7 +307,7 @@ export class MarkdownParser {
     public groupChangesByDocument(changes: { document: string; action: string; details: string; reason: string }[]): Map<string, { type: string; section: string; content: string }[]> {
         const changesByDoc = new Map<string, { type: string; section: string; content: string }[]>();
         for (const change of changes) {
-            if (change.action === 'None') continue;
+            if (change.action === 'None' || !change.document || change.document.trim() === '' || change.document === 'None') continue;
 
             const docName = change.document.replace('.md', '');
             if (!changesByDoc.has(docName)) changesByDoc.set(docName, []);
