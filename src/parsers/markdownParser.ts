@@ -270,12 +270,13 @@ export class MarkdownParser {
     /**
      * Parse a Markdown table of changes for tersify
      */
-    public parseChangeTable(content: string): { document: string; action: string; details: string }[] {
+    public parseChangeTable(content: string): { document: string; action: string; details: string; reason: string }[] {
         const tableData = this.parseMarkdownTable(content);
         return tableData.map(row => ({
-            document: row['Document'] || '',
+            document: row['Target Document'] || '',
             action: row['Action'] || '',
-            details: (row['Details'] || '') === '-' ? '' : (row['Details'] || '')
+            details: (row['Details'] || '') === '-' ? '' : (row['Details'] || ''),
+            reason: (row['Reason'] || '') === '-' ? '' : (row['Reason'] || '')
         }));
     }
 

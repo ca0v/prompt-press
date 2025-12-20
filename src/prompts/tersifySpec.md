@@ -16,13 +16,13 @@ For each referenced document, perform the following:
 
 Respond with a Markdown table summarizing the changes:
 
-| Document | Action | Details |
-|----------|--------|---------|
-| filename.md | Remove from Overview | content to remove |
-| filename.md | Add to AI-CLARIFY section | clarification content |
-| ... | ... | ... |
+| Target Document | Action | Details | Reason |
+|-----------------|--------|---------|--------|
+| filename.md | Remove from Overview | content to remove | Duplicate info |
+| filename.md | Add to AI-CLARIFY section | clarification content | Missing detail |
+| ... | ... | ... | ... |
 
-Use "None" in the Action column and "-" in Details for documents with no changes. Rows should be ordered by document appearance in the original list.
+Use "None" in the Action column and "-" in Details and Reason for documents with no changes. Rows should be ordered by document appearance in the original list.
 
 ---
 

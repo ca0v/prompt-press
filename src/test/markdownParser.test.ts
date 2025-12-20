@@ -38,19 +38,19 @@ Some text after
             const tableContent = `
 AI analysis complete.
 
-| Document | Action | Details |
-|----------|--------|---------|
-| geode-rose-quartz.req.md | Remove from Overview | Rose Quartz moves one space |
-| geode-rose-quartz.req.md | Add to AI-CLARIFY section | Color distinction noted |
-| faction.req.md | None | - |
+| Target Document | Action | Details | Reason |
+|-----------------|--------|---------|--------|
+| geode-rose-quartz.req.md | Remove from Overview | Rose Quartz moves one space | Duplicate |
+| geode-rose-quartz.req.md | Add to AI-CLARIFY section | Color distinction noted | Missing detail |
+| faction.req.md | None | - | - |
 
 End of report.
 `;
             const result = parser.parseChangeTable(tableContent);
             const expected = [
-                { document: 'geode-rose-quartz.req.md', action: 'Remove from Overview', details: 'Rose Quartz moves one space' },
-                { document: 'geode-rose-quartz.req.md', action: 'Add to AI-CLARIFY section', details: 'Color distinction noted' },
-                { document: 'faction.req.md', action: 'None', details: '' }
+                { document: 'geode-rose-quartz.req.md', action: 'Remove from Overview', details: 'Rose Quartz moves one space', reason: 'Duplicate' },
+                { document: 'geode-rose-quartz.req.md', action: 'Add to AI-CLARIFY section', details: 'Color distinction noted', reason: 'Missing detail' },
+                { document: 'faction.req.md', action: 'None', details: '', reason: '' }
             ];
             Assert.deepEqual(result, expected);
         });
