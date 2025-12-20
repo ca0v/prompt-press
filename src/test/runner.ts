@@ -18,6 +18,7 @@ import { runImplParserTest } from './implParser.test.js';
 import { runIdeValidationTests } from './ide-validation.test.js';
 import { runMarkdownFormatterTests } from './markdownFormatter.test.js';
 import { runMarkdownParserTest } from './markdownParser.test.js';
+import runCascadeCoreTest from './cascadeCore.test.js';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -85,6 +86,7 @@ async function main() {
             await runXAIClientTests();
             await runImplParserTest();
             await runMarkdownParserTest();
+            await runCascadeCoreTest();
             
             console.log('\n💡 Tips:');
             console.log('  - Run "node out/test/runner.js scaffold" for scaffold integration tests');

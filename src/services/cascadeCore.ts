@@ -783,18 +783,36 @@ export class CascadeCore {
         return { primary: section };
     }
 
-    private applyChange(content: string, change: { type: string; section: string; content: string }): string {
+    public applyChange(content: string, change: { type: string; section: string; content: string }): string {
         const { primary, secondary } = this.parseSection(change.section);
+        let contentToMatch = change.content;
+        
+        if (change.type === 'Remove from' && secondary) {
+            // For secondary sections, remove the label prefix from the content to match
+            const labelPrefix = `${secondary}: `;
+            if (contentToMatch.startsWith(labelPrefix)) {
+                contentToMatch = contentToMatch.substring(labelPrefix.length);
+            }
+        }
+        
+        // Normalize for comparison (trim, collapse spaces, remove trailing punctuation)
+        const normalize = (str: string) => str.trim().replace(/\s+/g, ' ').replace(/[;.,]$/, '');
+        const normalizedCurrent = normalize(this.parser.getSection(content, primary, secondary));
+        const normalizedToMatch = normalize(contentToMatch);
+        
         if (change.type === 'Remove from') {
             const current = this.parser.getSection(content, primary, secondary);
-            if (!current.includes(change.content)) {
-                this.logger.log(`[Tersify] Warning: Text to remove not found in ${primary}${secondary ? ' ' + secondary : ''}: ${change.content.substring(0, 100)}${change.content.length > 100 ? '...' : ''}`);
+            this.logger.log(`[Tersify] Current section content for ${primary}${secondary ? ' ' + secondary : ''}: "${current.substring(0, 200)}${current.length > 200 ? '...' : ''}"`);
+            if (!normalizedCurrent.includes(normalizedToMatch)) {
+                this.logger.log(`[Tersify] Warning: Text to remove not found in ${primary}${secondary ? ' ' + secondary : ''}: ${contentToMatch.substring(0, 100)}${contentToMatch.length > 100 ? '...' : ''}`);
+                this.logger.log(`[Tersify] Normalized current: "${normalizedCurrent.substring(0, 200)}"`);
+                this.logger.log(`[Tersify] Normalized to match: "${normalizedToMatch.substring(0, 100)}"`);
             }
-            const newContent = current.replace(change.content, '').trim();
+            const newContent = current.replace(contentToMatch, '').trim();
             return this.parser.setSection(content, primary, secondary, newContent);
         } else if (change.type === 'Add to') {
             const current = this.parser.getSection(content, primary, secondary);
-            const newContent = current ? current + '\n' + change.content : change.content;
+            const newContent = current ? current + '\n' + contentToMatch : contentToMatch;
             return this.parser.setSection(content, primary, secondary, newContent);
         }
         return content;

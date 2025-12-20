@@ -254,7 +254,14 @@ export class MarkdownParser {
 
             const sectionContent = sectionMatch[1];
             const itemRegex = new RegExp(`(- ${this.escapeRegExp(secondarySection)}: )([^\\n]+(?:\\n(?!- [^:]+: )[^\\n]*)*)`, 'gi');
-            const newSectionContent = sectionContent.replace(itemRegex, `$1${newBody}`);
+            let newSectionContent: string;
+            if (newBody === '') {
+                // Remove the entire item
+                newSectionContent = sectionContent.replace(itemRegex, '');
+            } else {
+                // Replace the content after the label
+                newSectionContent = sectionContent.replace(itemRegex, `$1${newBody}`);
+            }
             const newSection = `## ${primarySection}\n${newSectionContent}`;
             return content.replace(sectionRegex, newSection + sectionMatch[2]);
         }
