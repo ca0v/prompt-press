@@ -23,47 +23,198 @@ Below is the generated TOC.md, synced with domain terms extracted from ConOps.md
 | Constraints and Assumptions | Technical limits (e.g., VS Code environment, AI API availability), business factors (learning curve), and assumptions (stable APIs, user Git knowledge, reliable file operations). |
 | Risks and Mitigations | Potential issues like AI model deprecation (mitigated by multi-provider support), API rate limits (via caching/throttling), adoption resistance (via training), context limits (via prioritization), and parsing errors (via validation). |
 | Future Considerations | Expansions like multi-language support, enhanced AI provider integration, team collaboration features, enterprise integrations, advanced AI capabilities, and scalability optimizations. |
-| Operational Readiness | Metrics and training for adoption, including success criteria (e.g., 100% traceability, <5% ambiguity failure rates, 50% efficiency gains), usability targets (>80% adoption), and readiness activities. |
+| Operational Readiness | Metrics and training for smooth adoption and successful outcomes. |
 | Gap Analysis | Identification of current deficiencies in traditional development (e.g., informal documentation leading to miscommunication), and how PromptPress addresses them through structured specs and AI workflows. |
 | Recommended Updates | Suggestions like updating AI models, enhancing markdown validation, adding templates, improving change detection, integrating tools, and developing training materials. |
 
 # Discrepancies
 
-The following discrepancies were identified across ConOps.md, README.md, @ai-provider-integration.req, @code-generation.req, and @prompt-management.req. Analysis focused on definitions, requirements, terminology, and concepts that could impact code generation precision, implementation uncertainty, or integration. No major conflicts were found in core operational concepts (e.g., SDLC phases, prompt-driven workflow), but misalignments exist in AI provider handling, versioning specifics, and terminology nuances that could lead to non-deterministic code if not clarified.
+- **Term/Concept**: Directory Structure for Specifications
+  * *Issue**: Inconsistent folder organization for storing specification files.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req, README.md"
+  * *Impact on Code Generation**: Could lead to non-deterministic file monitoring and change detection in the extension, as the code assumes a specific `specs/` subdirectory hierarchy (e.g., requirements/, design/, implementation/) but @prompt-management.req introduces an additional `specs/prompts/` subdirectory, potentially causing integration issues if not unified.
 
-- **Term/Concept**: AI Provider Support (Primary vs. Multi-Provider Fallback)
-  * *Issue**: @ConOps.md describes xAI as the primary provider with "compatible providers like OpenAI" as fallbacks, emphasizing continuity without workflow interruption. However, @ai-provider-integration.req specifies "any provider that uses the same API as xAI (i.e., ChatGPT API-compatible interfaces)" and requires automatic failover, health monitoring, and unified interfaces. @code-generation.req mentions "AI API integration with xAI (and extensible to other providers like OpenAI or Anthropic)" but lacks details on fallback mechanisms. README.md focuses on xAI without explicit multi-provider support. This creates ambiguity in whether xAI-specific features (e.g., proprietary models) must be preserved or if full API abstraction is required.
-  * *Documents Involved**: ConOps.md, @ai-provider-integration.req, @code-generation.req, README.md
-  * *Impact on Code Generation**: Could result in non-deterministic code generation if fallback logic isn't uniformly implemented, leading to inconsistent AI responses or context handling across providers; implementation uncertainty arises in API abstraction layers, potentially causing errors during provider switches if token limits or response formats differ subtly.
+- **Term/Concept**: New Commands (Refactor Spec, Sync TOC, Sync ConOps)
+  * *Issue**: Introduction of additional VS Code commands in @prompt-management.req not referenced or aligned with workflows in ConOps.md or other requirement documents.
+  * *Documents Involved**: "@prompt-management.req, ConOps.md, README.md"
+  * *Impact on Code Generation**: May cause implementation uncertainty if these commands are not integrated into the core extension logic, as ConOps.md and README.md focus on "Apply Changes" for cascading, potentially leading to fragmented user interfaces and unhandled command paths in code generation workflows.
 
-- **Term/Concept**: SDLC Phases (Requirements, Design, Implementation)
-  * *Issue**: ConOps.md and README.md consistently define Requirements as developer-authored, Design as human-AI collaborative, and Implementation as AI-generated. However, @code-generation.req refers to "Requirements (developer-authored), Design (human-AI collaborative), and Implementation (AI-generated)" but includes additional phases like "testing is implied throughout," which isn't detailed in ConOps. @prompt-management.req aligns but uses "prompt specifications" interchangeably with SDLC artifacts, potentially confusing "prompts" as distinct from phases. No direct conflict, but README.md emphasizes "both 'requirements' and 'design' are collaborative spaces (human + AI); 'implementation' is AI-generated markdown specifications," while ConOps adds operational scenarios without this nuance.
-  * *Documents Involved**: ConOps.md, README.md, @code-generation.req, @prompt-management.req
-  * *Impact on Code Generation**: Minor inconsistency; could lead to implementation uncertainty in phase transitions (e.g., when AI generates vs. collaborates), potentially causing cascading update logic to misinterpret collaboration boundaries, resulting in ambiguous spec refinement and non-deterministic code outputs if AI roles aren't clearly parsed.
+- **Term/Concept**: AI Provider Compatibility Terminology
+  * *Issue**: Slight variation in describing supported AI providers; ConOps.md emphasizes "same API as xAI (i.e., ChatGPT API-compatible interfaces)", while @ai-provider-integration.req uses "OpenAI API compatible provider".
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Minimal impact as xAI's API is compatible with OpenAI, but inconsistent terminology could confuse configuration logic, leading to ambiguous fallback handling if not clarified.
 
-- **Term/Concept**: Versioning and Traceability (Git Integration and Naming Conventions)
-  * *Issue**: ConOps.md and README.md emphasize Git for versioning specs with consistent naming (e.g., `artifact-name.req`), ensuring 100% traceability. @code-generation.req requires "full compatibility with Git" and "standardized naming conventions." @prompt-management.req specifies "automatic versioning via Git" and "incrementing version numbers (e.g., semantic versioning like 1.0.0 to 1.0.1)." However, ConOps.md's metadata includes "version: 1.3.0" and "last-updated," but README.md lacks specific versioning details beyond "version-controllable via Git." @ai-provider-integration.req doesn't address versioning. This misaligns on whether versioning is semantic/auto-incremented or manual/Git-based only.
-  * *Documents Involved**: ConOps.md, README.md, @code-generation.req, @prompt-management.req, @ai-provider-integration.req
-  * *Impact on Code Generation**: Could affect integration issues in code regeneration; if versioning isn't deterministic (e.g., auto-increment vs. Git-only), specs might reference outdated versions, leading to traceability breaks and non-deterministic outputs during regeneration workflows.
+- **Term/Concept**: Clarification Markers Format
+  * *Issue**: Minor difference in clarification marker syntax; ConOps.md uses "[AI-CLARIFY: Specific question for AI to address?]", while @prompt-management.req uses "[AI-CLARIFY]" without the colon or question.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: Could result in parsing errors or non-deterministic AI refinement if the extension's Markdown validation expects a specific format, potentially causing failures in spec refinement workflows.
 
-- **Term/Concept**: Context Window Management and Token Limits
-  * *Issue**: ConOps.md mentions "context prioritization within token limits" and assumes "respecting AI provider compatibility as per ai-provider-integration.req." @ai-provider-integration.req specifies "context window management across providers, automatically truncating or summarizing prompts" and "token limiting settings." @code-generation.req requires "respecting token limits" but doesn't detail truncation. @prompt-management.req notes "context window limits" in constraints. No direct conflict, but ConOps implies universal handling, while reqs specify per-provider logic, potentially leading to ambiguity in multi-provider scenarios.
-  * *Documents Involved**: ConOps.md, @ai-provider-integration.req, @code-generation.req, @prompt-management.req
-  * *Impact on Code Generation**: Incomplete specification; could result in non-deterministic code if truncation/summarization isn't standardized, causing AI to omit critical spec details during refinement, leading to implementation uncertainty in large artifacts.
+- **Term/Concept**: Success Criteria for AI Provider Integration
+  * *Issue**: Variation in metrics; ConOps.md specifies "99.9% uptime for AI services, <10% degradation in response times during fallbacks", while @ai-provider-integration.req emphasizes "100% compatibility with existing prompt structures" without explicit uptime metrics.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: May affect health monitoring implementation, leading to uncertainty in fallback triggers and performance expectations during code generation, potentially resulting in incomplete or interrupted workflows.
 
-- **Term/Concept**: Formal Markdown Structure (Clarification Markers and Schema)
-  * *Issue**: @ConOps defines "formal Markdown structure" with markers like [AI-CLARIFY] and @ref:. README.md details schema with metadata, sections, and AI response formats. @code-generation.req requires "formal Markdown structure for AI interactions" with clarification markers. @prompt-management.req mandates "formal Markdown structure" including FR-/NFR- sections. @ai-provider-integration.req aligns on compatibility but doesn't specify markers. Terminology is consistent, but README.md's schema is more detailed (e.g., AI Interaction Log), while reqs are briefer.
-  * *Documents Involved**: @ConOps.md, README.md, @code-generation.req, @prompt-management.req, @ai-provider-integration.req
-  * *Impact on Code Generation**: Ambiguous or incomplete; if schema parsing isn't uniformly enforced (e.g., optional logs vs. required markers), AI parsing could fail, leading to non-deterministic spec refinement and integration issues in cascading updates.
+- **Term/Concept**: Programming Language Support Scope
+  * *Issue**: ConOps.md broadly states "support for multiple programming languages", while @code-generation.req specifies initial support for Node.js/web-based projects with extensibility, and README.md details JavaScript, TypeScript, etc.
+  * *Documents Involved**: "ConOps.md, @code-generation.req, README.md"
+  * *Impact on Code Generation**: Could lead to implementation uncertainty in code generation logic if extensibility is not clearly modular, potentially causing issues with language-specific parsers or generators in non-Node.js contexts.
 
-- **Term/Concept**: Success Criteria and Metrics (e.g., Adoption Rates, Failure Rates)
-  * *Issue**: ConOps.md specifies metrics like "100% traceability," "<5% ambiguity failure rates," "50% efficiency gains," and ">80% adoption." @code-generation.req requires "reproducibility with <5% failure rates" and "adoption rates (>80%)." @prompt-management.req includes "100% traceability" and "<10% refinement failure rates." @ai-provider-integration.req has "99.9% uptime" and ">80% adoption." No conflict in values, but slight variations (e.g., 5% vs. 10% failure rates) and differing emphases (uptime vs. efficiency) could misalign expectations.
-  * *Documents Involved**: ConOps.md, @code-generation.req, @prompt-management.req, @ai-provider-integration.req
-  * *Impact on Code Generation**: Misaligned concepts; could cause implementation uncertainty in monitoring/logging code, as metrics aren't fully harmonized, potentially leading to inconsistent error handling or performance thresholds in AI workflows.
+- **Term/Concept**: Traceability Emphasis
+  * *Issue**: @code-generation.req notes "Traceability is overstated and managed by any change control system" in clarifications, while ConOps.md and other documents emphasize it as a core NFR.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: May misalign implementation of traceability features, leading to inconsistent metadata handling and linkage in generated code, potentially affecting reproducibility.
 
-- **Term/Concept**: Chat Interface (Optional vs. Primary Workflow)
-  * *Issue**: ConOps.md describes "optional chat for AI interactions" supplementing "Apply Changes." README.md states "the chat interface is optional and not auto-prompted." @code-generation.req specifies "optional conversational workflow via a VS Code chat interface." @prompt-management.req includes "optional chat interface." No conflicts, but ConOps emphasizes "disabled by default" while others imply availability.
-  * *Documents Involved**: ConOps.md, README.md, @code-generation.req, @prompt-management.req
-  * *Impact on Code Generation**: Ambiguous; if not clarified, UI code might inconsistently handle chat defaults, leading to usability issues and potential integration problems in VS Code extension workflows.
+- **Term/Concept**: Technical Debt Shifting
+  * *Issue**: Consistent across documents, but @prompt-management.req adds tools like "Refactor Spec" for overview enhancements, which aren't detailed in ConOps.md's operational concepts.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: Could cause integration issues if refactoring tools aren't implemented, leading to manual workarounds in spec refinement that affect deterministic code generation.
 
-No discrepancies were found related to @example-parser.req, as its content was not provided in the analysis input. All identified issues are flagged for clarification to ensure precise, deterministic code generation and avoid integration uncertainties.
+- **Term/Concept**: Context Building Strategy
+  * *Issue**: @prompt-management.req specifies "selecting a single source of truth from related specification documents, discarding summary information", while ConOps.md describes general context prioritization without this discard mechanism.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: May result in ambiguous context management in AI interactions, potentially leading to over-inclusion of redundant data and exceeding token limits during refinement.
+
+- **Term/Concept**: AI Interaction Log Maintenance
+  * *Issue**: ConOps.md includes an "AI Interaction Log" section with updated overviews from req.md files, but this is not a standard part of the formal Markdown structure in other documents.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req, @code-generation.req, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Could introduce parsing inconsistencies if the extension treats logs as part of spec content, leading to non-deterministic AI parsing and refinement failures.
+
+- **Term/Concept**: Version Control Assumptions
+  * *Issue**: ConOps.md assumes "users have basic Git version control knowledge", while @prompt-management.req requires Git integration but doesn't specify user knowledge levels.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: May lead to usability issues in code generation if Git operations fail due to user inexperience, causing non-deterministic outcomes in versioning and rollback.
+
+- **Term/Concept**: Operational Constraints on Learning Curve
+  * *Issue**: ConOps.md notes a "learning curve for formal markdown schema", while @code-generation.req and README.md assume familiarity with VS Code tools.
+  * *Documents Involved**: "ConOps.md, @code-generation.req, README.md"
+  * *Impact on Code Generation**: Could result in implementation challenges if training isn't integrated, leading to errors in spec authoring that propagate to code generation.
+
+- **Term/Concept**: Multi-Provider Fallback Details
+  * *Issue**: ConOps.md references ai-provider-integration.req for fallback logic, but the req.md details specific FRs not fully mirrored in ConOps operational scenarios.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: May cause gaps in fallback implementation, leading to interruptions in code generation if edge cases (e.g., API deprecation) aren't handled as specified.
+
+- **Term/Concept**: Artifact Scaffolding References
+  * *Issue**: README.md details scaffolding with @artifact-name mentions and context sharing, but ConOps.md describes it more generally without reference inclusion rules.
+  * *Documents Involved**: "ConOps.md, README.md"
+  * *Impact on Code Generation**: Could lead to inconsistent initial spec generation, affecting traceability and context in downstream code generation phases.
+
+- **Term/Concept**: Change Detection and Cascading Scope
+  * *Issue**: ConOps.md and README.md focus on "Apply Changes" for cascading from Requirements to Implementation, while @prompt-management.req introduces "Refactor Spec" for intra-document updates.
+  * *Documents Involved**: "ConOps.md, README.md, @prompt-management.req"
+  * *Impact on Code Generation**: May result in overlapping or conflicting command implementations, leading to uncertainty in change propagation and code regeneration.
+
+- **Term/Concept**: Performance Metrics for AI Interactions
+  * *Issue**: ConOps.md specifies "AI interactions complete within 30 seconds", while @ai-provider-integration.req adds "<10% increase in latency during automatic fallbacks".
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Could affect timeout handling in code generation, leading to premature failures or non-deterministic retries during provider switches.
+
+- **Term/Concept**: Error Handling for Parsing
+  * *Issue**: ConOps.md mentions "Markdown parsing errors" as a risk, while @prompt-management.req specifies validation and feedback.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: May lead to inconsistent error recovery, impacting spec refinement and code generation reliability.
+
+- **Term/Concept**: Scalability for Artifacts
+  * *Issue**: ConOps.md notes "scalability to support numerous artifacts", while @code-generation.req specifies "projects with dozens or hundreds of artifacts".
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: Could cause performance issues in large projects if caching isn't optimized, leading to delays in code generation.
+
+- **Term/Concept**: Security for API Keys
+  * *Issue**: ConOps.md references ai-provider-integration.req for security, but details vary slightly on storage (e.g., VS Code secrets).
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Minimal, but inconsistent handling could expose keys, leading to security risks in AI interactions.
+
+- **Term/Concept**: Reproducibility Criteria
+  * *Issue**: ConOps.md specifies "<5% ambiguity or failure rates", while @code-generation.req emphasizes deterministic generation.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: May lead to varying expectations for failure handling, affecting code quality assurance.
+
+- **Term/Concept**: Usability Metrics
+  * *Issue**: ConOps.md cites ">80% developer adoption rate", while @ai-provider-integration.req focuses on low error rates.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Could misalign UI design priorities, leading to adoption barriers in code generation workflows.
+
+- **Term/Concept**: Future Multi-Language Support
+  * *Issue**: ConOps.md lists "Rust, Go, Python frameworks", while @code-generation.req specifies extensibility.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: May cause scope creep if not planned modularly, leading to incomplete language support in generation.
+
+- **Term/Concept**: Team Collaboration Features
+  * *Issue**: ConOps.md mentions "enhanced features for multi-developer workflows", but details are sparse compared to Git integration in other docs.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: Could result in missing conflict resolution in code generation for team settings.
+
+- **Term/Concept**: Enterprise Integrations
+  * *Issue**: ConOps.md lists CI/CD and compliance, but not detailed in req.md files.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: May lead to integration issues if not specified, affecting enterprise deployments.
+
+- **Term/Concept**: Advanced AI Capabilities
+  * *Issue**: ConOps.md mentions "code analysis, security scanning", not in req.md.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Could imply unsupported features, leading to gaps in generated code quality.
+
+- **Term/Concept**: Recommended Updates for AI Models
+  * *Issue**: ConOps.md suggests updating to latest models, referencing ai-provider-integration.req.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: May affect model compatibility logic if not backward-compatible.
+
+- **Term/Concept**: Markdown Validation Enhancements
+  * *Issue**: ConOps.md recommends more validation, aligned with @prompt-management.req.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: Ensures better spec quality, but implementation details vary slightly.
+
+- **Term/Concept**: Template and Scaffolding Configurations
+  * *Issue**: ConOps.md suggests custom templates, while README.md has predefined ones.
+  * *Documents Involved**: "ConOps.md, README.md"
+  * *Impact on Code Generation**: Could lead to customization issues if not extensible.
+
+- **Term/Concept**: Semantic Diffing for Change Detection
+  * *Issue**: ConOps.md recommends "semantic diffing", not detailed in req.md.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: May improve accuracy, but lack of spec could cause basic implementations.
+
+- **Term/Concept**: Project Management Tool Integration
+  * *Issue**: ConOps.md suggests integration, not in req.md.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: Could enhance traceability but requires additional implementation.
+
+- **Term/Concept**: Training Materials
+  * *Issue**: ConOps.md emphasizes them, aligned with operational readiness.
+  * *Documents Involved**: "ConOps.md, README.md"
+  * *Impact on Code Generation**: Supports usability, but varying depth across docs.
+
+- **Term/Concept**: Operational Readiness Metrics
+  * *Issue**: ConOps.md details training rates, while req.md focus on adoption.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Ensures smooth rollout, but metrics differ slightly.
+
+- **Term/Concept**: Gap Analysis Insights
+  * *Issue**: ConOps.md provides detailed analysis, consistent with README.
+  * *Documents Involved**: "ConOps.md, README.md"
+  * *Impact on Code Generation**: Aligns on addressing traditional development gaps.
+
+- **Term/Concept**: Risk Mitigation for Context Limits
+  * *Issue**: ConOps.md specifies prioritization strategies, aligned with req.md.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: Ensures efficient AI use, but details vary.
+
+- **Term/Concept**: Assumptions on API Stability
+  * *Issue**: Consistent across docs, but ConOps emphasizes it.
+  * *Documents Involved**: "ConOps.md, @ai-provider-integration.req"
+  * *Impact on Code Generation**: Critical for reliability, no major conflict.
+
+- **Term/Concept**: File System Operations Reliability
+  * *Issue**: Assumed reliable in multiple docs.
+  * *Documents Involved**: "ConOps.md, @code-generation.req"
+  * *Impact on Code Generation**: Foundational, no discrepancies noted.
+
+- **Term/Concept**: Markdown Parsing Library Assumptions
+  * *Issue**: Consistent assumptions.
+  * *Documents Involved**: "ConOps.md, @prompt-management.req"
+  * *Impact on Code Generation**: No impact, standard.
+
+- **Term/Concept**: VS Code Extension API Support
+  * *Issue**: Core constraint in ConOps.
+  * *Documents Involved**: "ConOps.md, README.md"
+  * *Impact on Code Generation**: Ensures platform compatibility.

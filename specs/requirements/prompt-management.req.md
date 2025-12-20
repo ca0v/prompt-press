@@ -23,6 +23,10 @@ last-updated: 2025-12-20
     - `Refactor Spec` - write enhancements in overview section and they are applied to the functional and non-functional sections.
     - `Sync TOC` - keeps the Table of Contents up-to-date with the specs
     - `Sync ConOps` - keeps the Concept of Operations document in-sync with the requirements documents
+  
+  A special [AI-CLARIFY] marker is injected into the document if an ambiguity has been detected.  Once these are addressed, the document is again passed through the AI via `Refactor Spec`.
+  
+  
 
 ## Functional Requirements
 - FR-1: The system shall allow developers to create new specifications as Markdown files in a designated `specs/` directory, with automatic scaffolding that includes metadata headers (e.g., artifact name, version, last-updated date) and a predefined structure for prompt content.
