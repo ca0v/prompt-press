@@ -6,6 +6,7 @@ import { GitHelper } from './gitHelper.js';
 import { DiffHelper } from './diffHelper.js';
 import { __dirname } from '../utils/dirname.js';
 import { MarkdownFormatter } from '../utils/markdownFormatter.js';
+import { PromptLogger } from '../utils/PromptLogger.js';
 
 type ReferencedArtifact = {
     name: string;
@@ -17,10 +18,12 @@ export class ScaffoldService {
     private promptCache: Map<string, { system: string; user: string }> = new Map();
     private outputChannel: vscode.OutputChannel;
     private aiClient: XAIClient;
+    private promptLogger: PromptLogger;
 
     constructor(aiClient: XAIClient, outputChannel: vscode.OutputChannel) {
         this.aiClient = aiClient;
         this.outputChannel = outputChannel;
+        this.promptLogger = new PromptLogger((msg) => this.outputChannel.appendLine(msg));
     }
 
     /**
@@ -196,7 +199,7 @@ export class ScaffoldService {
                 // Generate requirement spec
                 progress.report({ message: 'Generating requirements...', increment: 25 });
                 this.outputChannel.appendLine(`[Scaffold] Generating requirement spec for: ${artifactName}`);
-                const requirementSpec = await this.generateRequirement(artifactName, contextDescription, referencedArtifacts);
+                const requirementSpec = await this.generateRequirement(workspaceRoot, artifactName, contextDescription, referencedArtifacts);
                 this.outputChannel.appendLine(`[Scaffold] Requirement spec generated (${requirementSpec.length} chars)`);
 
                 // Generate design spec
@@ -206,7 +209,7 @@ export class ScaffoldService {
                     ? await this.loadReferencedArtifacts(workspaceRoot, mentionedArtifacts, 'design')
                     : [];
 
-                const designSpec = await this.generateDesign(artifactName, contextDescription, requirementSpec, designRefArtifacts);
+                const designSpec = await this.generateDesign(workspaceRoot, artifactName, contextDescription, requirementSpec, designRefArtifacts);
                 this.outputChannel.appendLine(`[Scaffold] Design spec generated (${designSpec.length} chars)`);
 
                 // Create files
@@ -247,6 +250,7 @@ export class ScaffoldService {
      * Generate requirement specification using AI
      */
     private async generateRequirement(
+        workspaceRoot: string,
         artifactName: string,
         description: string,
         referencedArtifacts: ReferencedArtifact[]
@@ -283,10 +287,9 @@ export class ScaffoldService {
 
         this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for requirement generation`);
         try {
+            const logId = await this.promptLogger.logRequest(workspaceRoot, 'generate-requirement', systemPrompt, userPrompt);
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
-            
-            // Log the AI interaction
-            await this.logAiInteraction('generate-requirement', systemPrompt, userPrompt, response);
+            await this.promptLogger.logResponse(workspaceRoot, logId, 'generate-requirement', response);
             
             return response;
         } catch (error: any) {
@@ -299,6 +302,7 @@ export class ScaffoldService {
      * Generate design specification using AI
      */
     private async generateDesign(
+        workspaceRoot: string,
         artifactName: string,
         description: string,
         requirementSpec: string,
@@ -340,10 +344,9 @@ export class ScaffoldService {
 
         this.outputChannel.appendLine(`[Scaffold] Sending ${messages.length} messages to AI for design generation`);
         try {
+            const logId = await this.promptLogger.logRequest(workspaceRoot, 'generate-design', systemPrompt, userPrompt);
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
-            
-            // Log the AI interaction
-            await this.logAiInteraction('generate-design', systemPrompt, userPrompt, response);
+            await this.promptLogger.logResponse(workspaceRoot, logId, 'generate-design', response);
             
             return response;
         } catch (error: any) {
@@ -441,6 +444,7 @@ export class ScaffoldService {
 
                     this.outputChannel.appendLine(`[Generate] Generating implementation spec with AI...`);
                     const implSpec = await this.syncImplementationSpec(
+                        workspaceRoot,
                         artifactName,
                         requirementContent,
                         designContent
@@ -471,6 +475,7 @@ export class ScaffoldService {
      * Generate implementation specification using AI
      */
     private async syncImplementationSpec(
+        workspaceRoot: string,
         artifactName: string,
         requirementSpec: string,
         designSpec: string
@@ -496,10 +501,9 @@ export class ScaffoldService {
 
         this.outputChannel.appendLine(`[Generate] Sending ${messages.length} messages to AI`);
         try {
+            const logId = await this.promptLogger.logRequest(workspaceRoot, 'sync-implementation', systemPrompt, userPrompt);
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
-            
-            // Log the AI interaction
-            await this.logAiInteraction('sync-implementation', systemPrompt, userPrompt, response);
+            await this.promptLogger.logResponse(workspaceRoot, logId, 'sync-implementation', response);
             
             return response;
         } catch (error: any) {
@@ -583,43 +587,6 @@ export class ScaffoldService {
             }
         } catch (error) {
             this.outputChannel.appendLine(`[Scaffold] Warning: Could not update VS Code settings: ${error}`);
-        }
-    }
-
-    /**
-     * Log AI request and response to files
-     */
-    private async logAiInteraction(operation: string, systemPrompt: string, userPrompt: string, response: string): Promise<void> {
-        if (!systemPrompt.trim() || !userPrompt.trim() || !response.trim()) {
-            return;
-        }
-
-        try {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) return;
-
-            const workspaceRoot = workspaceFolders[0].uri.fsPath;
-            const logsDir = path.join(workspaceRoot, 'logs');
-            const requestDir = path.join(logsDir, 'request');
-            const responseDir = path.join(logsDir, 'response');
-            await fs.mkdir(requestDir, { recursive: true });
-            await fs.mkdir(responseDir, { recursive: true });
-            
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const requestFile = path.join(requestDir, `${operation}-${timestamp}.md`);
-            const responseFile = path.join(responseDir, `${operation}-${timestamp}.md`);
-            
-            // Log request (system + user prompts)
-            const requestContent = `# System Prompt\n\n${systemPrompt}\n\n---\n\n# User Prompt\n\n${userPrompt}`;
-            await fs.writeFile(requestFile, requestContent, 'utf-8');
-            
-            // Log response
-            await fs.writeFile(responseFile, response, 'utf-8');
-            
-            this.outputChannel.appendLine(`[AI] Logged ${operation} request to ${requestFile}`);
-            this.outputChannel.appendLine(`[AI] Logged ${operation} response to ${responseFile}`);
-        } catch (error: any) {
-            this.outputChannel.appendLine(`[AI] Warning: Failed to log ${operation} interaction: ${error.message}`);
         }
     }
 
@@ -811,7 +778,7 @@ export class ScaffoldService {
                     ? overviews.join('\n\n---\n\n')
                     : `Project README.md:\n\n${readmeContent}`;
                     
-                const updates = await this.generateConOpsUpdates(conopsSection, contextContent);
+                const updates = await this.generateConOpsUpdates(workspaceRoot, conopsSection, contextContent);
                 
                 // Apply the updates
                 await this.applyConOpsUpdates(workspaceRoot, updates, conopsExists);
@@ -848,7 +815,7 @@ export class ScaffoldService {
     /**
      * Generate ConOps updates using AI
      */
-    private async generateConOpsUpdates(conopsSection: string, contextContent: string): Promise<string> {
+    private async generateConOpsUpdates(workspaceRoot: string, conopsSection: string, contextContent: string): Promise<string> {
         // Load prompt template
         const prompts = await this.loadPrompt('updateConOps.md');
         const systemPrompt = prompts.system;
@@ -863,10 +830,9 @@ export class ScaffoldService {
 
         this.outputChannel.appendLine('[syncConOps] Sending analysis to AI');
         try {
+            const logId = await this.promptLogger.logRequest(workspaceRoot, 'sync-conops', systemPrompt, userPrompt);
             const response = await this.aiClient.chat(messages, { maxTokens: 6000 });
-            
-            // Log the AI interaction
-            await this.logAiInteraction('sync-conops', systemPrompt, userPrompt, response);
+            await this.promptLogger.logResponse(workspaceRoot, logId, 'sync-conops', response);
             
             return response;
         } catch (error: any) {
@@ -1050,10 +1016,9 @@ ${aiResponse}
         }, async (progress) => {
             try {
                 progress.report({ message: 'Generating TOC...', increment: 50 });
+                const logId = await this.promptLogger.logRequest(workspaceRoot, 'sync-toc', prompts.system, userPrompt);
                 const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
-
-                // Log the AI interaction
-                await this.logAiInteraction('sync-toc', prompts.system, userPrompt, response);
+                await this.promptLogger.logResponse(workspaceRoot, logId, 'sync-toc', response);
 
                 // Format the markdown response
                 let formattedResponse = response;

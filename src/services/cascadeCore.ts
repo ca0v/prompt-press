@@ -8,6 +8,7 @@ import * as fs from 'fs/promises';
 import { XAIClient, ChatMessage } from '../ai/xaiClient.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';
 import { GitHelper } from './gitHelper.js';
+import { PromptLogger } from '../utils/PromptLogger.js';
 import { DiffHelper, ChangeDetectionResult } from './diffHelper.js';
 import { __dirname } from '../utils/dirname.js';
 
@@ -45,6 +46,7 @@ export interface ReferencedArtifact {
 export class CascadeCore {
     private parser: MarkdownParser;
     private promptCache: Map<string, { system: string; user: string }> = new Map();
+    private promptLogger: PromptLogger;
 
     constructor(
         private xaiClient: XAIClient,
@@ -52,6 +54,7 @@ export class CascadeCore {
         private logger: Logger = console
     ) {
         this.parser = new MarkdownParser();
+        this.promptLogger = new PromptLogger((msg) => this.logger.log(msg));
     }
 
     private escapeRegExp(string: string): string {
@@ -353,13 +356,13 @@ export class CascadeCore {
             ];
 
             // Log the AI request
-            await this.logAiInteraction('tersify', prompts.system, userPrompt, '');
+            const logId = await this.promptLogger.logRequest(this.workspaceRoot, 'tersify', prompts.system, userPrompt);
 
             this.logger.log('[Tersify] Calling AI to analyze documents for tersification...');
             const aiResponse = await this.xaiClient.chat(messages, { maxTokens: 4000 });
 
             // Log the AI response
-            await this.logAiInteraction('tersify-response', '', '', aiResponse);
+            await this.promptLogger.logResponse(this.workspaceRoot, logId, 'tersify', aiResponse);
 
             // Parse the AI response and apply changes
             await this.applyTersifyChanges(filePath, sourceContent, referencedDocs, aiResponse, result, specsDir);
@@ -441,10 +444,9 @@ export class CascadeCore {
             ];
 
             this.logger.log('[Cascade] Calling AI for document refinement...');
+            const logId = await this.promptLogger.logRequest(this.workspaceRoot, 'refine-document', systemPrompt, userPrompt);
             const refinedContent = await this.xaiClient.chat(messages, { maxTokens: 4000 });
-
-            // Log the AI interaction
-            await this.logAiInteraction('refine-document', systemPrompt, userPrompt, refinedContent);
+            await this.promptLogger.logResponse(this.workspaceRoot, logId, 'refine-document', refinedContent);
 
             if (refinedContent && refinedContent.trim().length > 100) {
                 await fs.writeFile(filePath, refinedContent, 'utf-8');
@@ -630,10 +632,9 @@ export class CascadeCore {
         ];
 
         this.logger.log('[Cascade] Calling AI to generate updated design...');
+        const logId = await this.promptLogger.logRequest(this.workspaceRoot, 'generate-design', systemPrompt, userPrompt);
         const response = await this.xaiClient.chat(messages, { maxTokens: 4000 });
-
-        // Log the AI interaction
-        await this.logAiInteraction('generate-design', systemPrompt, userPrompt, response);
+        await this.promptLogger.logResponse(this.workspaceRoot, logId, 'generate-design', response);
 
         return response;
     }
@@ -672,10 +673,9 @@ export class CascadeCore {
         ];
 
         this.logger.log('[Cascade] Calling AI to generate updated implementation...');
+        const logId = await this.promptLogger.logRequest(this.workspaceRoot, 'sync-implementation', systemPrompt, userPrompt);
         const response = await this.xaiClient.chat(messages, { maxTokens: 4000 });
-
-        // Log the AI interaction
-        await this.logAiInteraction('sync-implementation', systemPrompt, userPrompt, response);
+        await this.promptLogger.logResponse(this.workspaceRoot, logId, 'sync-implementation', response);
 
         return response;
     }
@@ -798,40 +798,6 @@ export class CascadeCore {
             return true;
         } catch {
             return false;
-        }
-    }
-
-    /**
-     * Log AI request and response to files
-     */
-    private async logAiInteraction(operation: string, systemPrompt: string, userPrompt: string, response: string): Promise<void> {
-        if (!systemPrompt.trim() || !userPrompt.trim() || !response.trim()) {
-            return;
-        }
-
-        try {
-            const logsDir = path.join(this.workspaceRoot, 'logs');
-            const requestDir = path.join(logsDir, 'request');
-            const responseDir = path.join(logsDir, 'response');
-            await fs.mkdir(requestDir, { recursive: true });
-            await fs.mkdir(responseDir, { recursive: true });
-            
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const requestFile = path.join(requestDir, `${operation}-${timestamp}.md`);
-            const responseFile = path.join(responseDir, `${operation}-${timestamp}.md`);
-            
-            // Log request (system + user prompts)
-            const requestContent = `# System Prompt\n\n${systemPrompt}\n\n---\n\n# User Prompt\n\n${userPrompt}`;
-            await fs.writeFile(requestFile, requestContent, 'utf-8');
-            
-            // Log response
-            await fs.writeFile(responseFile, response, 'utf-8');
-            
-            this.logger.log(`[AI] Logged ${operation} request to ${requestFile}`);
-            this.logger.log(`[AI] Logged ${operation} response to ${responseFile}`);
-        } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            this.logger.log(`[AI] Warning: Failed to log ${operation} interaction: ${errorMsg}`);
         }
     }
 }
