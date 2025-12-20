@@ -23,7 +23,7 @@ PromptPress shifts technical debt from source code to parsable markdown document
 
 ## Development Phases
 
-PromptPress follows three iterative phases that operate as a continuous cycle (testing is implied throughout):
+PromptPress follows three iterative phases that operate as a continuous cycle:
 
 - Requirements: Gather and document what the system must do (functional and non-functional needs).
 - Design: Plan system architecture, components, interfaces, and data models.
@@ -523,7 +523,7 @@ npm run watch
 
 ### Test Coverage
 
-- **API Client Tests**: xAI API integration, error handling, model compatibility
+- **API Client Tests**: OpenAI API integration via xAI, error handling, model compatibility
 - **Configuration Tests**: Endpoint configuration, model selection
 - **Error Handling**: Output channel logging, request/response details
 - **Cascade Service Tests**: Change detection, baseline comparison, git fallback, cascade propagation

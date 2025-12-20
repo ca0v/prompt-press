@@ -22,7 +22,7 @@ PromptPress is a VS Code extension that enables prompt-driven development by mai
 
 ## Stakeholders
 - **Developers**: Primary users who create, refine, and manage artifact specifications using the VS Code extension
-- **AI Systems**: xAI API service (and compatible providers like OpenAI) that provides intelligent content generation and refinement capabilities
+- **AI Systems**: OpenAI API compatible systems utilizing /chat/completions
 - **End Users**: Consumers of software artifacts generated from PromptPress specifications
 - **System Administrators**: Manage VS Code environments and extension deployments
 - **External Systems/Interfaces**: Version control systems (Git), file systems, and VS Code Extension Marketplace
@@ -37,7 +37,7 @@ The system is deployed as a VS Code extension, operating in developer workstatio
 ### User Roles and Responsibilities
 - **Developers**: Author and refine Markdown specifications in the `specs/` directory; execute commands like "Scaffold New Artifact" or "Apply Changes" to trigger AI-assisted workflows; manage prompt versioning via Git; ensure specs adhere to formal Markdown structures for deterministic AI interactions.
 - **System Administrators**: Install and configure the VS Code extension; monitor API rate limits and extension updates; ensure compatibility with VS Code versions and AI provider configurations.
-- **AI Systems**: Provide stateless content generation and refinement based on prompt specs; handle context prioritization within token limits and support multi-provider fallbacks.
+- **AI Systems**: Provide stateless content generation and refinement based on prompt specs.
 - **End Users**: Indirectly benefit from generated artifacts but do not interact directly with the system.
 - **External Systems**: Git handles versioning; file systems store specs and generated code; VS Code provides the UI and extension framework.
 

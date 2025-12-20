@@ -4,7 +4,7 @@ phase: requirement
 depends-on: []
 references: []
 version: 1.0.0
-last-updated: 2025-12-18
+last-updated: 2025-12-20
 ---
 
 # PromptPress - Requirements
@@ -18,7 +18,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven software devel
 - FR-3: The system shall support code generation from Implementation-level Markdown specifications, with built-in support for multiple programming languages (initially JavaScript/Node.js, with extensibility for others like Rust, Go, and Python frameworks), ensuring generated code is deterministic and reproducible.
 - FR-4: The system shall integrate with version control systems (e.g., Git) to track changes in specification files, enabling concurrent development, historical access, and rollback capabilities without affecting generated code.
 - FR-5: The system shall monitor the `specs/` directory for file changes (e.g., additions, modifications, deletions) and trigger AI-assisted refinement workflows, with optional auto-monitoring features controllable by the user.
-- FR-6: The system shall provide AI API integration with xAI (and extensible to other providers like OpenAI or Anthropic), managing stateless context for interactions, respecting token limits, and handling API rate limits through caching and fallback mechanisms.
+- FR-6: The system shall provide AI integration via /chat/completions (Open AI API compatible system), managing stateless context for interactions, respecting token limits, and handling API rate limits through caching and fallback mechanisms.
 - FR-7: The system shall enforce a formal Markdown structure for AI interactions, including clarification markers (e.g., [AI-CLARIFY]), document request capabilities, and validation to minimize ambiguities in specifications.
 - FR-8: The system shall offer an optional conversational workflow via a VS Code chat interface, supplementing the primary "Apply Changes" command for cascading specification updates and user-initiated AI queries.
 - FR-9: The system shall enable AI-driven specification refinement, allowing the AI to propose changes, request additional information, and iteratively update Requirements, Design, and Implementation specs based on user inputs.
