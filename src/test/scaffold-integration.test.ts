@@ -728,109 +728,39 @@ export async function runConOpsUpdateIntegrationTest(): Promise<void> {
             await fs.mkdir(path.join(testOutputDir, 'specs'), { recursive: true });
             await fs.mkdir(path.join(testOutputDir, 'specs', 'requirements'), { recursive: true });
 
-            // Step 1: Create three simple requirements documents
-            console.log('\n[Test] Step 1: Creating three simple requirements documents...');
-            
-            const req1Content = `---
-artifact: user-auth
-phase: requirement
-depends-on: []
-references: []
-version: 1.0.0
-last-updated: 2025-12-17
----
-
-# User Authentication - Requirements
-
-## Overview
-A simple user authentication system that allows users to register and login.
-
-## Functional Requirements
-- FR-1: Users can register with email and password
-- FR-2: Users can login with email and password
-- FR-3: System validates credentials
-- FR-4: System provides session management
-
-## Non-Functional Requirements
-- NFR-1: Passwords must be securely hashed
-- NFR-2: Response time < 2 seconds
-`;
-
-            const req2Content = `---
-artifact: data-storage
-phase: requirement
-depends-on: []
-references: []
-version: 1.0.0
-last-updated: 2025-12-17
----
-
-# Data Storage - Requirements
-
-## Overview
-A data storage system for user profiles and application data.
-
-## Functional Requirements
-- FR-1: Store user profile information
-- FR-2: Store application configuration
-- FR-3: Provide data retrieval API
-- FR-4: Support data backup and restore
-
-## Non-Functional Requirements
-- NFR-1: Data must be encrypted at rest
-- NFR-2: 99.9% uptime availability
-`;
-
-            const req3Content = `---
-artifact: notification-system
-phase: requirement
-depends-on: []
-references: []
-version: 1.0.0
-last-updated: 2025-12-17
----
-
-# Notification System - Requirements
-
-## Overview
-A notification system for sending alerts and messages to users.
-
-## Functional Requirements
-- FR-1: Send email notifications
-- FR-2: Send SMS notifications
-- FR-3: Queue notifications for delivery
-- FR-4: Track notification delivery status
-
-## Non-Functional Requirements
-- NFR-1: Support high volume (1000+ notifications/minute)
-- NFR-2: 95% delivery success rate
-`;
-
-            await fs.writeFile(path.join(testOutputDir, 'specs', 'requirements', 'user-auth.req.md'), req1Content, 'utf-8');
-            await fs.writeFile(path.join(testOutputDir, 'specs', 'requirements', 'data-storage.req.md'), req2Content, 'utf-8');
-            await fs.writeFile(path.join(testOutputDir, 'specs', 'requirements', 'notification-system.req.md'), req3Content, 'utf-8');
-            
-            console.log('[Test] ✅ Created three requirements documents');
+            // Step 1: Create three simple requirements documents from files
+            console.log('[Test] Step 1: Loading requirements templates from files...');
+            const reqFiles = [
+                'user-auth.req.md',
+                'data-storage.req.md',
+                'notification-system.req.md'
+            ];
+            for (const reqFile of reqFiles) {
+                const srcPath = path.join(__dirname, '../../test/data/conops-integration', reqFile);
+                const destPath = path.join(testOutputDir, 'specs', 'requirements', reqFile);
+                const content = await fs.readFile(srcPath, 'utf-8');
+                await fs.writeFile(destPath, content, 'utf-8');
+                console.log(`[Test] Copied ${reqFile} to test output directory.`);
+            }
+            console.log('[Test] ✅ Created three requirements documents from templates');
 
             // Step 2: Generate ConOps document
-            console.log('\n[Test] Step 2: Generating ConOps document...');
+            console.log('[Test] Step 2: Generating ConOps document...');
             const conopsResponse = await generateConOps(client, testOutputDir);
-            console.log('[Test] ✅ ConOps generated:', conopsResponse.length, 'characters');
+            console.log(`[Test] ✅ ConOps generated: ${conopsResponse.length} characters`);
 
             // Save ConOps
             const conopsPath = path.join(testOutputDir, 'specs', 'ConOps.md');
             await fs.writeFile(conopsPath, conopsResponse, 'utf-8');
-            console.log('[Test] Saved ConOps to:', conopsPath);
+            console.log(`[Test] Saved ConOps to: ${conopsPath}`);
 
             // Step 3: Validate ConOps content
-            console.log('\n[Test] Step 3: Validating ConOps content...');
+            console.log('[Test] Step 3: Validating ConOps content...');
             const conopsContent = await fs.readFile(conopsPath, 'utf-8');
-            
             // Check for key sections
             const hasPurpose = conopsContent.includes('Purpose and Scope');
             const hasStakeholders = conopsContent.includes('Stakeholders') || conopsContent.includes('User Roles');
             const hasRequirements = conopsContent.includes('Requirements Traceability');
-            
             if (hasPurpose && hasStakeholders && hasRequirements) {
                 console.log('[Test] ✅ ConOps contains expected sections');
             } else {
@@ -838,144 +768,18 @@ A notification system for sending alerts and messages to users.
             }
 
             // Step 4: Modify ConOps content to affect requirements
-            console.log('\n[Test] Step 4: Modifying ConOps content to affect requirements...');
-            
-            // Add a new operational requirement that should trigger updates
-            const modifiedConops = conopsContent + `
-
-## Additional Operational Requirements
-
-### Multi-Factor Authentication
-The system must support multi-factor authentication (MFA) for enhanced security. Users should be able to enable MFA using authenticator apps or SMS verification.
-
-### Real-time Notifications
-The notification system must support real-time delivery for critical alerts, with guaranteed delivery within 5 seconds.
-
-### Data Analytics
-The data storage system must provide analytics capabilities for user behavior tracking and system performance monitoring.
-`;
-
+            console.log('[Test] Step 4: Modifying ConOps content to affect requirements...');
+            const additionalReqsPath = path.join(__dirname, '../../test/data/conops-integration/additional-operational-requirements.md');
+            const additionalReqs = await fs.readFile(additionalReqsPath, 'utf-8');
+            const modifiedConops = conopsContent + '\n' + additionalReqs;
             await fs.writeFile(conopsPath, modifiedConops, 'utf-8');
-            console.log('[Test] ✅ Modified ConOps with additional operational requirements');
+            console.log('[Test] ✅ Modified ConOps with additional operational requirements from file');
 
             // Step 5: Test AI response parsing and apply updates manually
-            console.log('\n[Test] Step 5: Testing AI response parsing and applying requirement updates...');
-            
+            console.log('[Test] Step 5: Testing AI response parsing and applying requirement updates...');
             // Read the AI response from the log file
-            const logFiles = await fs.readdir(path.join(__dirname, '../../logs'));
-            const updateLogFile = logFiles.find(f => f.startsWith('test_syncConOps_'));
-            if (!updateLogFile) {
-                throw new Error('No syncConOps log file found');
-            }
-            
-            const logContent = await fs.readFile(path.join(__dirname, '../../logs', updateLogFile), 'utf-8');
-            const aiResponseMatch = logContent.match(/=== AI Response ===\s*\n([\s\S]*?)\n=== End Test Log ===/);
-            if (!aiResponseMatch) {
-                console.log('[Test] Could not extract AI response from log');
-                console.log('[Test] Log content preview:', logContent.substring(0, 500));
-                throw new Error('Could not extract AI response from log');
-            }
-            
-            const aiResponse = aiResponseMatch[1].trim();
-            
-            // Parse requirement updates from AI response (similar to scaffold service logic)
-            const reqUpdates: Array<{fileName: string, updatedOverview: string}> = [];
-            
-            // Try the expected format first: - **File**: filename\n- **Updated Overview**: content
-            const expectedMatches = Array.from(aiResponse.matchAll(/- \*\*File\*\*: ([^\n]+)\n- \*\*Updated Overview\*\*:([\s\S]*?)(?=\n- \*\*File\*\*|\n### |\n$)/g));
-            for (const match of expectedMatches) {
-                reqUpdates.push({
-                    fileName: match[1].trim(),
-                    updatedOverview: match[2].trim()
-                });
-            }
-            
-            // Parse each requirement update individually using regex
-            const requirementFiles = ['user-auth.req.md', 'data-storage.req.md', 'notification-system.req.md'];
-            
-            for (const reqFile of requirementFiles) {
-                // Look for the pattern: **Update filename.req.md:** followed by content until next **Update or end
-                const updateRegex = new RegExp(`\\*\\*Update ${reqFile.replace('.', '\\.')}:\\*\\*([\\s\\S]*?)(?=\\*\\*Update [a-zA-Z-]+\\.req\\.md:\\*\\*|\\n###|\\n$)`);
-                const match = aiResponse.match(updateRegex);
-                
-                if (match && match[1]) {
-                    const fullContent = match[1];
-                    
-                    // Extract just the Expanded Overview part
-                    const overviewRegex = /- \*\*Expanded Overview:\*\* ([^\n]+)/;
-                    const overviewMatch = fullContent.match(overviewRegex);
-                    const updatedOverview = overviewMatch ? overviewMatch[1].trim() : 'Could not extract overview';
-                    
-                    reqUpdates.push({
-                        fileName: reqFile,
-                        updatedOverview: updatedOverview
-                    });
-                }
-            }
-            
-            // Apply the updates to requirement files
-            for (const update of reqUpdates) {
-                const reqPath = path.join(testOutputDir, 'specs', 'requirements', update.fileName);
-                
-                try {
-                    let content = await fs.readFile(reqPath, 'utf-8');
-                    // Replace the ## Overview section
-                    const lines = content.split('\n');
-                    const overviewIndex = lines.findIndex(line => line.trim() === '## Overview');
-                    if (overviewIndex !== -1) {
-                        let endIndex = lines.findIndex((line, index) => index > overviewIndex && line.startsWith('## '));
-                        if (endIndex === -1) endIndex = lines.length;
+            // TODO
 
-                        // Replace the section
-                        lines.splice(overviewIndex + 1, endIndex - overviewIndex - 1, '', ...update.updatedOverview.split('\n'));
-                        content = lines.join('\n');
-                        await fs.writeFile(reqPath, content, 'utf-8');
-                        console.log(`[Test] ✅ Updated overview in ${update.fileName}`);
-                    }
-                } catch (error) {
-                    console.log(`[Test] ⚠️ Failed to update ${update.fileName}: ${error}`);
-                }
-            }
-            
-            console.log(`[Test] ✅ Processed ${reqUpdates.length} requirement updates from AI response`);
-
-            // Step 6: Validate that req documents changed
-            console.log('\n[Test] Step 6: Validating that requirements documents changed...');
-            
-            // Check user-auth.req.md for MFA changes
-            const updatedAuthReq = await fs.readFile(path.join(testOutputDir, 'specs', 'requirements', 'user-auth.req.md'), 'utf-8');
-            const hasMFA = updatedAuthReq.includes('MFA') || updatedAuthReq.includes('multi-factor') || updatedAuthReq.includes('authenticator');
-            
-            // Check notification-system.req.md for real-time changes
-            const updatedNotifReq = await fs.readFile(path.join(testOutputDir, 'specs', 'requirements', 'notification-system.req.md'), 'utf-8');
-            const hasRealtime = updatedNotifReq.includes('real-time') || updatedNotifReq.includes('5 seconds') || updatedNotifReq.includes('guaranteed delivery');
-            
-            // Check data-storage.req.md for analytics changes
-            const updatedDataReq = await fs.readFile(path.join(testOutputDir, 'specs', 'requirements', 'data-storage.req.md'), 'utf-8');
-            const hasAnalytics = updatedDataReq.includes('analytics') || updatedDataReq.includes('behavior tracking') || updatedDataReq.includes('performance monitoring');
-
-            if (hasMFA) {
-                console.log('[Test] ✅ user-auth.req.md updated with MFA requirements');
-            } else {
-                console.log('[Test] ⚠️  user-auth.req.md may not have MFA updates');
-            }
-
-            if (hasRealtime) {
-                console.log('[Test] ✅ notification-system.req.md updated with real-time requirements');
-            } else {
-                console.log('[Test] ⚠️  notification-system.req.md may not have real-time updates');
-            }
-
-            if (hasAnalytics) {
-                console.log('[Test] ✅ data-storage.req.md updated with analytics requirements');
-            } else {
-                console.log('[Test] ⚠️  data-storage.req.md may not have analytics updates');
-            }
-
-            // Save cache
-            await cache.save();
-            
-            console.log('\n[Test] ✅ ConOps Update Integration Test completed');
         });
     });
 

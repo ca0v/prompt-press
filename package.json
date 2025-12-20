@@ -129,6 +129,7 @@
     "lint": "eslint src --ext ts",
     "test": "npm run compile && npm run test:all",
     "test:unit": "node ./out/test/runner.js",
+    "test:conops": "node ./out/test/runner.js conops",
     "test:scaffold": "node ./out/test/runner.js scaffold",
     "test:cascade": "node ./out/test/runner.js cascade",
     "test:all": "node ./out/test/runner.js all",

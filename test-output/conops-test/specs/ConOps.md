@@ -104,7 +104,6 @@ This ConOps traces to the provided requirement overviews as follows:
 - **user-auth.req.md**: Mapped to Operational Scenarios (e.g., User Registration and Login) and User Roles (e.g., End-User responsibilities). Provides simple, secure authentication mechanisms.
 
 Traceability is maintained through cross-references in scenarios and interfaces, ensuring the ConOps directly synthesizes and operationalizes the requirements into a cohesive system concept. Updates to requirements will necessitate revisions to this document.
-
 ## Additional Operational Requirements
 
 ### Multi-Factor Authentication
