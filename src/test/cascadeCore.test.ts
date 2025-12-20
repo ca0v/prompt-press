@@ -3,9 +3,12 @@
  */
 
 import * as path from 'path';
+import * as fs from 'fs';
+import { fileURLToPath } from 'url';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
 import { CascadeCore } from '../services/cascadeCore.js';
+import { TersifyActionParser } from '../services/TersifyActionParser.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';
 
 // Mock logger
@@ -161,6 +164,35 @@ Operationally, players control these geodes in web-based sessions, selecting and
 
         Assert.ok(modifiedContent.includes('## Questions & Clarifications'), 'Should add clarifications section');
         Assert.ok(modifiedContent.includes('Contradiction: FR-6'), 'Should add the clarification');
+    });
+
+    it('should handle changes from tersify response file', async () => {
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
+        const core = new CascadeCore({} as any, '/tmp', new MockLogger());
+        const parser = new MarkdownParser();
+
+        // Read the tersify response file
+        const responseFile = path.join(__dirname, '../../test/data/tersify-response.md');
+        const responseContent = fs.readFileSync(responseFile, 'utf-8');
+
+        // Parse the table from the response using parseChangeTable
+        const tableChanges = parser.parseChangeTable(responseContent);
+
+        // Group changes by document
+        const changesByDoc = parser.groupChangesByDocument(tableChanges);
+
+        // Read the mock content for faction.req
+        const requestFile = path.join(__dirname, '../../test/data/tersify-faction.req.md');
+        let mockContent = fs.readFileSync(requestFile, 'utf-8');
+
+        // Apply changes for faction.req
+        const factionChanges = changesByDoc.get('faction.req') || [];
+        for (const change of factionChanges) {
+            mockContent = core.applyChange(mockContent, change);
+        }
+
+        // No assertions - for debugging purposes
+        console.log('Final result after applying all changes:', mockContent);
     });
 
 });

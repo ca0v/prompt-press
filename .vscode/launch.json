@@ -30,7 +30,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/out/test/runner.js",
-      "args": ["parser"],
+      "args": ["cascade"],
       "outFiles": [
         "${workspaceFolder}/out/**/*.js"
       ],

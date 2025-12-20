@@ -11,6 +11,7 @@ import { GitHelper } from './gitHelper.js';
 import { PromptLogger } from '../utils/PromptLogger.js';
 import { DiffHelper, ChangeDetectionResult } from './diffHelper.js';
 import { __dirname } from '../utils/dirname.js';
+import { TersifyActionParser } from './TersifyActionParser.js';
 
 // Prompt file paths
 const PROMPTS = {
@@ -692,29 +693,7 @@ export class CascadeCore {
         const tableChanges = this.parser.parseChangeTable(aiResponse);
 
         // Group changes by document
-        const changesByDoc = new Map<string, { type: string; section: string; content: string }[]>();
-        for (const change of tableChanges) {
-            if (change.action === 'None') continue;
-
-            const docName = change.document.replace('.md', '');
-            if (!changesByDoc.has(docName)) changesByDoc.set(docName, []);
-
-            let type: string;
-            let section: string;
-            let content: string = change.details;
-
-            if (change.action.startsWith('Remove from ')) {
-                type = 'Remove from';
-                section = change.action.substring('Remove from '.length);
-            } else if (change.action.startsWith('Add to ')) {
-                type = 'Add to';
-                section = change.action.substring('Add to '.length);
-            } else {
-                continue; // unknown action
-            }
-
-            changesByDoc.get(docName)!.push({ type, section, content });
-        }
+        const changesByDoc = this.parser.groupChangesByDocument(tableChanges);
 
         // Apply changes to each document
         for (const [docName, changes] of changesByDoc) {
@@ -814,6 +793,8 @@ export class CascadeCore {
             const current = this.parser.getSection(content, primary, secondary);
             const newContent = current ? current + '\n' + contentToMatch : contentToMatch;
             return this.parser.setSection(content, primary, secondary, newContent);
+        } else {
+            this.logger.log(`[Tersify] Warning: Unknown change type "${change.type}"`);
         }
         return content;
     }

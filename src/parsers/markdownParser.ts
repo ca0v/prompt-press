@@ -1,4 +1,5 @@
 import * as fs from 'fs/promises';
+import { TersifyActionParser } from '../services/TersifyActionParser.js';
 
 export interface SpecMetadata {
     artifact: string;
@@ -275,6 +276,19 @@ export class MarkdownParser {
     }
 
     /**
+     * Find the separator row in a markdown table starting from a given index
+     */
+    private findSeparatorRow(lines: string[], startIndex: number): number {
+        for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith('|') && line.includes('---') && line.endsWith('|')) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * Parse a Markdown table of changes for tersify
      */
     public parseChangeTable(content: string): { document: string; action: string; details: string; reason: string }[] {
@@ -285,6 +299,31 @@ export class MarkdownParser {
             details: (row['Details'] || '') === '-' ? '' : (row['Details'] || ''),
             reason: (row['Reason'] || '') === '-' ? '' : (row['Reason'] || '')
         }));
+    }
+
+    /**
+     * Group changes by document, filtering out 'None' and unknown actions
+     */
+    public groupChangesByDocument(changes: { document: string; action: string; details: string; reason: string }[]): Map<string, { type: string; section: string; content: string }[]> {
+        const changesByDoc = new Map<string, { type: string; section: string; content: string }[]>();
+        for (const change of changes) {
+            if (change.action === 'None') continue;
+
+            const docName = change.document.replace('.md', '');
+            if (!changesByDoc.has(docName)) changesByDoc.set(docName, []);
+
+            const actionParser = new TersifyActionParser(change.action);
+            if (!actionParser.isKnownAction()) {
+                continue;
+            }
+
+            const type = actionParser.getActionName();
+            const section = actionParser.getActionTarget();
+            const content = change.details;
+
+            changesByDoc.get(docName)!.push({ type, section, content });
+        }
+        return changesByDoc;
     }
 
     /**
@@ -307,11 +346,8 @@ export class MarkdownParser {
         const headers = headerLine.split('|').map(h => h.trim()).filter(h => h !== '');
 
         // Find separator row
-        let separatorIndex = headerIndex + 1;
-        while (separatorIndex < lines.length && !lines[separatorIndex].includes('|---')) {
-            separatorIndex++;
-        }
-        if (separatorIndex >= lines.length) return [];
+        const separatorIndex = this.findSeparatorRow(lines, headerIndex + 1);
+        if (separatorIndex === -1) return [];
 
         // Parse data rows
         const rows: Record<string, string>[] = [];

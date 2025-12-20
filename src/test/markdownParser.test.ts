@@ -54,6 +54,19 @@ End of report.
             ];
             Assert.deepEqual(result, expected);
         });
+
+        it('should parse tersify response table with formatted separator', async () => {
+            const parser = new MarkdownParser();
+            const fs = await import('fs/promises');
+            const content = await fs.readFile('/home/ca0v/code/prompt-press/test/data/tersify-response.md', 'utf-8');
+            const result = parser.parseMarkdownTable(content);
+            Assert.equal(result.length, 20);
+            Assert.equal(result[0]['Target Document'], 'faction.req');
+            Assert.equal(result[0]['Action'], 'Remove from Overview');
+            Assert.equal(result[0]['Details'], 'The base faction is called **The Crystalline Guard** and is detailed in @faction-crystaline-guard.req;');
+            Assert.equal(result[19]['Target Document'], 'geode-rose-quartz.req');
+            Assert.equal(result[19]['Action'], 'None');
+        });
     });
     await runner.run();
 }

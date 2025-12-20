@@ -65,6 +65,7 @@ async function main() {
         } else if (runCascadeTest) {
             console.log('📦 Running Cascade Service Test\n');
             await runCascadeServiceTest();
+            await runCascadeCoreTest();
         } else if (runConOpsTest) {
             console.log('📦 Running ConOps Update Integration Test\n');
             await runConOpsUpdateIntegrationTest();
