@@ -285,8 +285,8 @@ export class ScaffoldService {
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
             
-            // Log the AI response to file
-            await this.logAiResponse('generateRequirement', systemPrompt, userPrompt, response);
+            // Log the AI interaction
+            await this.logAiInteraction('generate-requirement', systemPrompt, userPrompt, response);
             
             return response;
         } catch (error: any) {
@@ -342,8 +342,8 @@ export class ScaffoldService {
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
             
-            // Log the AI response to file
-            await this.logAiResponse('generateDesign', systemPrompt, userPrompt, response);
+            // Log the AI interaction
+            await this.logAiInteraction('generate-design', systemPrompt, userPrompt, response);
             
             return response;
         } catch (error: any) {
@@ -498,8 +498,8 @@ export class ScaffoldService {
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
             
-            // Log the AI response to file
-            await this.logAiResponse('syncImplementationSpec', systemPrompt, userPrompt, response);
+            // Log the AI interaction
+            await this.logAiInteraction('sync-implementation', systemPrompt, userPrompt, response);
             
             return response;
         } catch (error: any) {
@@ -587,10 +587,36 @@ export class ScaffoldService {
     }
 
     /**
-     * Check git status for unstaged changes
+     * Log AI request and response to files
      */
-    private async checkGitStatus(workspaceRoot: string): Promise<boolean> {
-        return GitHelper.checkGitStatus(workspaceRoot);
+    private async logAiInteraction(operation: string, systemPrompt: string, userPrompt: string, response: string): Promise<void> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders) return;
+
+            const workspaceRoot = workspaceFolders[0].uri.fsPath;
+            const logsDir = path.join(workspaceRoot, 'logs');
+            const requestDir = path.join(logsDir, 'request');
+            const responseDir = path.join(logsDir, 'response');
+            await fs.mkdir(requestDir, { recursive: true });
+            await fs.mkdir(responseDir, { recursive: true });
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const requestFile = path.join(requestDir, `${operation}-${timestamp}.md`);
+            const responseFile = path.join(responseDir, `${operation}-${timestamp}.md`);
+            
+            // Log request (system + user prompts)
+            const requestContent = `# System Prompt\n\n${systemPrompt}\n\n---\n\n# User Prompt\n\n${userPrompt}`;
+            await fs.writeFile(requestFile, requestContent, 'utf-8');
+            
+            // Log response
+            await fs.writeFile(responseFile, response, 'utf-8');
+            
+            this.outputChannel.appendLine(`[AI] Logged ${operation} request to ${requestFile}`);
+            this.outputChannel.appendLine(`[AI] Logged ${operation} response to ${responseFile}`);
+        } catch (error: any) {
+            this.outputChannel.appendLine(`[AI] Warning: Failed to log ${operation} interaction: ${error.message}`);
+        }
     }
 
     /**
@@ -605,6 +631,13 @@ export class ScaffoldService {
             this.outputChannel.appendLine(`[syncConOps] Warning: Failed to stage changes: ${errorMsg}`);
             // Don't throw - allow cascade to continue even if staging fails
         }
+    }
+
+    /**
+     * Check git status for unstaged changes
+     */
+    private async checkGitStatus(workspaceRoot: string): Promise<boolean> {
+        return GitHelper.checkGitStatus(workspaceRoot);
     }
 
     /**
@@ -825,17 +858,11 @@ export class ScaffoldService {
         ];
 
         this.outputChannel.appendLine('[syncConOps] Sending analysis to AI');
-        this.outputChannel.appendLine('[syncConOps] System Prompt:');
-        this.outputChannel.appendLine(systemPrompt);
-        this.outputChannel.appendLine('[syncConOps] User Prompt:');
-        this.outputChannel.appendLine(userPrompt);
         try {
             const response = await this.aiClient.chat(messages, { maxTokens: 6000 });
-            this.outputChannel.appendLine('[syncConOps] AI Response:');
-            this.outputChannel.appendLine(response);
             
-            // Log the AI response to file
-            await this.logAiResponse('syncConOps', systemPrompt, userPrompt, response);
+            // Log the AI interaction
+            await this.logAiInteraction('sync-conops', systemPrompt, userPrompt, response);
             
             return response;
         } catch (error: any) {
@@ -1020,6 +1047,9 @@ ${aiResponse}
             try {
                 progress.report({ message: 'Generating TOC...', increment: 50 });
                 const response = await this.aiClient.chat(messages, { maxTokens: 4000 });
+
+                // Log the AI interaction
+                await this.logAiInteraction('sync-toc', prompts.system, userPrompt, response);
 
                 // Format the markdown response
                 let formattedResponse = response;

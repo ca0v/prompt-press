@@ -353,24 +353,13 @@ export class CascadeCore {
             ];
 
             // Log the AI request
-            const logsDir = path.join(this.workspaceRoot, 'logs');
-            const requestDir = path.join(logsDir, 'request');
-            const responseDir = path.join(logsDir, 'response');
-            await fs.mkdir(requestDir, { recursive: true });
-            await fs.mkdir(responseDir, { recursive: true });
-            
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const requestFile = path.join(requestDir, `tersify-${timestamp}.md`);
-            await fs.writeFile(requestFile, userPrompt, 'utf-8');
-            this.logger.log(`[Tersify] Logged AI request to ${requestFile}`);
+            await this.logAiInteraction('tersify', prompts.system, userPrompt, '');
 
             this.logger.log('[Tersify] Calling AI to analyze documents for tersification...');
             const aiResponse = await this.xaiClient.chat(messages, { maxTokens: 4000 });
 
             // Log the AI response
-            const responseFile = path.join(responseDir, `tersify-${timestamp}.md`);
-            await fs.writeFile(responseFile, aiResponse, 'utf-8');
-            this.logger.log(`[Tersify] Logged AI response to ${responseFile}`);
+            await this.logAiInteraction('tersify-response', '', '', aiResponse);
 
             // Parse the AI response and apply changes
             await this.applyTersifyChanges(filePath, sourceContent, referencedDocs, aiResponse, result, specsDir);
@@ -453,6 +442,9 @@ export class CascadeCore {
 
             this.logger.log('[Cascade] Calling AI for document refinement...');
             const refinedContent = await this.xaiClient.chat(messages, { maxTokens: 4000 });
+
+            // Log the AI interaction
+            await this.logAiInteraction('refine-document', systemPrompt, userPrompt, refinedContent);
 
             if (refinedContent && refinedContent.trim().length > 100) {
                 await fs.writeFile(filePath, refinedContent, 'utf-8');
@@ -639,6 +631,10 @@ export class CascadeCore {
 
         this.logger.log('[Cascade] Calling AI to generate updated design...');
         const response = await this.xaiClient.chat(messages, { maxTokens: 4000 });
+
+        // Log the AI interaction
+        await this.logAiInteraction('generate-design', systemPrompt, userPrompt, response);
+
         return response;
     }
 
@@ -677,6 +673,10 @@ export class CascadeCore {
 
         this.logger.log('[Cascade] Calling AI to generate updated implementation...');
         const response = await this.xaiClient.chat(messages, { maxTokens: 4000 });
+
+        // Log the AI interaction
+        await this.logAiInteraction('sync-implementation', systemPrompt, userPrompt, response);
+
         return response;
     }
 
@@ -798,6 +798,36 @@ export class CascadeCore {
             return true;
         } catch {
             return false;
+        }
+    }
+
+    /**
+     * Log AI request and response to files
+     */
+    private async logAiInteraction(operation: string, systemPrompt: string, userPrompt: string, response: string): Promise<void> {
+        try {
+            const logsDir = path.join(this.workspaceRoot, 'logs');
+            const requestDir = path.join(logsDir, 'request');
+            const responseDir = path.join(logsDir, 'response');
+            await fs.mkdir(requestDir, { recursive: true });
+            await fs.mkdir(responseDir, { recursive: true });
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const requestFile = path.join(requestDir, `${operation}-${timestamp}.md`);
+            const responseFile = path.join(responseDir, `${operation}-${timestamp}.md`);
+            
+            // Log request (system + user prompts)
+            const requestContent = `# System Prompt\n\n${systemPrompt}\n\n---\n\n# User Prompt\n\n${userPrompt}`;
+            await fs.writeFile(requestFile, requestContent, 'utf-8');
+            
+            // Log response
+            await fs.writeFile(responseFile, response, 'utf-8');
+            
+            this.logger.log(`[AI] Logged ${operation} request to ${requestFile}`);
+            this.logger.log(`[AI] Logged ${operation} response to ${responseFile}`);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            this.logger.log(`[AI] Warning: Failed to log ${operation} interaction: ${errorMsg}`);
         }
     }
 }
