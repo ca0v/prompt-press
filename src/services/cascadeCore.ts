@@ -805,6 +805,10 @@ export class CascadeCore {
      * Log AI request and response to files
      */
     private async logAiInteraction(operation: string, systemPrompt: string, userPrompt: string, response: string): Promise<void> {
+        if (!systemPrompt.trim() || !userPrompt.trim() || !response.trim()) {
+            return;
+        }
+
         try {
             const logsDir = path.join(this.workspaceRoot, 'logs');
             const requestDir = path.join(logsDir, 'request');

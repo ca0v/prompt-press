@@ -590,6 +590,10 @@ export class ScaffoldService {
      * Log AI request and response to files
      */
     private async logAiInteraction(operation: string, systemPrompt: string, userPrompt: string, response: string): Promise<void> {
+        if (!systemPrompt.trim() || !userPrompt.trim() || !response.trim()) {
+            return;
+        }
+
         try {
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders) return;
