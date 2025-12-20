@@ -296,6 +296,34 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.tersifySpec', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showErrorMessage('No active editor. Please open a spec file.');
+                return;
+            }
+
+            const filePath = editor.document.uri.fsPath;
+            if (!filePath.match(/specs\/.*\.(req|design)\.md$/)) {
+                vscode.window.showErrorMessage('Please open a requirement or design spec file (.req.md or .design.md)');
+                return;
+            }
+
+            outputChannel.appendLine(`[Command] Tersify Spec triggered for ${filePath}`);
+            await vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Tersifying spec documents...',
+                    cancellable: false
+                },
+                async () => {
+                    await cascadeService.tersifySpec(filePath);
+                }
+            );
+        })
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.syncImplementationSpec', async () => {
             await scaffoldService.syncImplementationSpecSpec();
         })

@@ -51,6 +51,10 @@
         "title": "PromptPress: Refactor Spec"
       },
       {
+        "command": "promptpress.tersifySpec",
+        "title": "PromptPress: Tersify Spec"
+      },
+      {
         "command": "promptpress.syncConOps",
         "title": "PromptPress: Sync Concept Document (ConOps.md)"
       },

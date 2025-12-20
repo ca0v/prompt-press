@@ -26,6 +26,10 @@ class MockXAIClient {
             // Return empty string to skip refinement in tests
             return '';
         }
+        // Check for tersify
+        if (userContent.includes('Tersify Spec Documents')) {
+            return 'No changes required.';
+        }
         // Check for implementation first to avoid substring clashes
         if (userContent.includes('implementation')) {
             return this.generateMockImplementation();
@@ -505,6 +509,49 @@ version: 1.0.0
             // Verify that requirement content was passed to AI
             const allContent = mockClient.lastMessages.map((m: any) => m.content).join(' ');
             Assert.ok(allContent.includes('Requirements with specific feature'), 'AI should receive requirement content');
+        });
+
+        it('should tersify spec documents', async () => {
+            await setup();
+
+            // Create a requirement file with references
+            const reqFile = path.join(testDir, 'specs', 'requirements', 'test-artifact.req.md');
+            await fs.mkdir(path.dirname(reqFile), { recursive: true });
+            await fs.writeFile(reqFile, `---
+artifact: test-artifact
+phase: requirement
+references: ["test-artifact.design"]
+---
+
+# Test Requirements
+
+Some details about the design.
+`, 'utf-8');
+
+            // Create referenced design file
+            const designFile = path.join(testDir, 'specs', 'design', 'test-artifact.design.md');
+            await fs.mkdir(path.dirname(designFile), { recursive: true });
+            await fs.writeFile(designFile, `---
+artifact: test-artifact
+phase: design
+---
+
+# Test Design
+
+Design details.
+`, 'utf-8');
+
+            // Tersify spec
+            const result = await cascadeService.tersifySpec(reqFile, testUi);
+
+            Assert.equal(result.success, true);
+            Assert.ok(mockClient.callCount > 0, 'AI should have been called for tersify');
+            
+            // Check that the AI received the correct prompt
+            const userMessage = mockClient.lastMessages[1]?.content || '';
+            Assert.ok(userMessage.includes('Tersify Spec Documents'), 'Should call tersify prompt');
+            Assert.ok(userMessage.includes('Some details about the design'), 'Should include source content');
+            Assert.ok(userMessage.includes('Design details'), 'Should include referenced content');
         });
     });
 

@@ -65,5 +65,42 @@ export class CascadeServiceCommands {
         return await this.core.refactorSpec(filePath, ui);
     }
 
+    async tersifySpec(filePath: string) {
+        const ui: CascadeUI = {
+            confirmGitStatus: async (hasUnstaged: boolean) => {
+                if (!hasUnstaged) {
+                    return 'continue';
+                }
+                const choice = await vscode.window.showWarningMessage(
+                    'You have unstaged changes. Would you like to stage them before proceeding?',
+                    { modal: true },
+                    'Stage & Continue',
+                    'Continue Without Staging',
+                    'Cancel'
+                );
+                if (choice === 'Stage & Continue') {
+                    return 'stage';
+                } else if (choice === 'Continue Without Staging') {
+                    return 'continue';
+                } else {
+                    return 'cancel';
+                }
+            },
+            confirm: async (message: string) => {
+                const choice = await vscode.window.showWarningMessage(
+                    message,
+                    { modal: true },
+                    'Proceed',
+                    'Cancel'
+                );
+                return choice === 'Proceed';
+            },
+            notifyInfo: (msg: string) => vscode.window.showInformationMessage(msg),
+            notifyError: (msg: string) => vscode.window.showErrorMessage(msg)
+        };
+
+        return await this.core.tersifySpec(filePath, ui);
+    }
+
 }
 

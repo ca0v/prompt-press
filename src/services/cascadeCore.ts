@@ -15,7 +15,8 @@ import { __dirname } from '../utils/dirname.js';
 const PROMPTS = {
     refineDocument: path.join(__dirname, '../prompts/refineDocument.md'),
     generateDesign: path.join(__dirname, '../prompts/generateDesign.md'),
-    syncImplementationSpec: path.join(__dirname, '../prompts/syncImplementationSpec.md')
+    syncImplementationSpec: path.join(__dirname, '../prompts/syncImplementationSpec.md'),
+    tersifySpec: path.join(__dirname, '../prompts/tersifySpec.md')
 };
 
 export interface CascadeResult {
@@ -51,6 +52,10 @@ export class CascadeCore {
         private logger: Logger = console
     ) {
         this.parser = new MarkdownParser();
+    }
+
+    private escapeRegExp(string: string): string {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     private async loadPrompts(promptKey: string): Promise<{ system: string; user: string }> {
@@ -245,6 +250,143 @@ export class CascadeCore {
             this.logger.log(`[Cascade] Error: ${errorMsg}`);
             result.errors.push(errorMsg);
             ui.notifyError(`Cascade failed: ${errorMsg}`);
+            return result;
+        }
+    }
+
+    async tersifySpec(
+        filePath: string,
+        ui: CascadeUI
+    ): Promise<CascadeResult> {
+        const result: CascadeResult = {
+            success: false,
+            updatedFiles: [],
+            errors: []
+        };
+
+        try {
+            this.logger.log(`[Tersify] Starting tersification for ${path.basename(filePath)}`);
+
+            const sourceContent = await fs.readFile(filePath, 'utf-8');
+            const parsed = this.parser.parse(sourceContent);
+            const metadata = parsed.metadata;
+
+            if (!metadata || !metadata.references || metadata.references.length === 0) {
+                ui.notifyInfo('No references found in this document. Nothing to tersify.');
+                result.success = true;
+                return result;
+            }
+
+            // Load all referenced documents
+            const referencedDocs: { filename: string; content: string }[] = [];
+            const specsDir = path.join(this.workspaceRoot, 'specs');
+
+            for (const ref of metadata.references) {
+                // Parse reference to separate base name from phase
+                const parts = ref.split('.');
+                let baseName: string;
+                let specificPhase: string | null = null;
+
+                if (parts.length === 2 && (parts[1] === 'req' || parts[1] === 'design')) {
+                    // Name includes phase (e.g. "game-of-life.design")
+                    baseName = parts[0];
+                    specificPhase = parts[1];
+                } else {
+                    // Name without phase (fallback)
+                    baseName = ref;
+                }
+
+                let refPath: string;
+                if (specificPhase) {
+                    // Load from specific phase directory
+                    const phaseDir = specificPhase === 'req' ? 'requirements' : 'design';
+                    refPath = path.join(specsDir, phaseDir, `${baseName}.${specificPhase}.md`);
+                } else {
+                    // Fallback: look in specs directory
+                    refPath = path.join(specsDir, `${ref}.md`);
+                }
+
+                if (await this.fileExists(refPath)) {
+                    const content = await fs.readFile(refPath, 'utf-8');
+                    referencedDocs.push({ filename: ref, content });
+                } else {
+                    this.logger.log(`[Tersify] Referenced document not found: ${refPath}`);
+                }
+            }
+
+            if (referencedDocs.length === 0) {
+                ui.notifyInfo('No referenced documents found. Nothing to tersify.');
+                result.success = true;
+                return result;
+            }
+
+            // Check git status
+            const hasUnstaged = await this.checkGitStatus();
+            if (hasUnstaged) {
+                const gitAction = await ui.confirmGitStatus(hasUnstaged);
+                if (gitAction === 'cancel') {
+                    this.logger.log('[Tersify] User cancelled due to unstaged changes');
+                    result.success = true;
+                    return result;
+                } else if (gitAction === 'stage') {
+                    await this.stageChanges();
+                    this.logger.log('[Tersify] Staged changes, proceeding with tersification');
+                }
+            }
+
+            // Create the AI prompt
+            const prompts = await this.loadPrompts('tersifySpec');
+            const sourceFilename = path.basename(filePath);
+
+            const referencedText = referencedDocs.map(doc => 
+                `## ${doc.filename}.md\n\n${doc.content}`
+            ).join('\n\n---\n\n');
+
+            const userPrompt = prompts.user
+                .replace('{source_filename}', sourceFilename)
+                .replace('{content}', sourceContent)
+                .replace('{referenced_documents}', referencedText);
+
+            const messages: ChatMessage[] = [
+                { role: 'system', content: prompts.system },
+                { role: 'user', content: userPrompt }
+            ];
+
+            // Log the AI request
+            const logsDir = path.join(this.workspaceRoot, 'logs');
+            const requestDir = path.join(logsDir, 'request');
+            const responseDir = path.join(logsDir, 'response');
+            await fs.mkdir(requestDir, { recursive: true });
+            await fs.mkdir(responseDir, { recursive: true });
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const requestFile = path.join(requestDir, `tersify-${timestamp}.md`);
+            await fs.writeFile(requestFile, userPrompt, 'utf-8');
+            this.logger.log(`[Tersify] Logged AI request to ${requestFile}`);
+
+            this.logger.log('[Tersify] Calling AI to analyze documents for tersification...');
+            const aiResponse = await this.xaiClient.chat(messages, { maxTokens: 4000 });
+
+            // Log the AI response
+            const responseFile = path.join(responseDir, `tersify-${timestamp}.md`);
+            await fs.writeFile(responseFile, aiResponse, 'utf-8');
+            this.logger.log(`[Tersify] Logged AI response to ${responseFile}`);
+
+            // Parse the AI response and apply changes
+            await this.applyTersifyChanges(filePath, sourceContent, referencedDocs, aiResponse, result, specsDir);
+
+            result.success = result.errors.length === 0;
+            if (result.success) {
+                ui.notifyInfo(`Successfully tersified ${result.updatedFiles.length} file(s)`);
+            }
+
+            return result;
+
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            this.logger.log(`[Tersify] Error: ${errorMsg}`);
+            result.errors.push(errorMsg);
+            ui.notifyError(`Tersify failed: ${errorMsg}`);
             return result;
         }
     }
@@ -536,6 +678,129 @@ export class CascadeCore {
         this.logger.log('[Cascade] Calling AI to generate updated implementation...');
         const response = await this.xaiClient.chat(messages, { maxTokens: 4000 });
         return response;
+    }
+
+    private async applyTersifyChanges(
+        sourcePath: string,
+        sourceContent: string,
+        referencedDocs: { filename: string; content: string }[],
+        aiResponse: string,
+        result: CascadeResult,
+        specsDir: string
+    ): Promise<void> {
+        if (aiResponse.trim() === 'No changes required.') {
+            this.logger.log('[Tersify] No changes required');
+            return;
+        }
+
+        // Parse the AI response for changes
+        const lines = aiResponse.split('\n');
+        let currentDoc = '';
+        let changes: { type: string; section: string; content: string }[] = [];
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('Document: ')) {
+                // Apply changes to previous document if any
+                if (currentDoc && changes.length > 0) {
+                    await this.applyChangesToDocument(currentDoc, changes, result, specsDir, sourcePath);
+                    changes = [];
+                }
+                currentDoc = trimmed.substring('Document: '.length).replace('.md', '');
+            } else if (trimmed.startsWith('- Add to ')) {
+                const parts = trimmed.substring('- Add to '.length).split(': ');
+                if (parts.length >= 2) {
+                    changes.push({
+                        type: 'Add to',
+                        section: parts[0],
+                        content: parts.slice(1).join(': ')
+                    });
+                }
+            } else if (trimmed.startsWith('- Remove from ')) {
+                const parts = trimmed.substring('- Remove from '.length).split(': ');
+                if (parts.length >= 2) {
+                    changes.push({
+                        type: 'Remove from',
+                        section: parts[0],
+                        content: parts.slice(1).join(': ')
+                    });
+                }
+            } else if (trimmed.startsWith('- Add AI-CLARIFY section: ')) {
+                changes.push({
+                    type: 'Add',
+                    section: 'AI-CLARIFY section',
+                    content: trimmed.substring('- Add AI-CLARIFY section: '.length)
+                });
+            }
+        }
+
+        // Apply changes to the last document
+        if (currentDoc && changes.length > 0) {
+            await this.applyChangesToDocument(currentDoc, changes, result, specsDir, sourcePath);
+        }
+    }
+
+    private async applyChangesToDocument(
+        docName: string,
+        changes: { type: string; section: string; content: string }[],
+        result: CascadeResult,
+        specsDir: string,
+        sourcePath: string
+    ): Promise<void> {
+        let filePath: string;
+        if (docName === path.basename(sourcePath, '.md')) {
+            filePath = sourcePath;
+        } else {
+            // Parse docName to determine correct path
+            const parts = docName.split('.');
+            let baseName: string;
+            let specificPhase: string | null = null;
+
+            if (parts.length === 2 && (parts[1] === 'req' || parts[1] === 'design')) {
+                baseName = parts[0];
+                specificPhase = parts[1];
+            } else {
+                baseName = docName;
+            }
+
+            if (specificPhase) {
+                const phaseDir = specificPhase === 'req' ? 'requirements' : 'design';
+                filePath = path.join(specsDir, phaseDir, `${baseName}.${specificPhase}.md`);
+            } else {
+                filePath = path.join(specsDir, `${docName}.md`);
+            }
+        }
+
+        let content = await fs.readFile(filePath, 'utf-8');
+
+        for (const change of changes) {
+            if (change.type === 'Add to') {
+                // Add content to a section
+                const sectionRegex = new RegExp(this.escapeRegExp(`## ${change.section}`), 'i');
+                const match = content.match(sectionRegex);
+                if (match) {
+                    const insertPos = match.index! + match[0].length;
+                    content = content.slice(0, insertPos) + '\n\n' + change.content + content.slice(insertPos);
+                }
+            } else if (change.type === 'Remove from') {
+                // Remove content from a section (simplified - remove exact match)
+                content = content.replace(change.content, '');
+            } else if (change.type === 'Add') {
+                // Add AI-CLARIFY section
+                if (change.section === 'AI-CLARIFY section') {
+                    if (!content.includes('[AI-CLARIFY]')) {
+                        content += '\n\n## [AI-CLARIFY]\n\n' + change.content;
+                    } else {
+                        // Append to existing
+                        content = content.replace(/(\[AI-CLARIFY\][\s\S]*)$/, '$1\n\n' + change.content);
+                    }
+                }
+            }
+        }
+
+        await fs.writeFile(filePath, content, 'utf-8');
+        result.updatedFiles.push(filePath);
+        this.logger.log(`[Tersify] Updated ${docName}`);
     }
 
     private async fileExists(filePath: string): Promise<boolean> {
