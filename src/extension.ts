@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { SpecFileWatcher } from './watchers/specFileWatcher.js';
 import { XAIClient } from './ai/xaiClient.js';
 import { ChatPanelProvider } from './ui/chatPanelProvider.js';
@@ -12,6 +10,7 @@ import { ImplParser } from './services/implParser.js';
 import { FileStructureParser } from './services/fileStructureParser.js';
 import { MarkdownParser } from './parsers/markdownParser.js';
 import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
+import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -74,6 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Initialize spec provider
     const specProvider = new SpecCompletionProvider(workspaceRoot);
+    const specRefManager = new SpecReferenceManager(workspaceRoot);
     
     // Register spec completion and link providers
     context.subscriptions.push(
@@ -89,11 +89,11 @@ export function activate(context: vscode.ExtensionContext) {
         {
             provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {
                 const filePath = document.uri.fsPath;
-                const fileName = path.basename(filePath);
+                const fileName = filePath.split('/').pop() || filePath;
                 const isConOps = fileName === 'ConOps.md';
                 const currentRefMatch = fileName.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
                 const currentRef = currentRefMatch ? `${currentRefMatch[1]}.${currentRefMatch[2]}` : (isConOps ? 'ConOps' : null);
-                let currentPhase = currentRefMatch ? currentRefMatch[2] : null;
+                const currentPhase = currentRefMatch ? currentRefMatch[2] : null;
 
                 const line = document.lineAt(position).text;
                 const linePrefix = line.substr(0, position.character);
@@ -103,8 +103,8 @@ export function activate(context: vscode.ExtensionContext) {
                     const atIndex = line.lastIndexOf('@');
                     const afterAt = line.substr(atIndex + 1, position.character - atIndex - 1);
                     
-                    const allRefs = getAllSpecRefs(workspaceRoot);
-                    let allowedRefs = allRefs.filter(ref => {
+                    const allRefs = specRefManager.getAllSpecRefs();
+                    const allowedRefs = allRefs.filter(ref => {
                         if (ref === currentRef) return false; // don't show current
                         if (ref.endsWith('.impl')) return false; // don't show .impl
                         if (isConOps && !ref.endsWith('.req')) return false; // ConOps only .req
@@ -154,13 +154,13 @@ export function activate(context: vscode.ExtensionContext) {
                         return [];
                     }
                     
-                    const allRefs = getAllSpecRefs(workspaceRoot);
-                    let allowedRefs = allRefs.filter(ref => {
+                    const allRefs = specRefManager.getAllSpecRefs();
+                    const allowedRefs = allRefs.filter(ref => {
                         if (ref === currentRef) return false; // don't show current
                         if (ref.endsWith('.impl')) return false; // don't show .impl
                         if (currentPhase === 'req' && ref.endsWith('.design')) return false;
                         if (isConOps && isReferences && !ref.endsWith('.req')) return false; // ConOps references only .req
-                        if (isDependsOn && currentRef && wouldCreateCycle(ref, currentRef, workspaceRoot)) return false; // no circular
+                        if (isDependsOn && currentRef && specRefManager.wouldCreateCycle(ref, currentRef)) return false; // no circular
                         return true;
                     });
                     
@@ -193,94 +193,6 @@ export function activate(context: vscode.ExtensionContext) {
         workspaceRoot,
         diagnosticCollection
     );
-
-    // Function to resolve spec path
-    function resolveSpecPath(specRef: string, workspaceRoot: string): string {
-        const parts = specRef.split('.');
-        const artifact = parts[0];
-        const phase = parts[1];
-        let subdir = '';
-        if (phase === 'req') {
-            subdir = 'requirements';
-        } else if (phase === 'design') {
-            subdir = 'design';
-        } else if (phase === 'impl') {
-            subdir = 'implementation';
-        }
-        if (subdir) {
-            return path.join(workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
-        } else {
-            return path.join(workspaceRoot, 'specs', phase ? `${artifact}.${phase}.md` : `${artifact}.md`);
-        }
-    }
-
-
-
-    // Function to get all spec refs
-    function getAllSpecRefs(workspaceRoot: string): string[] {
-        const refs: string[] = [];
-        const specsDir = path.join(workspaceRoot, 'specs');
-        if (!fs.existsSync(specsDir)) return refs;
-        const subdirs = ['requirements', 'design', 'implementation'];
-        for (const subdir of subdirs) {
-            const dir = path.join(specsDir, subdir);
-            if (fs.existsSync(dir)) {
-                const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
-                for (const file of files) {
-                    const match = file.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
-                    if (match) {
-                        refs.push(`${match[1]}.${match[2]}`);
-                    }
-                }
-            }
-        }
-        // Add ConOps
-        if (fs.existsSync(path.join(specsDir, 'ConOps.md'))) {
-            refs.push('ConOps');
-        }
-        return refs;
-    }
-
-    // Function to get all dependencies of a spec
-    function getAllDependencies(specRef: string, workspaceRoot: string, visited: Set<string> = new Set()): Set<string> {
-        if (visited.has(specRef)) {
-            return new Set();
-        }
-        visited.add(specRef);
-        const filePath = resolveSpecPath(specRef, workspaceRoot);
-        if (!fs.existsSync(filePath)) {
-            return new Set();
-        }
-        const deps = new Set<string>();
-        try {
-            const content = fs.readFileSync(filePath, 'utf-8');
-            const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-            if (frontmatterMatch) {
-                const yaml = frontmatterMatch[1];
-                const dependsOnMatch = yaml.match(/depends-on:\s*\[([^\]]*)\]/);
-                if (dependsOnMatch) {
-                    const depsStr = dependsOnMatch[1];
-                    const depRefs = depsStr.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
-                    for (const d of depRefs) {
-                        if (d && !visited.has(d)) {
-                            deps.add(d);
-                            const sub = getAllDependencies(d, workspaceRoot, new Set(visited));
-                            sub.forEach(sd => deps.add(sd));
-                        }
-                    }
-                }
-            }
-        } catch {}
-        return deps;
-    }
-
-    // Function to check if adding dep would create cycle
-    function wouldCreateCycle(dep: string, currentRef: string, workspaceRoot: string): boolean {
-        const allDeps = getAllDependencies(dep, workspaceRoot);
-        return allDeps.has(currentRef);
-    }
-
-
 
     // Register commands
     context.subscriptions.push(
