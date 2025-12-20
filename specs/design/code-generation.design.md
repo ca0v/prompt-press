@@ -3,7 +3,7 @@ artifact: code-generation
 phase: design
 depends-on: []
 references: []
-last-updated: 2025-12-19
+last-updated: 2025-12-20
 ---
 ```
 ---
@@ -136,9 +136,4 @@ Dependencies are managed via npm; versions pinned for stability. No heavy framew
 ## Questions & Clarifications
 [AI-CLARIFY: Based on requirements clarifications, confirm prioritization of fallback AI providers (e.g., OpenAI as default secondary). For initial languages, include JavaScript/Node.js and Python in v1.0, with plugin architecture for extensibility. Specify metadata fields: include artifactId (UUID), version (semver), references (array of artifact IDs), and lastUpdated (ISO timestamp). For spec constraints, limit implementation specs to 50KB to fit AI context; use chunking for larger specs. Also, how should code generation handle dependencies in generated code (e.g., auto-include package.json for Node.js)?]
 
-## Cross-References
-[Leave empty - references are documented in the metadata header above]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
 ```

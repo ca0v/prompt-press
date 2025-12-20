@@ -55,8 +55,6 @@ Use `##` (level 2) headers for main sections. Common sections vary by phase:
 - Functional Requirements
 - Non-Functional Requirements
 - Questions & Clarifications
-- Cross-References
-- AI Interaction Log
 
 **Design Phase:**
 - Overview
@@ -66,8 +64,6 @@ Use `##` (level 2) headers for main sections. Common sections vary by phase:
 - Algorithms & Logic
 - Dependencies
 - Questions & Clarifications
-- Cross-References
-- AI Interaction Log
 
 **Implementation Phase:**
 - Overview
@@ -78,8 +74,6 @@ Use `##` (level 2) headers for main sections. Common sections vary by phase:
 - Error Handling
 - Test Cases
 - Questions & Clarifications
-- Cross-References
-- AI Interaction Log
 
 ## Special Markers
 
@@ -118,18 +112,6 @@ Request to load additional document for context.
 
 [VALIDATION: passed | failed]
 Validation result if checking spec completeness.
-```
-
-## AI Interaction Log
-
-Every spec file should end with an AI Interaction Log section (auto-maintained):
-
-```markdown
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-- [2025-12-15 14:30] User: Initial design request
-- [2025-12-15 14:31] AI: Suggested OAuth2 with PKCE flow
-- [2025-12-15 14:32] User: Approved, requested JWT format details
 ```
 
 ## Validation Rules
@@ -183,11 +165,6 @@ Secure user authentication system supporting email/password and OAuth2 providers
 [AI-CLARIFY: Should we support multi-factor authentication?]
 [AI-CLARIFY: What OAuth2 flow is preferred - authorization code or PKCE?]
 
-## Cross-References
-None (initial requirement)
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
 ```
 
 ## Extension Behavior

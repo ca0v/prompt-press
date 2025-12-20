@@ -74,11 +74,6 @@ Below is the generated TOC.md, synced with domain terms extracted from ConOps.md
   * *Documents Involved**: "ConOps.md, @prompt-management.req"
   * *Impact on Code Generation**: May result in ambiguous context management in AI interactions, potentially leading to over-inclusion of redundant data and exceeding token limits during refinement.
 
-- **Term/Concept**: AI Interaction Log Maintenance
-  * *Issue**: ConOps.md includes an "AI Interaction Log" section with updated overviews from req.md files, but this is not a standard part of the formal Markdown structure in other documents.
-  * *Documents Involved**: "ConOps.md, @prompt-management.req, @code-generation.req, @ai-provider-integration.req"
-  * *Impact on Code Generation**: Could introduce parsing inconsistencies if the extension treats logs as part of spec content, leading to non-deterministic AI parsing and refinement failures.
-
 - **Term/Concept**: Version Control Assumptions
   * *Issue**: ConOps.md assumes "users have basic Git version control knowledge", while @prompt-management.req requires Git integration but doesn't specify user knowledge levels.
   * *Documents Involved**: "ConOps.md, @prompt-management.req"

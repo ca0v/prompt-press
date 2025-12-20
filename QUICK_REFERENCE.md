@@ -72,8 +72,6 @@ last-updated: 2025-12-15
 ## Cross-References
 - @ref:other-feature.req - Description
 
-## AI Interaction Log
-<!-- Auto-maintained -->
 ```
 
 ## 🔑 Special Markers

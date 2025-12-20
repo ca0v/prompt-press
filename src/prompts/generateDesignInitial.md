@@ -35,13 +35,6 @@ last-updated: {last_updated}
 ## Questions & Clarifications
 [AI-CLARIFY: Design decisions that need input?]
 
-## Cross-References
-[Leave empty - references are documented in the metadata header above]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
-```
-
 Generate a complete, detailed design specification. Be precise about architecture and APIs.
 
 ---

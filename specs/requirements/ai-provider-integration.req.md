@@ -36,9 +36,3 @@ last-updated: 2025-12-20
 
 ## Questions & Clarifications
 [No ambiguities remain after clarifications.]
-
-## Cross-References
-[Leave empty - references are documented in the metadata header]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->

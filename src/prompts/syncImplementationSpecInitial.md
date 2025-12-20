@@ -59,12 +59,6 @@ interface Example {
 
 ## Deployment Notes
 [Build process, deployment steps]
-
-## Cross-References
-[Leave empty - references are documented in the metadata header above]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
 ```
 
 Generate a complete, precise implementation specification. Include exact function signatures, detailed logic, and comprehensive test scenarios.

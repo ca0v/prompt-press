@@ -130,11 +130,6 @@ last-updated: 2025-12-15
 ## Questions & Clarifications
 [AI-CLARIFY: Questions AI identified]
 
-## Cross-References
-[Any dependencies]
-
-## AI Interaction Log
-<!-- Auto-maintained -->
 ```
 
 ### Design Specification
@@ -172,11 +167,6 @@ last-updated: 2025-12-15
 ## Questions & Clarifications
 [AI-CLARIFY: Design questions]
 
-## Cross-References
-- @ref:user-authentication.req - Requirements
-
-## AI Interaction Log
-<!-- Auto-maintained -->
 ```
 
 ## Best Practices

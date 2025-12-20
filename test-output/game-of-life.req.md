@@ -35,9 +35,3 @@ See @game-of-life.design for design details and @game-of-life.impl for implement
 
 ## Questions & Clarifications
 [AI-CLARIFY: Should the pattern library include user-uploaded custom patterns, or only predefined ones? What specific performance benchmarks are required for large grids (e.g., target FPS on certain hardware)? Are there any constraints on technologies (e.g., must use Canvas, not WebGL)? How should toroidal edges be toggled (always on or user-configurable)?]
-
-## Cross-References
-None.
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->

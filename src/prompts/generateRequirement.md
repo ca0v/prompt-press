@@ -28,12 +28,6 @@ last-updated: {last_updated}
 
 ## Questions & Clarifications
 [AI-CLARIFY: Any ambiguities that need clarification?]
-
-## Cross-References
-[Leave empty - references are documented in the metadata header]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
 ```
 
 Generate a complete, well-structured requirement specification. Be specific and thorough.

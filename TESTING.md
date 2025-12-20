@@ -44,8 +44,6 @@ A simple hello world application.
 ## Questions & Clarifications
 [AI-CLARIFY: Should we support multiple languages?]
 
-## AI Interaction Log
-<!-- Auto-maintained -->
 EOF
 ```
 
@@ -96,11 +94,6 @@ function greet(name: string): string
 ## Questions
 [AI-CLARIFY: Should we validate name input?]
 
-## Cross-References
-- @ref:hello-world.req - Requirements
-
-## AI Interaction Log
-<!-- Auto-maintained -->
 EOF
 ```
 

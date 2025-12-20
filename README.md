@@ -14,12 +14,12 @@ PromptPress shifts technical debt from source code to parsable markdown document
 ## Core Principles
 
 - Prompts are source of truth
+- Technical debt accumulates in markdown specs, not source code - specs determine the code
 - The prompt itself is iterated on until it precisely articulates the desired outcome
 - Follows a standard SDLC with requirements, design, and implementation documentation. Both "requirements" and "design" are collaborative spaces (human + AI); "implementation" is AI-generated markdown specifications.
 - Code is generated from the "implementation" markdown, which is similar to "assembly", where the source code is analogous to "binary".
 - A single markdown file may describe one or many artifacts. Artifacts can be grouped logically within a file.
-- VS Code extension monitors markdown changes and prioritizes the Apply Changes workflow; the chat interface is optional and not auto-prompted.
-- Technical debt accumulates in markdown specs, not source code - when specs improve, code is regenerated
+- VS Code facilitates exacting specifications via the `Refactor Spec`, `Sync TOC` and `Sync ConOs` extensions.
 
 ## Development Phases
 
@@ -66,7 +66,7 @@ PromptPress follows three iterative phases that operate as a continuous cycle:
 - Extension SHALL monitor file system changes in `specs/` directory
 - Extension SHALL detect creation, modification, and deletion of `.req.md`, `.design.md`, and `.impl.md` files
 - Extension SHALL identify which specific sections or prompts have changed within a markdown file
-- Extension SHALL update the `last-updated` metadata field on save or during Apply Changes
+- Extension SHALL update the `last-updated` metadata field on save or during `Refactor Spec`
 - Extension SHALL validate `depends-on` and `references` entries (targets exist, phases valid)
 - Extension SHALL surface non-blocking status/warnings; it SHALL NOT auto-prompt chat sessions
 - Extension SHALL provide user control to enable/disable auto-monitoring
@@ -96,7 +96,7 @@ PromptPress follows three iterative phases that operate as a continuous cycle:
 - Users SHALL provide clarification feedback by:
   - Editing the markdown file directly below `[AI-CLARIFY:]` markers with their answers
   - Using the optional chat interface to respond to AI questions interactively
-  - Running Apply Changes command after updating clarifications to cascade responses
+  - Running `Refactor Spec` command after updating clarifications to cascade responses
 - AI responses SHALL be formatted with:
   - Document reference when requesting clarification (e.g., `REQUEST-DOC: artifact-name.design`)
   - Section identifiers when providing feedback
@@ -104,7 +104,7 @@ PromptPress follows three iterative phases that operate as a continuous cycle:
 
 ### FR-9: Conversational Workflow
 - Extension SHALL provide an optional chat/conversation interface within VS Code (disabled by default)
-- Extension SHALL NOT automatically prompt users to start chat sessions; Apply Changes is the primary workflow
+- Extension SHALL NOT automatically prompt users to start chat sessions; `Refactor Spec` is the primary workflow
 - Extension SHALL show the AI's response in context of the current artifact when chat is used
 - Extension SHALL allow user to approve, reject, or iterate on AI responses
 - Extension SHALL update markdown files with AI-generated content upon user approval
@@ -116,7 +116,7 @@ PromptPress follows three iterative phases that operate as a continuous cycle:
 - Extension SHALL present clarification questions to the user in the UI (via chat interface or inline in markdown)
 - User responses SHALL be submitted back to AI with expanded context either:
   - Directly via chat interface as conversational replies, OR
-  - By editing the markdown file (adding answers below `[AI-CLARIFY:]` markers) and running Apply Changes
+  - By editing the markdown file (adding answers below `[AI-CLARIFY:]` markers) and running `Refactor Spec`
 - Extension SHALL facilitate iterative refinement until spec is complete
 
 ### FR-11: Code Generation Trigger
@@ -343,15 +343,6 @@ last-updated: 2025-12-15
 [AI-CLARIFY: Specific question for AI to address?]
 [AI-CLARIFY: Another question?]
 
-## Cross-References
-- @ref:related-artifact.req - Brief description of relationship
-- @ref:another-artifact.design - Why this is relevant
-
-## AI Interaction Log
-<!-- Auto-maintained by extension -->
-- [2025-12-15 14:30] User: Initial design request
-- [2025-12-15 14:31] AI: Suggested OAuth2 with PKCE flow
-- [2025-12-15 14:32] User: Approved, requested JWT format details
 ```
 
 **AI Response Format:**
@@ -398,9 +389,9 @@ Validation result if checking spec completeness.
 9. Repeat steps 4-8 until spec is refined
 10. Extension updates markdown with final AI-generated content upon approval
 
-### Apply Changes Workflow (Cascade)
+### `Refactor Spec` Workflow (Cascade)
 
-The **Apply Changes** command automates propagation of specification changes through the SDLC phases, including refinement of the source document itself.
+The **`Refactor Spec`** command automates propagation of specification changes through the SDLC phases, including refinement of the source document itself.
 
 **When to use:**
 - After modifying a requirement spec (`.req.md`) that has dependent design/implementation files
@@ -462,7 +453,7 @@ The **Apply Changes** command automates propagation of specification changes thr
 # After editing game-of-life.req.md Overview to mention multiplayer
 1. Open game-of-life.req.md in VS Code
 2. Edit Overview: "...should support multiplayer mode with real-time sync..."
-3. Run: PromptPress: Apply Changes (Ctrl+Shift+P)
+3. Run: PromptPress: `Refactor Spec` (Ctrl+Shift+P)
 4. Extension detects uncommitted changes
    → "You have uncommitted changes. Commit before cascading?"
    → Select "Commit & Continue", commit changes

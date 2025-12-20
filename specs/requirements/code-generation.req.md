@@ -49,9 +49,3 @@ Any API compatible with ChatGPT is supported, it is just a matter of modifying t
 There is only explicit support for node and web-based projects initially because they can be linted and compiled and tested using tools any vscode user will be familar with, but they should be integrated in a modular fashion so new project types (java, dotnet, rust, etc.) can also lint and compile the generated source to confirm it is valid and run test cases.  Correctness should be a matter of clearly expressing intent in the markdown, but linters and compilers need to provide feedback to the AI as does the unit test so the AI can iterate until a solution is found that compiles and passes the tests.  Not explicitly mentioned yet, but test generation is also important and the specs should allow for explicitly listing input and expected output values for specific tests.
 
 Traceablility is overstated and managed by any change control system.
-
-## Cross-References
-[Leave empty - references are documented in the metadata header]
-
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
