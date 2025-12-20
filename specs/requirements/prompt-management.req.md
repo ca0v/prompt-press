@@ -38,6 +38,11 @@ last-updated: 2025-12-20
 - FR-11: The system shall support document request capabilities during AI interactions, allowing the AI to request additional context or related documents (e.g., other specs) to refine prompts accurately.
 - FR-12: The system shall provide error handling and feedback for prompt management operations, such as validation errors in Markdown parsing, API failures, or file system issues, with user-friendly messages displayed in VS Code.
 - FR-13: The system shall ensure traceability by linking prompt specifications to downstream artifacts (e.g., design and implementation specs), using consistent naming conventions and cross-reference mechanisms.
+- FR-14: The system shall support context building by selecting a single source of truth from related specification documents, discarding redundant summary information found in companion documents to ensure only the most accurate assertions are included.
+- FR-15: The system shall enforce strict structure on specification documents, ensuring overview information is detailed unambiguously in bullet form in subsequent sections.
+- FR-16: The system shall provide a "Refactor Spec" command that applies enhancements written in the overview section to the functional and non-functional sections.
+- FR-17: The system shall provide a "Sync TOC" command that maintains the Table of Contents up-to-date with the specifications.
+- FR-18: The system shall provide a "Sync ConOps" command that synchronizes the Concept of Operations document with the requirements documents.
 
 ## Non-Functional Requirements
 - NFR-1: Traceability - The system shall maintain clear linkage from prompt specifications to related artifacts (e.g., requirements, design, implementation) through consistent naming conventions and embedded references, enabling easy navigation and audit trails.
@@ -47,6 +52,7 @@ last-updated: 2025-12-20
 - NFR-5: Reproducibility - The system shall ensure deterministic behavior in prompt refinement and generation, with minimized ambiguity through formal Markdown structures, allowing consistent outcomes across different environments and AI model versions.
 - NFR-6: Usability - The system shall provide an intuitive VS Code interface with optional auto-monitoring features, user control over AI interactions, and comprehensive tooltips or help documentation to reduce the learning curve for prompt management.
 - NFR-7: Security - The system shall protect prompt specifications from unauthorized access, using VS Code's workspace permissions and avoiding storage of sensitive data (e.g., API keys) within prompt files.
+- NFR-8: Reliability - The system shall achieve 100% traceability and maintain a refinement failure rate below 10%.
 
 ## Questions & Clarifications
 [AI-CLARIFY: Are there specific limits on prompt file sizes or the number of versions to maintain? What constitutes a 'significant change' for automatic version incrementing? How should conflicts in Git merges for prompt files be resolved automatically versus manually? Are there predefined templates for different types of prompts (e.g., code generation vs. design refinement)?]

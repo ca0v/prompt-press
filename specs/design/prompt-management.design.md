@@ -1,146 +1,91 @@
 ---
 artifact: prompt-management
 phase: design
-depends-on: []
-references: ["prompt-management.req"]
+depends-on: ["prompt-management.req"]
+references: []
 version: 1.0.0
-last-updated: 2025-12-18
+last-updated: 2025-12-20
 ---
 
 # Prompt Management - Design
 
-## Overview
-The design for Prompt Management adopts a modular, event-driven architecture centered around a VS Code extension that treats prompt specifications as first-class, file-based artifacts. Prompts are stored as versioned Markdown files in a structured `specs/` directory, adhering to a formal schema for consistency and AI interpretability. The system leverages VS Code's file system APIs for monitoring and manipulation, integrates with Git for versioning, and uses stateless API calls to xAI for refinement. Key design principles include separation of concerns (e.g., file I/O, AI logic, UI commands), event-driven updates to cascade changes across SDLC phases, and a focus on reproducibility through formal Markdown structures. The extension provides core commands for scaffolding, refinement, and retrieval, with an optional chat interface for interactive workflows. Error handling prioritizes user feedback, and performance optimizations include caching and context summarization to manage AI API constraints.
+## Architecture Overview
+The Prompt Management system is designed as a modular, prompt-driven workflow component within PromptPress, emphasizing prompts as first-class, persistent artifacts stored in a structured `specs/` directory as versioned Markdown files. This architecture integrates seamlessly with version control systems like Git for traceability, supports iterative refinement via AI-driven interactions, and ensures formal Markdown structures to minimize ambiguity and enable deterministic outcomes in SDLC phases.
 
-## Architecture
-The architecture follows a layered approach within the VS Code extension framework, comprising four primary layers: User Interface (UI), Business Logic, Data Access, and External Integrations. Components are implemented as TypeScript modules for maintainability.
+Key updates from requirements changes include:
+- **Enhanced Focus on Prompts as Artifacts**: Prompts are now treated as core specifications with strict structure, including metadata headers (e.g., artifact, version, last-updated) and sections for overview, requirements, etc. This aligns with the source-of-truth principle by discarding redundant summary information and enforcing bullet-form details in subsequent sections for unambiguous context building.
+- **Context Management Tools**: New tools like `Refactor Spec` (for applying overview enhancements to functional/non-functional sections), `Sync TOC` (to maintain Table of Contents), and `Sync ConOps` (to synchronize Concept of Operations with requirements) are integrated to ensure spec integrity and cross-document consistency.
+- **Operational Integration**: Supports developer workflows via VS Code commands for AI refinement (e.g., clarifications or refactoring), cascading updates across phases, and historical version retrieval. Constraints like context window limits are addressed through stateless AI API interactions.
+- **User Roles and Interfaces**: Developers handle spec management, administrators configure Git. Interfaces include VS Code for editing, Git for versioning, and AI APIs for stateless refinement, ensuring <10% refinement failure rates and 100% traceability.
 
-### System Components and Modules
-- **PromptManager**: Core module handling prompt lifecycle operations (create, read, update, delete) via VS Code commands. It enforces Markdown schema validation and triggers cascading updates.
-- **FileMonitor**: Event-driven module using VS Code's file watcher API to detect changes in the `specs/` directory, emitting events for AI refinement or version increments.
-- **AIManager**: Stateless integration with xAI API for prompt refinement, managing context windows, token limits, and clarification markers (e.g., [AI-CLARIFY]).
-- **VersionController**: Git integration module for versioning, including commit creation, branching, and merge conflict resolution using VS Code's Git API.
-- **ChatInterface (Optional)**: Conversational module extending VS Code's chat API for interactive prompt modifications, bridging file-based and chat-based workflows.
-- **SchemaValidator**: Utility module for validating Markdown files against the formal schema (e.g., mandatory sections like Overview, Functional Requirements).
-- **EventBus**: Central event dispatcher for inter-module communication, enabling cascading updates (e.g., prompt change → design spec regeneration).
+The architecture follows a layered approach: a Core Layer for spec handling, an Integration Layer for Git and AI, and a Presentation Layer for VS Code interfaces. It uses event-driven updates for cascading changes and prioritizes Git-based persistence to support rollback and collaboration.
 
-### Layers
-- **UI Layer**: VS Code commands (e.g., "Scaffold New Prompt", "Apply Changes"), status bar indicators, and the optional chat interface. Handles user inputs and displays progress/error notifications.
-- **Business Logic Layer**: Orchestrates operations like refinement logic, change detection algorithms, and SDLC cascading. Includes decision flows for when to increment versions or trigger AI calls.
-- **Data Access Layer**: Abstraction for file system operations (read/write Markdown files) and Git interactions, ensuring atomicity and error recovery.
-- **External Integrations Layer**: Wrappers for xAI API (RESTful calls), VS Code Extension API, and optional integrations like external version control hooks.
+## Component Design
+The system comprises the following components, updated to incorporate new tools and strict spec structures:
 
-The architecture supports extensibility for multi-language code generation and additional AI providers via plugin interfaces.
+- **Spec Manager**: Core component responsible for creating, modifying, and retrieving prompt specifications. It enforces the formal Markdown schema (e.g., metadata headers, structured sections) and integrates with Git for versioning. New functionality includes automatic scaffolding for new specs (FR-1) and persistence as versioned files (FR-2). It triggers cascading updates to dependent phases upon changes.
 
-## API Contracts
-APIs are defined as TypeScript interfaces and function signatures, leveraging VS Code's Extension API for commands and events. Data structures use plain objects for serialization.
+- **Context Builder**: Handles single-source-of-truth context selection by parsing related specs, discarding redundant summaries, and enforcing bullet-form details in overview sections. It ensures only the most accurate assertions from companion documents are included.
 
-### Key Interfaces
-- **IPromptSpec**: Represents a prompt Markdown file structure.
-  ```typescript
-  interface IPromptSpec {
-    metadata: {
-      artifact: string;
-      phase: 'requirement' | 'design' | 'implementation';
-      version: string;
-      lastUpdated: string;
-      dependsOn: string[];
-      references: string[];
-    };
-    sections: {
-      overview: string;
-      functionalRequirements: string[];
-      nonFunctionalRequirements: string[];
-      questionsClarifications: string;
-      crossReferences: string;
-      aiInteractionLog: string;
-    };
-  }
-  ```
-- **IAIManager**: Handles AI interactions.
-  ```typescript
-  interface IAIManager {
-    refinePrompt(spec: IPromptSpec, userInput: string): Promise<IPromptSpec>;
-    requestDocument(spec: IPromptSpec, docType: string): Promise<string>;
-  }
-  ```
-- **IVersionController**: Manages versioning.
-  ```typescript
-  interface IVersionController {
-    commitChanges(filePath: string, message: string): Promise<void>;
-    incrementVersion(currentVersion: string, changeType: 'patch' | 'minor' | 'major'): string;
-    resolveConflict(filePath: string, ours: string, theirs: string): Promise<string>;
-  }
-  ```
+- **Refinement Engine**: Interfaces with AI APIs for stateless prompt refinement (e.g., clarifications via VS Code commands). It monitors context window limits to prevent failures and supports iterative enhancements, integrating with the Spec Manager for updates.
 
-### Function Signatures
-- **PromptManager.createPrompt(artifactName: string, initialContent: string): Promise<string>**: Creates a new Markdown file in `specs/` with scaffolded structure, returns file path.
-- **FileMonitor.onFileChange(filePath: string, event: 'create' | 'update' | 'delete'): void**: Emits events to PromptManager for processing.
-- **AIManager.callXAI(prompt: string, context: object): Promise<string>**: Makes stateless API call to xAI, handling token limits by summarizing context if needed.
-- **VersionController.detectSignificantChange(oldSpec: IPromptSpec, newSpec: IPromptSpec): boolean**: Compares specs to determine if version increment is required (e.g., via semantic diff on requirements).
+- **Sync Tools Suite**: A new suite including:
+  - `Refactor Spec`: Applies overview enhancements to functional and non-functional sections, ensuring structural consistency.
+  - `Sync TOC`: Dynamically updates the Table of Contents based on spec changes.
+  - `Sync ConOps`: Maintains synchronization between Concept of Operations and requirements documents, triggering events for cascading updates.
 
-Data structures prioritize JSON-serializable formats for persistence and AI API compatibility.
+- **Version Control Integrator**: Manages Git interactions for committing changes, retrieving historical versions, and rollback. It assumes user Git knowledge and provides admin interfaces for setup.
 
-## Data Model
-No traditional database; data is file-based with Markdown as the primary storage format. Relationships are maintained through file paths, metadata references, and naming conventions.
+- **VS Code Extension Interface**: Provides commands for spec editing, AI refinement requests, and sync tool execution. It handles user roles (developers for editing, admins for Git config) and ensures UI-driven workflows.
 
-### Markdown File Schema
-Each prompt file follows a strict structure for determinism:
-- Header: YAML frontmatter with metadata (artifact, phase, version, etc.).
-- Body: Sections like Overview, Functional Requirements (bulleted FR- items), Non-Functional Requirements, Questions & Clarifications, etc.
-- Relationships: Cross-references via artifact names (e.g., "design.spec" links to "implementation.spec"); versioning via Git history.
+Components communicate via an event bus for real-time updates (e.g., spec changes triggering Sync ConOps), with all data persisted in the `specs/` directory.
 
-### Data Structures
-- **PromptGraph**: In-memory graph of specs for cascading updates, represented as a Map<string, IPromptSpec> where keys are artifact names and values include dependencies.
-- **ChangeLog**: Array of change objects for version tracking: `{ timestamp: Date, changeType: string, details: string }`, stored in AI Interaction Log section.
+## Data Structures
+Key data structures have been updated to support the new strict schema and tools:
 
-### Relationships
-- One-to-many: A requirement spec can depend on multiple design specs (via depends-on array).
-- Hierarchical: Specs in `specs/` directory with subdirs like `specs/prompts/`, `specs/designs/` for organization.
-- Traceability: Embedded links (e.g., [artifact:design]) for navigation; Git provides historical relationships.
+- **PromptSpec (Object)**:
+  - Fields: `artifact` (string), `phase` (string, e.g., "requirement"), `depends-on` (array of strings), `references` (array of strings), `version` (string, e.g., "1.0.0"), `last-updated` (ISO date string), `content` (object with sections: `overview` (array of bullet strings), `requirements` (array of FR objects), etc.).
+  - Purpose: Represents a full spec in Markdown format, enforcing structure for context building and tool integration (e.g., `Refactor Spec` modifies `content` sections based on `overview`).
 
-## Algorithms & Logic
-Key algorithms focus on efficiency, determinism, and AI integration.
+- **ContextSnapshot (Object)**:
+  - Fields: `sourceSpecId` (string), `relatedSpecs` (array of PromptSpec IDs), `filteredAssertions` (array of bullet strings), `discardedSummaries` (set of strings).
+  - Purpose: Captures the single-source-of-truth context, ensuring only unique, unambiguous details are retained from companion docs.
 
-### Change Detection Algorithm
-1. On file save/commit, compute diff using VS Code's text diff API.
-2. If changes affect FR/NFR sections, flag for refinement.
-3. Cascade: Update dependent specs by triggering AIManager.refinePrompt() with propagated changes.
+- **RefinementRequest (Object)**:
+  - Fields: `specId` (string), `requestType` (enum: "clarify", "refactor"), `aiPrompt` (string, constrained to context window), `response` (string), `successRate` (float, tracked for <10% failure metric).
+  - Purpose: Manages AI-driven refinement, integrating with the Refinement Engine to update specs.
 
-### AI Refinement Logic
-1. Parse Markdown to extract sections.
-2. Build context: Summarize related specs if context window exceeds 80% of xAI limit (e.g., 4096 tokens).
-3. Call xAI with prompt: "Refine this spec based on [userInput], addressing [clarifications]."
-4. Parse response, validate against schema, and merge updates.
-5. If [AI-CLARIFY] markers found, prompt user for input via UI.
+- **SyncEvent (Object)**:
+  - Fields: `tool` (enum: "Refactor Spec", "Sync TOC", "Sync ConOps"), `affectedSpec` (PromptSpec), `changesApplied` (array of diffs).
+  - Purpose: Tracks sync tool executions for auditing and cascading updates.
 
-### Versioning Logic
-- Increment based on semantic versioning: Patch for clarifications, minor for new FRs, major for structural changes.
-- Automatic: If significant change detected (e.g., >10% content diff), increment and commit.
-- Manual override via command for user control.
+These structures use JSON for serialization in memory and Markdown for file storage, with validation against schemas to enforce structure.
 
-### Cascading Update Flow
-- Event: Prompt file changed.
-- Decision: If phase is 'requirement', notify dependents (design, implementation).
-- Action: Queue AI refinements for each dependent, with progress UI.
-- Fallback: On API failure, revert to last version and log error.
+## API Design
+APIs have been updated to expose new tools and refinement capabilities:
 
-Business logic ensures prompts drive SDLC: Requirements → Design → Implementation, with AI enabling iterative refinement.
+- **SpecManagerAPI**:
+  - `createSpec(metadata: object, template: string) -> PromptSpec`: Creates a new spec with scaffolding (metadata headers, predefined sections) in `specs/` directory.
+  - `updateSpec(id: string, changes: object) -> void`: Modifies spec content, triggers Git commit and sync events.
+  - `getSpec(id: string, version?: string) -> PromptSpec`: Retrieves current or historical versions via Git.
 
-## Dependencies
-- **VS Code Extension API**: Core for commands, file watching, Git integration (e.g., @types/vscode).
-- **xAI API**: For AI calls (RESTful, requires API key management via VS Code secrets).
-- **Markdown Parsing**: Library like 'remark' or 'marked' for schema validation and manipulation.
-- **Git Integration**: VS Code's built-in Git API or 'simple-git' for advanced operations.
-- **External Services**: None mandatory, but optional for CI/CD (e.g., GitHub API for pull requests).
+- **ContextBuilderAPI**:
+  - `buildContext(specId: string) -> ContextSnapshot`: Selects and filters context from related specs, discarding summaries.
 
-All dependencies are open-source and compatible with VS Code's extension hosting.
+- **RefinementEngineAPI**:
+  - `refinePrompt(specId: string, request: RefinementRequest) -> string`: Sends stateless AI request, applies response to spec, logs success rate.
 
-## Questions & Clarifications
-[AI-CLARIFY: Should the Markdown schema support custom sections beyond the standard ones? How to handle prompt file sizes exceeding AI context limits (e.g., chunking strategy)? What specific Git merge strategies should be implemented for conflicts (e.g., always favor newer, or user-prompt)? Are there predefined prompt templates for different artifact types (e.g., code vs. design), and how should they be stored/configured? How to integrate with multiple AI providers if xAI is unavailable?]
+- **SyncToolsAPI**:
+  - `refactorSpec(specId: string, enhancements: array) -> void`: Updates functional/non-functional sections from overview.
+  - `syncTOC(specId: string) -> void`: Regenerates Table of Contents.
+  - `syncConOps(reqSpecId: string, conopsId: string) -> void`: Synchronizes documents and cascades updates.
 
-## Cross-References
-[Leave empty - references are documented in the metadata header above]
+All APIs are RESTful over HTTPS, with authentication for role-based access (developers vs. admins), and include error handling for constraints like context windows.
 
-## AI Interaction Log
-<!-- Auto-maintained by PromptPress extension -->
+## Performance Considerations
+To address updates like AI refinement and sync tools, optimizations focus on efficiency:
+- **Caching**: Cache ContextSnapshots and PromptSpecs in memory to reduce file I/O for frequent access, minimizing latency in VS Code interactions.
+- **Asynchronous Processing**: Run refinement and sync operations async via the event bus to avoid blocking UI, ensuring <10% failure rates through retry logic and AI API throttling.
+- **Git Optimization**: Use shallow clones and delta commits for versioning to handle large spec histories without excessive storage.
+- **Context Window Management**: Pre-filter and truncate inputs to AI APIs, logging metrics to maintain deterministic outcomes under limits.
+- **Scalability**: Event-driven architecture supports horizontal scaling for concurrent spec updates, with database-backed metadata for traceability queries. Monitor for bottlenecks in cascading updates via profiling tools.
