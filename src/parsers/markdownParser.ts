@@ -266,4 +266,60 @@ export class MarkdownParser {
     private escapeRegExp(string: string): string {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
+
+    /**
+     * Parse a Markdown table of changes for tersify
+     */
+    public parseChangeTable(content: string): { document: string; action: string; details: string }[] {
+        const tableData = this.parseMarkdownTable(content);
+        return tableData.map(row => ({
+            document: row['Document'] || '',
+            action: row['Action'] || '',
+            details: (row['Details'] || '') === '-' ? '' : (row['Details'] || '')
+        }));
+    }
+
+    /**
+     * Generalized Markdown table parser
+     * Returns an array of objects where keys are header names and values are cell content
+     */
+    public parseMarkdownTable(content: string): Record<string, string>[] {
+        const lines = content.split('\n');
+        const tableStart = lines.findIndex(line => line.trim().startsWith('|') && !line.includes('|---'));
+        if (tableStart === -1) return [];
+
+        // Find header row
+        let headerIndex = tableStart;
+        while (headerIndex < lines.length && !lines[headerIndex].includes('|')) {
+            headerIndex++;
+        }
+        if (headerIndex >= lines.length) return [];
+
+        const headerLine = lines[headerIndex].trim();
+        const headers = headerLine.split('|').map(h => h.trim()).filter(h => h !== '');
+
+        // Find separator row
+        let separatorIndex = headerIndex + 1;
+        while (separatorIndex < lines.length && !lines[separatorIndex].includes('|---')) {
+            separatorIndex++;
+        }
+        if (separatorIndex >= lines.length) return [];
+
+        // Parse data rows
+        const rows: Record<string, string>[] = [];
+        for (let i = separatorIndex + 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line.startsWith('|') || line.includes('|---') || line.trim() === '') continue;
+
+            const cells = line.split('|').map(c => c.trim()).filter(c => c !== '');
+            if (cells.length === headers.length) {
+                const row: Record<string, string> = {};
+                headers.forEach((header, index) => {
+                    row[header] = cells[index] || '';
+                });
+                rows.push(row);
+            }
+        }
+        return rows;
+    }
 }

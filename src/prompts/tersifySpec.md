@@ -14,15 +14,15 @@ For each referenced document, perform the following:
 
 4. If the details in the source document could be learned by reading the referenced document, remove them from the source document to avoid duplication.
 
-Respond with a structured summary of changes for each document that requires changes. Use this exact format:
+Respond with a Markdown table summarizing the changes:
 
-Document: filename.md
-Changes:
-- Add to section_name: content to add
-- Remove from section_name: content to remove
-- Add to AI-CLARIFY section: clarification content
+| Document | Action | Details |
+|----------|--------|---------|
+| filename.md | Remove from Overview | content to remove |
+| filename.md | Add to AI-CLARIFY section | clarification content |
+| ... | ... | ... |
 
-If no changes are needed for any document, respond with "No changes required."
+Use "None" in the Action column and "-" in Details for documents with no changes. Rows should be ordered by document appearance in the original list.
 
 ---
 

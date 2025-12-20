@@ -688,55 +688,37 @@ export class CascadeCore {
         result: CascadeResult,
         specsDir: string
     ): Promise<void> {
-        if (aiResponse.trim() === 'No changes required.') {
-            this.logger.log('[Tersify] No changes required');
-            return;
-        }
+        // Parse the AI response table
+        const tableChanges = this.parser.parseChangeTable(aiResponse);
 
-        // Parse the AI response for changes
-        const lines = aiResponse.split('\n');
-        let currentDoc = '';
-        let changes: { type: string; section: string; content: string }[] = [];
+        // Group changes by document
+        const changesByDoc = new Map<string, { type: string; section: string; content: string }[]>();
+        for (const change of tableChanges) {
+            if (change.action === 'None') continue;
 
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('Document: ')) {
-                // Apply changes to previous document if any
-                if (currentDoc && changes.length > 0) {
-                    await this.applyChangesToDocument(currentDoc, changes, result, specsDir, sourcePath);
-                    changes = [];
-                }
-                currentDoc = trimmed.substring('Document: '.length).replace('.md', '');
-            } else if (trimmed.startsWith('- Add to ')) {
-                const parts = trimmed.substring('- Add to '.length).split(': ');
-                if (parts.length >= 2) {
-                    changes.push({
-                        type: 'Add to',
-                        section: parts[0],
-                        content: parts.slice(1).join(': ')
-                    });
-                }
-            } else if (trimmed.startsWith('- Remove from ')) {
-                const parts = trimmed.substring('- Remove from '.length).split(': ');
-                if (parts.length >= 2) {
-                    changes.push({
-                        type: 'Remove from',
-                        section: parts[0],
-                        content: parts.slice(1).join(': ')
-                    });
-                }
-            } else if (trimmed.startsWith('- Add to AI-CLARIFY section: ')) {
-                changes.push({
-                    type: 'Add to',
-                    section: 'AI-CLARIFY section',
-                    content: trimmed.substring('- Add to AI-CLARIFY section: '.length)
-                });
+            const docName = change.document.replace('.md', '');
+            if (!changesByDoc.has(docName)) changesByDoc.set(docName, []);
+
+            let type: string;
+            let section: string;
+            let content: string = change.details;
+
+            if (change.action.startsWith('Remove from ')) {
+                type = 'Remove from';
+                section = change.action.substring('Remove from '.length);
+            } else if (change.action.startsWith('Add to ')) {
+                type = 'Add to';
+                section = change.action.substring('Add to '.length);
+            } else {
+                continue; // unknown action
             }
+
+            changesByDoc.get(docName)!.push({ type, section, content });
         }
 
-        // Apply changes to the last document
-        if (currentDoc && changes.length > 0) {
-            await this.applyChangesToDocument(currentDoc, changes, result, specsDir, sourcePath);
+        // Apply changes to each document
+        for (const [docName, changes] of changesByDoc) {
+            await this.applyChangesToDocument(docName, changes, result, specsDir, sourcePath);
         }
     }
 
