@@ -27,7 +27,11 @@ Respond only with a Markdown table of proposed changes:
 - Target Document is the document to modify.
 - Order rows by appearance in the references list, then dependents list.
 - For documents with no changes, use "None" | "-" | "-".
-- In the Details column, provide the exact text to remove or add without any prefixes like "The sentence" or additional phrasing. If the text contains the pipe character (|), replace it with &vert; or rephrase to avoid it, as it may interfere with markdown table parsing.
+- Action must be one of:
+  - "Remove from [Section Name]" where [Section Name] is the exact main section header (e.g., "Overview", "Functional Requirements", "Non-Functional Requirements") from the target document. Do not use subsection names like "FR-3" or individual requirement identifiers.
+  - "Add to [AI-CLARIFY] section"
+  - "None"
+- In the Details column, provide the exact text to remove or add, including any subsection labels like "FR-3:" if they are part of the text being removed. Do not add extra prefixes or rephrase; use verbatim text from the document. If the text contains the pipe character (|), replace it with &vert; or rephrase to avoid it, as it may interfere with markdown table parsing.
 
 # User Prompt
 Source document: game-board.req.md

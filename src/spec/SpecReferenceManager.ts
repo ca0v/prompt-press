@@ -1,11 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { MarkdownParser } from '../parsers/markdownParser.js';
 
 export class SpecReferenceManager {
     private workspaceRoot: string;
+    private markdownParser: MarkdownParser;
 
     constructor(workspaceRoot: string) {
         this.workspaceRoot = workspaceRoot;
+        this.markdownParser = new MarkdownParser();
     }
 
     resolveSpecPath(specRef: string): string {
@@ -63,19 +66,13 @@ export class SpecReferenceManager {
         const deps = new Set<string>();
         try {
             const content = fs.readFileSync(filePath, 'utf-8');
-            const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-            if (frontmatterMatch) {
-                const yaml = frontmatterMatch[1];
-                const dependsOnMatch = yaml.match(/depends-on:\s*\[([^\]]*)\]/);
-                if (dependsOnMatch) {
-                    const depsStr = dependsOnMatch[1];
-                    const depRefs = depsStr.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
-                    for (const d of depRefs) {
-                        if (d && !visited.has(d)) {
-                            deps.add(d);
-                            const sub = this.getAllDependencies(d, new Set(visited));
-                            sub.forEach(sd => deps.add(sd));
-                        }
+            const parsed = this.markdownParser.parse(content);
+            if (parsed.metadata.dependsOn) {
+                for (const d of parsed.metadata.dependsOn) {
+                    if (d && !visited.has(d)) {
+                        deps.add(d);
+                        const sub = this.getAllDependencies(d, new Set(visited));
+                        sub.forEach(sd => deps.add(sd));
                     }
                 }
             }
