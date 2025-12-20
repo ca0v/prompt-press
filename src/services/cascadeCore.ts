@@ -725,11 +725,11 @@ export class CascadeCore {
                         content: parts.slice(1).join(': ')
                     });
                 }
-            } else if (trimmed.startsWith('- Add AI-CLARIFY section: ')) {
+            } else if (trimmed.startsWith('- Add to AI-CLARIFY section: ')) {
                 changes.push({
-                    type: 'Add',
+                    type: 'Add to',
                     section: 'AI-CLARIFY section',
-                    content: trimmed.substring('- Add AI-CLARIFY section: '.length)
+                    content: trimmed.substring('- Add to AI-CLARIFY section: '.length)
                 });
             }
         }
@@ -774,33 +774,40 @@ export class CascadeCore {
         let content = await fs.readFile(filePath, 'utf-8');
 
         for (const change of changes) {
-            if (change.type === 'Add to') {
-                // Add content to a section
-                const sectionRegex = new RegExp(this.escapeRegExp(`## ${change.section}`), 'i');
-                const match = content.match(sectionRegex);
-                if (match) {
-                    const insertPos = match.index! + match[0].length;
-                    content = content.slice(0, insertPos) + '\n\n' + change.content + content.slice(insertPos);
-                }
-            } else if (change.type === 'Remove from') {
-                // Remove content from a section (simplified - remove exact match)
-                content = content.replace(change.content, '');
-            } else if (change.type === 'Add') {
-                // Add AI-CLARIFY section
-                if (change.section === 'AI-CLARIFY section') {
-                    if (!content.includes('[AI-CLARIFY]')) {
-                        content += '\n\n## [AI-CLARIFY]\n\n' + change.content;
-                    } else {
-                        // Append to existing
-                        content = content.replace(/(\[AI-CLARIFY\][\s\S]*)$/, '$1\n\n' + change.content);
-                    }
-                }
-            }
+            content = this.applyChange(content, change);
         }
 
         await fs.writeFile(filePath, content, 'utf-8');
         result.updatedFiles.push(filePath);
         this.logger.log(`[Tersify] Updated ${docName}`);
+    }
+
+    private parseSection(section: string): { primary: string; secondary?: string } {
+        if (section === 'AI-CLARIFY section') {
+            return { primary: 'Questions & Clarifications' };
+        }
+        const parts = section.split(' ');
+        if (parts.length > 1) {
+            const lastPart = parts[parts.length - 1];
+            if (/^(FR|NFR)-\d+$/.test(lastPart)) {
+                return { primary: parts.slice(0, -1).join(' '), secondary: lastPart };
+            }
+        }
+        return { primary: section };
+    }
+
+    private applyChange(content: string, change: { type: string; section: string; content: string }): string {
+        const { primary, secondary } = this.parseSection(change.section);
+        if (change.type === 'Remove from') {
+            const current = this.parser.getSection(content, primary, secondary);
+            const newContent = current.replace(change.content, '').trim();
+            return this.parser.setSection(content, primary, secondary, newContent);
+        } else if (change.type === 'Add to') {
+            const current = this.parser.getSection(content, primary, secondary);
+            const newContent = current ? current + '\n' + change.content : change.content;
+            return this.parser.setSection(content, primary, secondary, newContent);
+        }
+        return content;
     }
 
     private async fileExists(filePath: string): Promise<boolean> {

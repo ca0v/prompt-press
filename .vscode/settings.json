@@ -3,13 +3,15 @@
     "**/*.baseline": true,
     ".promptpress/**": true,
     "templates/**": true,
-    "*.js": true
+    "out/**": true,
   },
   "files.exclude": {
     "node_modules": true,
     ".github": true,
     ".promptpress": true,
     ".vscode": true,
-    "out": true,
+    "*.js": true,
+    "test-output": true,
+    "out/**": true,
   }
 }

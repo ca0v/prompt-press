@@ -189,4 +189,81 @@ export class MarkdownParser {
             errors
         };
     }
+
+    /**
+     * Get the Overview section content
+     */
+    public getOverview(content: string): string {
+        const match = content.match(/## Overview\n([\s\S]*?)(\n## |\n---|\n$)/);
+        return match ? match[1].trim() : "";
+    }
+
+    /**
+     * Set the Overview section content
+     */
+    public setOverview(content: string, newOverview: string): string {
+        const regex = /(## Overview\n)([\s\S]*?)(\n## |\n---|\n$)/;
+        if (regex.test(content)) {
+            return content.replace(regex, `$1${newOverview}$3`);
+        } else {
+            // If no Overview section, add it after title
+            const titleMatch = content.match(/^# .+\n/);
+            if (titleMatch) {
+                const insertPoint = titleMatch.index! + titleMatch[0].length;
+                return content.slice(0, insertPoint) + `\n## Overview\n${newOverview}\n` + content.slice(insertPoint);
+            }
+            return content;
+        }
+    }
+
+    /**
+     * Get a section content, optionally with a secondary subsection
+     */
+    public getSection(content: string, primarySection: string, secondarySection?: string): string {
+        const sectionRegex = new RegExp(`## ${this.escapeRegExp(primarySection)}\n([\\s\\S]*?)(\\n## |\\n---|\\n$)`, 'i');
+        const sectionMatch = content.match(sectionRegex);
+        if (!sectionMatch) return "";
+
+        const sectionContent = sectionMatch[1];
+        if (!secondarySection) return sectionContent.trim();
+
+        // Find the secondary item (e.g., FR-1, NFR-1)
+        const itemRegex = new RegExp(`- ${this.escapeRegExp(secondarySection)}: ([^\\n]+(?:\\n(?!- [^:]+: )[^\\n]*)*)`, 'gi');
+        const itemMatch = itemRegex.exec(sectionContent);
+        return itemMatch ? itemMatch[1].trim() : "";
+    }
+
+    /**
+     * Set a section content, optionally with a secondary subsection
+     */
+    public setSection(content: string, primarySection: string, secondarySection: string | undefined, newBody: string): string {
+        if (!secondarySection) {
+            // Replace the whole section
+            const regex = new RegExp(`(## ${this.escapeRegExp(primarySection)}\n)([\\s\\S]*?)(\\n## |\\n---|\\n$)`, 'i');
+            if (regex.test(content)) {
+                return content.replace(regex, `$1${newBody}$3`);
+            } else {
+                // Add new section at the end
+                return content + `\n## ${primarySection}\n${newBody}\n`;
+            }
+        } else {
+            // Replace within the section
+            const sectionRegex = new RegExp(`## ${this.escapeRegExp(primarySection)}\n([\\s\\S]*?)(\\n## |\\n---|\\n$)`, 'i');
+            const sectionMatch = content.match(sectionRegex);
+            if (!sectionMatch) return content;
+
+            const sectionContent = sectionMatch[1];
+            const itemRegex = new RegExp(`(- ${this.escapeRegExp(secondarySection)}: )([^\\n]+(?:\\n(?!- [^:]+: )[^\\n]*)*)`, 'gi');
+            const newSectionContent = sectionContent.replace(itemRegex, `$1${newBody}`);
+            const newSection = `## ${primarySection}\n${newSectionContent}`;
+            return content.replace(sectionRegex, newSection + sectionMatch[2]);
+        }
+    }
+
+    /**
+     * Helper to escape regex special characters
+     */
+    private escapeRegExp(string: string): string {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
 }

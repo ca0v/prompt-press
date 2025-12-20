@@ -20,7 +20,7 @@ Document: filename.md
 Changes:
 - Add to section_name: content to add
 - Remove from section_name: content to remove
-- Add AI-CLARIFY section: clarification content
+- Add to AI-CLARIFY section: clarification content
 
 If no changes are needed for any document, respond with "No changes required."
 
