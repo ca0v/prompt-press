@@ -127,7 +127,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "npm run compile && node ./out/test/runner.js",
+    "test": "npm run compile && npm run test:all",
     "test:unit": "node ./out/test/runner.js",
     "test:scaffold": "node ./out/test/runner.js scaffold",
     "test:cascade": "node ./out/test/runner.js cascade",

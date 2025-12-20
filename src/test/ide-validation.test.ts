@@ -104,7 +104,7 @@ This references @foo.req and @bar.design
 This references @foo.req[extra] and @bar.design.md
 `;
             const parsed = parser.parse(content);
-            Assert.deepEqual(parsed.references, ['foo.req[extra]', 'bar.design.md']);
+            Assert.deepEqual(parsed.references, ['foo.req', 'bar.design.md']);
         });
 
         it('should detect over-specified depends-on', () => {

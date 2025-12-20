@@ -8,6 +8,7 @@ import * as path from 'path';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
 import { XAIClient } from '../ai/xaiClient.js';
+import { __dirname } from '../utils/dirname.js';
 
 // Simple cache implementation
 class ResponseCache {
