@@ -25,6 +25,7 @@ Respond only with a Markdown table of proposed changes:
 - Target Document is always the document to modify (usually game-board.req.md for removals).
 - Order rows by appearance in the references list.
 - For referenced documents with no changes, use "None" | "-" | "-".
+- In the Details column, provide the exact text to remove or add without any prefixes like "The sentence" or additional phrasing. If the text contains the pipe character (|), replace it with &vert; or rephrase to avoid it, as it may interfere with markdown table parsing.
 
 # User Prompt
 Source document: game-board.req.md

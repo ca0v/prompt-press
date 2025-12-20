@@ -754,14 +754,19 @@ export class CascadeCore {
         }
 
         let content = await fs.readFile(filePath, 'utf-8');
+        const originalContent = content;
 
         for (const change of changes) {
             content = this.applyChange(content, change);
         }
 
-        await fs.writeFile(filePath, content, 'utf-8');
-        result.updatedFiles.push(filePath);
-        this.logger.log(`[Tersify] Updated ${docName}`);
+        if (content !== originalContent) {
+            await fs.writeFile(filePath, content, 'utf-8');
+            result.updatedFiles.push(filePath);
+            this.logger.log(`[Tersify] Updated ${docName}`);
+        } else {
+            this.logger.log(`[Tersify] No changes applied to ${docName} - text not found or already up to date`);
+        }
     }
 
     private parseSection(section: string): { primary: string; secondary?: string } {
@@ -782,6 +787,9 @@ export class CascadeCore {
         const { primary, secondary } = this.parseSection(change.section);
         if (change.type === 'Remove from') {
             const current = this.parser.getSection(content, primary, secondary);
+            if (!current.includes(change.content)) {
+                this.logger.log(`[Tersify] Warning: Text to remove not found in ${primary}${secondary ? ' ' + secondary : ''}: ${change.content.substring(0, 100)}${change.content.length > 100 ? '...' : ''}`);
+            }
             const newContent = current.replace(change.content, '').trim();
             return this.parser.setSection(content, primary, secondary, newContent);
         } else if (change.type === 'Add to') {
