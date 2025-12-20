@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 export class FileStructureParser {
     constructor(private outputChannel: vscode.OutputChannel) { }

@@ -3,7 +3,7 @@
  * Reproduces and tests the 404 error
  */
 
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 import { XAIClient } from '../ai/xaiClient.js';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
