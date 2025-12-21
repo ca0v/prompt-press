@@ -32,8 +32,6 @@ last-updated: {last_updated}
 ## API Design
 [Interface definitions - INCLUDE new/modified APIs]
 
-## Performance Considerations
-[Optimization strategies - CONSIDER performance impacts]
 ```
 
 Be specific and technically detailed. ENSURE changes are properly integrated into the design.
