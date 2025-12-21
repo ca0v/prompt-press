@@ -15,4 +15,7 @@ description: This prompt refactors a requirement specification document by synch
 8. Ensure each non-functional requirement in the `Non-Functional Requirements` section is atomic, testable, and unambiguous.
 9. Revise the `Overview` section to keep it as a high-level summary only, removing any specific requirement details that have been moved.
 
+POST-PROCESSING:
+
+Re-evaluate the `Overview` section for excessive wording or unnecessary claims.  It should be concise and focused on summarizing the requirements without extraneous information.
 ---
