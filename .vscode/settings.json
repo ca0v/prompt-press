@@ -7,7 +7,7 @@
   },
   "files.exclude": {
     "node_modules": true,
-    ".github": true,
+    ".github": false,
     ".promptpress": true,
     ".vscode": true,
     "*.js": true,
