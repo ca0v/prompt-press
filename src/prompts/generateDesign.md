@@ -8,33 +8,49 @@ Modified sections: {modified_sections}
 Your design MUST address these changes and integrate them properly.
 
 ## Expected Structure:
+
 ```
 ---
 artifact: {artifact_name}
 phase: design
-depends-on: [{artifact_name}.req]
-references: []
+depends-on: []
+references: {reference_tags}
 version: 1.0.0
 last-updated: {last_updated}
 ---
 
-# {artifact_title} - Design
+# [Title] - Design
 
-## Architecture Overview
-[High-level architecture description - UPDATE for changes]
+## Overview
+[Explain how this design satisfies the provided requirements]
 
-## Component Design
-[Detailed component breakdown - INCLUDE new/modified components]
+## Technologies Used
+[Identify necessary technologies to satisfy the provided requirement, identify the requirement(s)]
 
-## Data Structures
-[Key data structures - ADD structures for changes]
+## Modules
+[Identify any modules needed to satisfy the provided requirement, identify the requirement(s)]
 
-## API Design
-[Interface definitions - INCLUDE new/modified APIs]
+## Data Model
+[Database schema, data structures, relationships]
 
+## Algorithms & Logic
+[Key algorithms, decision flows, business logic]
+
+## Dependencies
+[Third-party libraries, external services]
+
+## Questions & Clarifications
+[AI-CLARIFY: Design decisions that need input?]
 ```
 
-Be specific and technically detailed. ENSURE changes are properly integrated into the design.
+Use the requirements listed below to generate a complete design specification.
+
+When citing requirements use this as an example:
+ req document name: "foo.req.md"
+ requirement number: "FR-01"
+ identify with "foo FR-01"
+
+Be terse but ensure every requirement is mentioned in the design.
 
 ---
 

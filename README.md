@@ -7,19 +7,22 @@ Prompt-Driven Development Tool - A VS Code Extension
 
 ## Vision
 
-Track AI prompts as persistent, versioned specs. Turn vague English into rigid, reusable Markdown. Future AI reruns for upgrades or language swaps.
+PromptPress shifts technical debt from source code to parsable markdown documents. 
 
-PromptPress shifts technical debt from source code to parsable markdown documents. When requirements change or technology evolves, regenerate code from refined specs rather than refactoring legacy code.
+When requirements change or technology evolves, regenerate code from update specs rather than refactoring legacy code by turning vague English into rigid, reusable Markdown.
 
 ## Core Principles
 
 - Prompts are source of truth
-- Technical debt accumulates in markdown specs, not source code - specs determine the code
-- The prompt itself is iterated on until it precisely articulates the desired outcome
-- Follows a standard SDLC with requirements, design, and implementation documentation. Both "requirements" and "design" are collaborative spaces (human + AI); "implementation" is AI-generated markdown specifications.
-- Code is generated from the "implementation" markdown, which is similar to "assembly", where the source code is analogous to "binary".
-- A single markdown file may describe one or many artifacts. Artifacts can be grouped logically within a file.
-- VS Code facilitates exacting specifications via the `Refactor Spec`, `Sync TOC` and `Sync ConOs` extensions.
+- Technical debt accumulates in spec documents, not source code 
+- Each spec is iterated on until it precisely articulates a desired outcome
+- Follows a standard SDLC with Requirements, Design, Implementation documentation.
+- The "Requirements" spec is where you plainly state the goals of the module
+- The "Design" spec is where you further clarify by providing more implementation details
+- The "Implementation" spec further expounds on the "design" spec with implementation details such as class and method signatures to facilitate maintainability.
+- Code is generated from the "implementation" markdown, which expresses all the details of the "design" and "requirements" with high specificity.
+- Many artifacts can be grouped logically within a single spec document.
+- This VS Code extension facilitates exacting specifications via the `Create`, `Refactor`,  `Sync` commands.
 
 ## Development Phases
 

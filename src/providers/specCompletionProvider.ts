@@ -9,6 +9,10 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
         this.workspaceRoot = workspaceRoot;
     }
 
+    /**
+     * Provides document links for @mentions and frontmatter references to spec documents.
+     * Enables navigation from references like @artifact.req to the corresponding spec file.
+     */
     provideDocumentLinks(
         document: vscode.TextDocument,
         token: vscode.CancellationToken

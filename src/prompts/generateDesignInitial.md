@@ -15,13 +15,13 @@ last-updated: {last_updated}
 # [Title] - Design
 
 ## Overview
-[High-level design approach]
+[Explain how this design satisfies the provided requirements]
 
-## Architecture
-[System components, modules, layers]
+## Technologies Used
+[Identify necessary technologies to satisfy the provided requirement, identify the requirement(s)]
 
-## API Contracts
-[Interfaces, function signatures, data structures]
+## Modules
+[Identify any modules needed to satisfy the provided requirement, identify the requirement(s)]
 
 ## Data Model
 [Database schema, data structures, relationships]
@@ -34,8 +34,16 @@ last-updated: {last_updated}
 
 ## Questions & Clarifications
 [AI-CLARIFY: Design decisions that need input?]
+```
 
-Generate a complete, detailed design specification. Be precise about architecture and APIs.
+Use the requirements listed below to generate a complete design specification.
+
+When citing requirements use this as an example:
+ req document name: "foo.req.md"
+ requirement number: "FR-01"
+ identify with "foo FR-01"
+
+Be terse but ensure every requirement is mentioned in the design.
 
 ---
 
