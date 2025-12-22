@@ -65,6 +65,26 @@
       {
         "command": "promptpress.codeToImplementationSpecification",
         "title": "PromptPress: Code to Implementation Specification"
+      },
+      {
+        "command": "promptpress.implementationToDesignSpecification",
+        "title": "PromptPress: Implementation to Design Specification",
+        "description": "This prompt instructs the AI to convert a provided implementation specification into a detailed design specification, generalizing the content into a higher-level summary while remaining precise and terse, and update the implementation specification to reference the design elements it satisfies."
+      },
+      {
+        "command": "promptpress.designToRequirementsSpecification",
+        "title": "PromptPress: Design to Requirements Specification",
+        "description": "This prompt instructs the AI to convert a provided design specification into a detailed requirements specification, generalizing the content into a higher-level summary while remaining precise and terse, and update the design specification to reference the requirements it satisfies."
+      },
+      {
+        "command": "promptpress.applyRequirementSpecRefactoring",
+        "title": "PromptPress: Apply Requirement Spec Refactoring",
+        "description": "This prompt refactors a requirement specification document by synchronizing and strictifying functional and non-functional requirements."
+      },
+      {
+        "command": "promptpress.satisfyReqSpec",
+        "title": "PromptPress: Satisfy Req Spec",
+        "description": "Imports requirements into a design document, ensuring they are clearly defined, organized, and unambiguous."
       }
     ],
     "configuration": {

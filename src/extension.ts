@@ -347,6 +347,18 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.codeToImplementationSpecification', async () => {
             await promptService.executePrompt('code-to-impl-spec');
+        }),
+        vscode.commands.registerCommand('promptpress.implementationToDesignSpecification', async () => {
+            await promptService.executePrompt('impl-to-design-spec');
+        }),
+        vscode.commands.registerCommand('promptpress.designToRequirementsSpecification', async () => {
+            await promptService.executePrompt('design-to-req-spec');
+        }),
+        vscode.commands.registerCommand('promptpress.applyRequirementSpecRefactoring', async () => {
+            await promptService.executePrompt('apply-req-spec');
+        }),
+        vscode.commands.registerCommand('promptpress.satisfyReqSpec', async () => {
+            await promptService.executePrompt('satisfy-req-spec');
         })
     );
 

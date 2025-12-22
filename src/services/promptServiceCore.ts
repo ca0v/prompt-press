@@ -3,7 +3,7 @@ import * as path from 'path';
 import {__dirname} from '../utils/dirname.js';
 
 export class PromptServiceCore {
-    private static readonly PROMPTS_DIR = path.join(__dirname, '../prompts');
+    public static readonly PROMPTS_DIR = path.join(__dirname, '../prompts');
 
     /**
      * Loads the content of a prompt file by name.

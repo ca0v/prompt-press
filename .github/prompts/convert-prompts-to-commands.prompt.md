@@ -18,9 +18,12 @@ This prompt performs the following tasks to ensure that every prompt file in the
 
 - **Register the command in extension.ts**: Modify extension.ts to register the new command if it is not already registered.
 
-- **Implement prompt loading in promptServiceCore.ts**: Add or modify a method in promptServiceCore.ts that loads the content of the corresponding prompt file from the .github/prompts directory.
+- **Implement prompt loading in promptServiceCore.ts**: Add or modify a method in promptServiceCore.ts that loads the content of the corresponding prompt file from the src/prompts directory (where it was copied to enable proper loading in the deployed extension).
 
-- **Implement command execution in promptService.ts**: Add or modify promptService.ts to include a method that calls the loading method from promptServiceCore.ts and then executes the prompt in the VS Code chat interface.
+- **Implement command execution in promptService.ts**: Add or modify promptService.ts to implement the command execution logic:
+   - It calls the loading method from promptServiceCore.ts to get the prompt content.
+   - It copies the prompt file to the user's .github/prompts folder if it does not already exist there, allowing the user to modify it and run it from the chat interface.
+   - It opens the VS Code chat interface ('workbench.action.chat.open') with the loaded prompt.
 
 This process ensures that each prompt can be invoked as a VS Code command, providing a seamless way to run prompts within the extension.
 
