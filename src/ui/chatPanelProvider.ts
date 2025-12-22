@@ -59,6 +59,14 @@ export class ChatPanelProvider implements vscode.Disposable {
     }
 
     /**
+     * Send a message to the chat
+     */
+    public async sendMessage(text: string): Promise<void> {
+        this.show();
+        await this.handleUserMessage(text);
+    }
+
+    /**
      * Notify about file changes
      */
     public notifyFileChange(

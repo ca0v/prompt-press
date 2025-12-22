@@ -1,4 +1,5 @@
 ---
+name: Design to Requirements Specification
 agent: agent
 description: This prompt instructs the AI to convert a provided design specification into a detailed requirements specification, generalizing the content into a higher-level summary while remaining precise and terse, and update the design specification to reference the requirements it satisfies.
 ---

@@ -61,6 +61,10 @@
       {
         "command": "promptpress.syncTOC",
         "title": "PromptPress: Sync TOC"
+      },
+      {
+        "command": "promptpress.codeToImplementationSpecification",
+        "title": "PromptPress: Code to Implementation Specification"
       }
     ],
     "configuration": {

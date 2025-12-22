@@ -1,4 +1,5 @@
 ---
+name: Apply Requirement Spec Refactoring
 agent: agent
 description: This prompt refactors a requirement specification document by synchronizing and strictifying functional and non-functional requirements.
 ---

@@ -11,6 +11,7 @@ import { FileStructureParser } from './services/fileStructureParser.js';
 import { MarkdownParser } from './parsers/markdownParser.js';
 import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
 import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
+import { PromptService } from './services/promptService.js';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
@@ -187,6 +188,8 @@ export function activate(context: vscode.ExtensionContext) {
         contextBuilder
     );
 
+    const promptService = new PromptService();
+
     // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
     const specsWatcher = new SpecFileWatcher(
         config.get<boolean>('autoMonitor', true),
@@ -338,6 +341,12 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('promptpress.syncTOC', async () => {
             await scaffoldService.syncTOC();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('promptpress.codeToImplementationSpecification', async () => {
+            await promptService.executePrompt('code-to-impl-spec');
         })
     );
 

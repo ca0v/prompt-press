@@ -1,4 +1,5 @@
 ---
+name: Implementation to Design Specification
 agent: agent
 description: This prompt instructs the AI to convert a provided implementation specification into a detailed design specification, generalizing the content into a higher-level summary while remaining precise and terse, and update the implementation specification to reference the design elements it satisfies.
 ---
