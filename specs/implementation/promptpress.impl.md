@@ -810,7 +810,7 @@ None
 - **Description**: Finds all implementations based on file type, REFID, and artifact following specific scanning rules.
 - **Parameters**: fileType: 'req' | 'design' | 'impl', refId: string, artifact: string
 - **Return Type**: Promise<vscode.Location[]>
-- **Algorithm**: Scans files according to rules: for req scan design files for artifact.req/REFID, for design scan impl files for artifact.design/REFID, for impl scan all for artifact.impl/REFID.
+- **Algorithm**: Scans files according to rules: for req scan design files for artifact.req/REFID, for design scan impl files for artifact.design/REFID, for impl scan all the source files for artifact/REFID and not the specs.
 - **Exceptions**: None
 
 ### isRemoveFromAction (IMP-1017)
