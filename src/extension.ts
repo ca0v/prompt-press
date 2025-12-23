@@ -10,6 +10,8 @@ import { ImplParser } from './services/ImplParser.js';
 import { FileStructureParser } from './services/FileStructureParser.js';
 import { MarkdownParser } from './parsers/markdownParser.js';
 import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
+import { SpecReferenceFinder } from './providers/specReferenceFinder.js';
+import { SpecImplementationFinder } from './providers/specImplementationFinder.js';
 import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
 import { PromptService } from './services/PromptService.js';
 
@@ -75,6 +77,8 @@ export function activate(context: vscode.ExtensionContext) {
     
     // Initialize spec provider
     const specProvider = new SpecCompletionProvider(workspaceRoot);
+    const specReferenceFinder = new SpecReferenceFinder(workspaceRoot);
+    const specImplementationFinder = new SpecImplementationFinder(workspaceRoot);
     const specRefManager = new SpecReferenceManager(workspaceRoot);
     
     // Register spec completion and link providers
@@ -82,6 +86,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerDocumentLinkProvider(
             { scheme: 'file' },
             specProvider
+        ),
+        vscode.languages.registerReferenceProvider(
+            { scheme: 'file', pattern: '**/specs/**/*.md' },
+            specReferenceFinder
         )
     );
 
@@ -435,6 +443,48 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand('promptpress.satisfyReqSpec', async () => {
             await promptService.executePrompt('satisfy-req-spec');
+        }),
+        vscode.commands.registerCommand('promptpress.findAllImplementations', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+
+            const document = editor.document;
+            const position = editor.selection.active;
+            const wordRange = document.getWordRangeAtPosition(position, /FR-\d{4}|DES-\d{4}|IMP-\d{4}/);
+            if (!wordRange) {
+                vscode.window.showErrorMessage('No REFID found at cursor position.');
+                return;
+            }
+
+            const refId = document.getText(wordRange);
+            const filePath = document.uri.fsPath;
+            const fileName = filePath.split('/').pop() || '';
+            const match = fileName.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
+            if (!match) {
+                vscode.window.showErrorMessage('Not in a valid spec file.');
+                return;
+            }
+
+            const artifact = match[1];
+            const fileType = match[2] as 'req' | 'design' | 'impl';
+
+            const locations = await specImplementationFinder.findAllImplementations(fileType, refId, artifact);
+            if (locations.length === 0) {
+                vscode.window.showInformationMessage('No implementations found.');
+                return;
+            }
+
+            // Show in "References" view or open quick pick
+            const items = locations.map(loc => ({
+                label: `${loc.uri.fsPath}:${loc.range.start.line + 1}`,
+                description: document.getText(loc.range),
+                location: loc
+            }));
+
+            const selected = await vscode.window.showQuickPick(items, { placeHolder: 'Select implementation' });
+            if (selected) {
+                vscode.window.showTextDocument(selected.location.uri, { selection: selected.location.range });
+            }
         })
     );
 

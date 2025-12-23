@@ -5,6 +5,7 @@ depends-on: []
 references: []
 last-updated: 2025-12-23
 ---
+
 # Implementation Specification for promptpress
 
 ## Overview
@@ -32,6 +33,12 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 
 ### DES-1016: SpecCompletionProvider
 - IMP-1016: provideDocumentLinks
+
+### DES-1036: SpecReferenceFinder
+- IMP-1077: findAllReferences
+
+### DES-1037: SpecImplementationFinder
+- IMP-1078: findAllImplementations
 
 ### DES-1017: TersifyActionParser
 - IMP-1017: isRemoveFromAction
@@ -131,6 +138,8 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **src/ai/xaiClient.ts** - Client for interacting with XAI API for chat completions.
 - **src/parsers/markdownParser.ts** - Parser for markdown spec files.
 - **src/providers/specCompletionProvider.ts** - Provides completion and link support for spec files.
+- **src/providers/specReferenceFinder.ts** - Implements "Find all References" feature.
+- **src/providers/specImplementationFinder.ts** - Implements "Find all Implementations" feature.
 - **src/services/TersifyActionParser.ts** - Parses tersify actions.
 - **src/services/CascadeCore.ts** - Core logic for cascading operations on specs.
 - **src/services/CascadeService.ts** - Commands for cascading spec operations.
@@ -178,6 +187,18 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 ### File: src/providers/specCompletionProvider.ts
 - **Purpose**: Provides document links for @mentions and frontmatter references to spec documents, enabling navigation.
 - **Classes**: SpecCompletionProvider
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/providers/specReferenceFinder.ts
+- **Purpose**: Implements "Find all References" feature to find all places that mention the REFID.
+- **Classes**: SpecReferenceFinder
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/providers/specImplementationFinder.ts
+- **Purpose**: Implements "Find all Implementations" feature following specific rules for scanning.
+- **Classes**: SpecImplementationFinder
 - **Interfaces**: None
 - **Other Elements**: None
 
@@ -356,6 +377,26 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **Inheritance**: implements vscode.DocumentLinkProvider
 - **Properties**: workspaceRoot: string
 - **Methods**: provideDocumentLinks (IMP-1016)
+- **Fields**: workspaceRoot
+- **Constructors**: constructor(workspaceRoot: string)
+- **Events**: None
+- **Nested Types**: None
+
+### SpecReferenceFinder
+- **Description**: Implements "Find all References" feature to find all places that mention the REFID.
+- **Inheritance**: None
+- **Properties**: workspaceRoot: string
+- **Methods**: findAllReferences (IMP-1077)
+- **Fields**: workspaceRoot
+- **Constructors**: constructor(workspaceRoot: string)
+- **Events**: None
+- **Nested Types**: None
+
+### SpecImplementationFinder
+- **Description**: Implements "Find all Implementations" feature following specific rules for scanning based on artifact names.
+- **Inheritance**: None
+- **Properties**: workspaceRoot: string
+- **Methods**: findAllImplementations (IMP-1078)
 - **Fields**: workspaceRoot
 - **Constructors**: constructor(workspaceRoot: string)
 - **Events**: None
@@ -754,6 +795,22 @@ None
 - **Parameters**: document: vscode.TextDocument, token: vscode.CancellationToken
 - **Return Type**: vscode.ProviderResult<vscode.DocumentLink[]>
 - **Algorithm**: Finds @mentions and resolves to spec files.
+- **Exceptions**: None
+
+### findAllReferences (IMP-1077)
+- **Belongs to**: SpecReferenceFinder
+- **Description**: Finds all references to the given REFID across the workspace.
+- **Parameters**: refId: string
+- **Return Type**: Promise<vscode.Location[]>
+- **Algorithm**: Uses workspace search to find occurrences of the REFID.
+- **Exceptions**: None
+
+### findAllImplementations (IMP-1078)
+- **Belongs to**: SpecImplementationFinder
+- **Description**: Finds all implementations based on file type, REFID, and artifact following specific scanning rules.
+- **Parameters**: fileType: 'req' | 'design' | 'impl', refId: string, artifact: string
+- **Return Type**: Promise<vscode.Location[]>
+- **Algorithm**: Scans files according to rules: for req scan design files for artifact.req/REFID, for design scan impl files for artifact.design/REFID, for impl scan all for artifact.impl/REFID.
 - **Exceptions**: None
 
 ### isRemoveFromAction (IMP-1017)

@@ -85,8 +85,21 @@
         "command": "promptpress.satisfyReqSpec",
         "title": "PromptPress: Satisfy Req Spec",
         "description": "Imports requirements into a design document, ensuring they are clearly defined, organized, and unambiguous."
+      },
+      {
+        "command": "promptpress.findAllImplementations",
+        "title": "PromptPress: Find All Implementations"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "promptpress.findAllImplementations",
+          "when": "resourceExtname == .md && resourceDirname =~ /specs/",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "PromptPress",
       "properties": {
