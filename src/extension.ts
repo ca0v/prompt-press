@@ -13,6 +13,7 @@ import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
 import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
 import { PromptService } from './services/promptService.js';
 
+// PromptPress/IMP-1013
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
 
@@ -377,6 +378,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(statusBarItem);
 }
 
+// PromptPress/IMP-1014
 export function deactivate() {
     console.log('PromptPress extension is now deactivated');
 }

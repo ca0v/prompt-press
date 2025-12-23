@@ -10,6 +10,7 @@ export class DiffHelper {
     /**
      * Compare two content strings and detect changes
      */
+    // PromptPress/IMP-1040
     public static compareContent(oldContent: string, newContent: string): ChangeDetectionResult {
         if (oldContent === newContent) {
             return {
@@ -38,6 +39,7 @@ export class DiffHelper {
     /**
      * Find modified sections by comparing line-by-line
      */
+    // PromptPress/IMP-1041
     public static findModifiedSections(oldLines: string[], newLines: string[]): string[] {
         const sections = new Set<string>();
         const oldSections = DiffHelper.buildSectionMap(oldLines);
@@ -60,6 +62,7 @@ export class DiffHelper {
     /**
      * Build section map from content lines
      */
+    // PromptPress/IMP-1042
     public static buildSectionMap(lines: string[]): Map<string, string> {
         const sections = new Map<string, string>();
         let currentSection = '';
@@ -85,6 +88,7 @@ export class DiffHelper {
     /**
      * Generate change summary
      */
+    // PromptPress/IMP-1043
     public static generateChangeSummary(oldLines: string[], newLines: string[], modifiedSections: string[]): string {
         const added = newLines.length - oldLines.length;
         const sections = modifiedSections.length;

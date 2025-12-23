@@ -5,6 +5,7 @@ export class GitHelper {
     /**
      * Check if there are unstaged changes in the git repository
      */
+    // PromptPress/IMP-1046
     public static async checkGitStatus(workspaceRoot: string): Promise<boolean> {
         try {
             // Check for unstaged changes only (leading space means staged, M/A/D means unstaged, ?? means untracked)
@@ -27,6 +28,7 @@ export class GitHelper {
     /**
      * Stage all changes in the git repository
      */
+    // PromptPress/IMP-1047
     public static async stageChanges(workspaceRoot: string): Promise<void> {
         try {
             child_process.execSync('git add -A', {
@@ -42,6 +44,7 @@ export class GitHelper {
     /**
      * Get the last committed version of a file from git
      */
+    // PromptPress/IMP-1048
     public static async getLastCommittedContent(workspaceRoot: string, filePath: string): Promise<string | null> {
         try {
             const relativePath = path.relative(workspaceRoot, filePath);
@@ -57,6 +60,7 @@ export class GitHelper {
     /**
      * Get the staged version of a file from git
      */
+    // PromptPress/IMP-1049
     public static async getStagedContent(workspaceRoot: string, filePath: string): Promise<string | null> {
         try {
             const relativePath = path.relative(workspaceRoot, filePath);

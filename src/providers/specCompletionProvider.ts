@@ -13,6 +13,7 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
      * Provides document links for @mentions and frontmatter references to spec documents.
      * Enables navigation from references like @artifact.req to the corresponding spec file.
      */
+    // PromptPress/IMP-1016
     provideDocumentLinks(
         document: vscode.TextDocument,
         token: vscode.CancellationToken

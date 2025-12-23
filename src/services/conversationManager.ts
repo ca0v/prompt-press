@@ -36,6 +36,7 @@ export class ConversationManager {
     /**
      * Get or create conversation for an artifact
      */
+    // PromptPress/IMP-1034
     public getConversation(artifact: string): Conversation {
         if (!this.conversations.has(artifact)) {
             const conversation: Conversation = {
@@ -50,6 +51,7 @@ export class ConversationManager {
     /**
      * Add message to conversation
      */
+    // PromptPress/IMP-1035
     public addMessage(
         artifact: string,
         role: 'user' | 'assistant',
@@ -67,6 +69,7 @@ export class ConversationManager {
     /**
      * Get conversation history formatted for AI
      */
+    // PromptPress/IMP-1036
     public getHistory(artifact: string, lastN?: number): Array<{ role: string; content: string }> {
         const conversation = this.getConversation(artifact);
         const messages = lastN
@@ -82,6 +85,7 @@ export class ConversationManager {
     /**
      * Clear conversation history
      */
+    // PromptPress/IMP-1037
     public clearConversation(artifact: string): void {
         this.conversations.delete(artifact);
         const filePath = path.join(this.historyDir, `${artifact}.json`);
@@ -140,6 +144,7 @@ export class ConversationManager {
     /**
      * List all artifacts with conversations
      */
+    // PromptPress/IMP-1038
     public listArtifacts(): string[] {
         return Array.from(this.conversations.keys());
     }
@@ -147,6 +152,7 @@ export class ConversationManager {
     /**
      * Get conversation count
      */
+    // PromptPress/IMP-1039
     public getMessageCount(artifact: string): number {
         const conversation = this.conversations.get(artifact);
         return conversation ? conversation.messages.length : 0;

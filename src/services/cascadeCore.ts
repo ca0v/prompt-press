@@ -179,6 +179,7 @@ export class CascadeCore {
         }).join('\n\n---\n\n');
     }
 
+    // PromptPress/IMP-1023
     async refactorSpec(
         filePath: string,
         ui: CascadeUI
@@ -258,6 +259,7 @@ export class CascadeCore {
         }
     }
 
+    // PromptPress/IMP-1024
     async tersifySpec(
         filePath: string,
         ui: CascadeUI
@@ -426,10 +428,12 @@ export class CascadeCore {
         }
     }
 
+    // PromptPress/IMP-1025
     public async checkGitStatus(): Promise<boolean> {
         return GitHelper.checkGitStatus(this.workspaceRoot);
     }
 
+    // PromptPress/IMP-1026
     public async stageChanges(): Promise<void> {
         try {
             await GitHelper.stageChanges(this.workspaceRoot);
@@ -804,6 +808,7 @@ export class CascadeCore {
         return { primary: section };
     }
 
+    // PromptPress/IMP-1027
     public applyChange(content: string, change: { type: string; section: string; content: string }): string {
         const { primary, secondary } = this.parseSection(change.section);
         let contentToMatch = change.content;

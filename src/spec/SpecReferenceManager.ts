@@ -11,6 +11,7 @@ export class SpecReferenceManager {
         this.markdownParser = new MarkdownParser();
     }
 
+    // PromptPress/IMP-1062
     resolveSpecPath(specRef: string): string {
         const parts = specRef.split('.');
         const artifact = parts[0];
@@ -30,6 +31,7 @@ export class SpecReferenceManager {
         }
     }
 
+    // PromptPress/IMP-1063
     getAllSpecRefs(): string[] {
         const refs: string[] = [];
         const specsDir = path.join(this.workspaceRoot, 'specs');
@@ -54,6 +56,7 @@ export class SpecReferenceManager {
         return refs;
     }
 
+    // PromptPress/IMP-1064
     getAllDependencies(specRef: string, visited: Set<string> = new Set()): Set<string> {
         if (visited.has(specRef)) {
             return new Set();
@@ -82,6 +85,7 @@ export class SpecReferenceManager {
         return deps;
     }
 
+    // PromptPress/IMP-1065
     wouldCreateCycle(dep: string, currentRef: string): boolean {
         const allDeps = this.getAllDependencies(dep);
         return allDeps.has(currentRef);

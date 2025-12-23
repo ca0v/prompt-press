@@ -4,22 +4,27 @@ export class TersifyActionParser {
 
     constructor(private action: string) { }
 
+    // PromptPress/IMP-1017
     isRemoveFromAction(): boolean {
         return this.action.startsWith('Remove from ');
     }
 
+    // PromptPress/IMP-1018
     isAddToAction(): boolean {
         return this.action.startsWith('Add to ');
     }
 
+    // PromptPress/IMP-1019
     isNoneAction(): boolean {
         return this.action === 'None';
     }
 
+    // PromptPress/IMP-1020
     isKnownAction(): boolean {
         return this.isRemoveFromAction() || this.isAddToAction() || this.isNoneAction();
     }
 
+    // PromptPress/IMP-1021
     getActionName(): string {
         if (this.isRemoveFromAction()) {
             return 'Remove from';
@@ -31,6 +36,7 @@ export class TersifyActionParser {
         return 'Unknown';
     }
 
+    // PromptPress/IMP-1022
     getActionTarget(): string {
         if (this.isRemoveFromAction()) {
             return this.action.substring('Remove from '.length);

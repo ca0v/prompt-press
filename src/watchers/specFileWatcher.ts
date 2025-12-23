@@ -121,6 +121,7 @@ export class SpecFileWatcher implements vscode.Disposable {
         return null;
     }
 
+    // PromptPress/IMP-1073
     public toggleMonitoring() {
         this.enabled = !this.enabled;
         const status = this.enabled ? 'enabled' : 'disabled';
@@ -131,14 +132,17 @@ export class SpecFileWatcher implements vscode.Disposable {
         }
     }
 
+    // PromptPress/IMP-1074
     public async validateFile(filePath: string): Promise<void> {
         await this.processor?.convertOverspecifiedReferences(filePath);
     }
 
+    // PromptPress/IMP-1075
     public async updateMetadata(filePath: string): Promise<void> {
         await this.processor?.updateMetadata(filePath);
     }
 
+    // PromptPress/IMP-1076
     public dispose() {
         this.watcher?.dispose();
         this.disposables.forEach(d => d.dispose());

@@ -8,6 +8,7 @@ export class PromptService {
      * Executes a prompt by loading it and sending it to the VS Code chat interface.
      * @param promptName The name of the prompt file without extension
      */
+    // PromptPress/IMP-1051
     async executePrompt(promptName: string): Promise<void> {
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
         if (!workspaceFolder) return;

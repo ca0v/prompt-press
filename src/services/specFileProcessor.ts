@@ -18,6 +18,7 @@ export class SpecFileProcessor {
     this.workspaceRoot = workspaceRoot;
   }
 
+  // PromptPress/IMP-1057
   async updateMetadata(filePath: string): Promise<void> {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
@@ -58,6 +59,7 @@ export class SpecFileProcessor {
     }
   }
 
+  // PromptPress/IMP-1058
   async syncReferencesWithMentions(filePath: string, parsed?: ParsedSpec): Promise<void> {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
@@ -110,6 +112,7 @@ export class SpecFileProcessor {
     return frontmatterLines.join('\n') + '\n' + withoutFrontmatter;
   }
 
+  // PromptPress/IMP-1059
   async validateReferences(filePath: string): Promise<ValidationError[]> {
     const errors: ValidationError[] = [];
 
@@ -405,6 +408,7 @@ export class SpecFileProcessor {
     return null;
   }
 
+  // PromptPress/IMP-1060
   async getAllDependencies(specRef: string, visited: Set<string> = new Set()): Promise<Set<string>> {
     if (visited.has(specRef)) {
       return new Set(); // Cycle detected, but return empty to avoid infinite
@@ -437,6 +441,7 @@ export class SpecFileProcessor {
     }
   }
 
+  // PromptPress/IMP-1061
   async convertOverspecifiedReferences(filePath: string): Promise<void> {
     try {
       let content = await fs.readFile(filePath, 'utf-8');

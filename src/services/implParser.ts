@@ -13,6 +13,7 @@ export interface FileInfo {
 export class ImplParser {
     constructor(private parser: MarkdownParser, private xaiClient: XAIClient, private outputChannel: vscode.OutputChannel, private fileStructureParser: FileStructureParser) {}
 
+    // PromptPress/IMP-1050
     async parseAndGenerate(implPath: string): Promise<void> {
         this.outputChannel.appendLine(`[ImplParser] Starting code generation for ${implPath}`);
         

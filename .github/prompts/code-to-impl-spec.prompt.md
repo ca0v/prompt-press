@@ -13,6 +13,8 @@ Given one or more source code files (e.g., TypeScript .ts files), the AI must:
 3. Generate a detailed implementation specification in Markdown format.
 4. Update the source code files with reference comments to IMP-XXXX identifiers.
 
+Pre-processing: Run the `src/utils/impInjector.ts` script to pre-inject IMP-XXXX comments into the source code. This assigns sequential IDs starting from IMP-1000 across files (alphabetical order) and within files (top-to-bottom).
+
 ## Special Cases
 
 - If the client prompt is "refresh", infer the module name and intended source files from the existing `implementation/<module_name>.impl.md` file. Only process source files that are already mentioned in the spec document; do not include any new source files not previously specified.
@@ -36,17 +38,18 @@ specs/
 
 ## IMP-XXXX Identifier Assignment
 
-- Assign a unique IMP-XXXX identifier to every public method in the implementation.
-- Identifiers start at IMP-1000 and increment by 1 for each new public method (e.g., IMP-1000, IMP-1001, IMP-1002, ...).
+- Scan the source code for existing `// <module_name>/IMP-XXXX` comments to identify assigned IDs.
+- If comments are missing, assign new unique IMP-XXXX identifiers to every public method, starting from IMP-1000 and incrementing sequentially.
+- For TypeScript: Consider exported classes, interfaces, functions, and their public members as public. Assign IMP-XXXX to public methods (explicitly public or in exported classes/interfaces). Include all exported interfaces, types, enums, and constants in the specification.
 - Assign IDs sequentially across all provided source files, in the order the files are processed (alphabetical by filename).
 - Within each file, assign IDs in the order public methods appear in the code (top-to-bottom).
 
 ## Source Code Updates
 
-- For each public method, add a comment immediately above its declaration in the source code.
-- Comment format: `// <module_name>/IMP-XXXX`.
-- Do not modify the code logic; only add comments.
-- If a comment already exists, prepend the IMP-XXXX to it.
+- Ensure each public method has a `// <module_name>/IMP-XXXX` comment immediately above its declaration.
+- If the comment is missing, add it using the assigned ID.
+- Do not modify the code logic; only add or verify comments.
+- If a comment already exists, ensure it matches the assigned ID.
 
 ## Implementation Specification Format
 

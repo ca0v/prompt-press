@@ -10,6 +10,7 @@ export class PromptServiceCore {
      * @param promptName The name of the prompt file without extension (e.g., 'code-to-impl-spec')
      * @returns The full content of the prompt file
      */
+    // PromptPress/IMP-1052
     static async loadPrompt(promptName: string): Promise<string> {
         const promptPath = path.join(this.PROMPTS_DIR, `${promptName}.prompt.md`);
         try {

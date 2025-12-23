@@ -159,6 +159,7 @@
     "test:all": "node ./out/test/runner.js all",
     "test:parser": "node ./out/test/runner.js parser",
     "test:ide": "node ./out/test/runner.js ide",
+    "spec:inject": "npm run compile && node ./out/utils/impInjector.js",
     "package:build": "vsce package",
     "package:deploy": "npm run package:build && code --install-extension promptpress-*.vsix",
     "install-deps": "npm install"

@@ -4,6 +4,7 @@ import * as path from 'path';
 export class PromptLogger {
     constructor(private log: (msg: string) => void) {}
 
+    // PromptPress/IMP-1070
     async logRequest(workspaceRoot: string, operation: string, systemPrompt: string, userPrompt: string): Promise<string> {
         if (!systemPrompt.trim() || !userPrompt.trim()) {
             return '';
@@ -28,6 +29,7 @@ export class PromptLogger {
         }
     }
 
+    // PromptPress/IMP-1071
     async logResponse(workspaceRoot: string, id: string, operation: string, response: string): Promise<void> {
         if (!id || !response.trim()) {
             return;
