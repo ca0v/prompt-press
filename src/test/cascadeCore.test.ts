@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import { fileURLToPath } from 'url';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
-import { CascadeCore } from '../services/cascadeCore.js';
+import { CascadeCore } from '../services/CascadeCore.js';
 import { TersifyActionParser } from '../services/TersifyActionParser.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';
 

@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { MarkdownParser, ParsedSpec } from '../parsers/markdownParser.js';
@@ -10,10 +9,12 @@ export interface ContextItem {
     metadata: any;
 }
 
-export class ContextBuilder {
+export class ContextBuilderCore {
     private parser: MarkdownParser;
+    private workspaceRoot: string;
 
-    constructor() {
+    constructor(workspaceRoot: string) {
+        this.workspaceRoot = workspaceRoot;
         this.parser = new MarkdownParser();
     }
 
@@ -130,11 +131,6 @@ export class ContextBuilder {
         artifactName: string,
         type: 'requirement' | 'design' | 'implementation'
     ): Promise<string | null> {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
-            return null;
-        }
-
         const extensions: { [key: string]: string } = {
             'requirement': '.req.md',
             'design': '.design.md',
@@ -148,14 +144,14 @@ export class ContextBuilder {
         };
 
         const expectedPath = path.join(
-            workspaceFolders[0].uri.fsPath,
+            this.workspaceRoot,
             'specs',
             typeDir[type],
             `${artifactName}${extensions[type]}`
         );
 
         try {
-            await vscode.workspace.fs.stat(vscode.Uri.file(expectedPath));
+            await fs.access(expectedPath);
             return expectedPath;
         } catch {
             return null;

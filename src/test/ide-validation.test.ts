@@ -6,7 +6,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { MarkdownParser } from '../parsers/markdownParser.js';
-import { SpecFileProcessor } from '../services/specFileProcessor.js';
+import { SpecFileProcessor } from '../services/SpecFileProcessor.js';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
 import { __dirname } from '../utils/dirname.js';

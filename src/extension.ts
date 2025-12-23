@@ -2,16 +2,16 @@ import * as vscode from 'vscode';
 import { SpecFileWatcher } from './watchers/specFileWatcher.js';
 import { XAIClient } from './ai/xaiClient.js';
 import { ChatPanelProvider } from './ui/chatPanelProvider.js';
-import { ConversationManager } from './services/conversationManager.js';
-import { ContextBuilder } from './services/contextBuilder.js';
-import { ScaffoldService } from './services/scaffoldService.js';
-import { CascadeServiceCommands } from './services/cascadeService.js';
-import { ImplParser } from './services/implParser.js';
-import { FileStructureParser } from './services/fileStructureParser.js';
+import { ConversationManager } from './services/ConversationManager.js';
+import { ContextBuilder } from './services/ContextBuilder.js';
+import { ScaffoldService } from './services/ScaffoldService.js';
+import { CascadeServiceCommands } from './services/CascadeService.js';
+import { ImplParser } from './services/ImplParser.js';
+import { FileStructureParser } from './services/FileStructureParser.js';
 import { MarkdownParser } from './parsers/markdownParser.js';
 import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
 import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
-import { PromptService } from './services/promptService.js';
+import { PromptService } from './services/PromptService.js';
 
 // PromptPress/IMP-1013
 export function activate(context: vscode.ExtensionContext) {
@@ -60,17 +60,17 @@ export function activate(context: vscode.ExtensionContext) {
         outputChannel.appendLine('[INFO] API key configured');
     }
 
+    // Get workspace root for cascade service
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    
     // Initialize services
     const aiClient = new XAIClient(apiKey, config, outputChannel);
     const conversationManager = new ConversationManager(context);
-    const contextBuilder = new ContextBuilder();
+    const contextBuilder = new ContextBuilder(workspaceRoot);
     const scaffoldService = new ScaffoldService(aiClient, outputChannel);
     const markdownParser = new MarkdownParser();
     const fileStructureParser = new FileStructureParser(outputChannel);
     const implParser = new ImplParser(markdownParser, aiClient, outputChannel, fileStructureParser);
-    
-    // Get workspace root for cascade service
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
     const cascadeService = new CascadeServiceCommands(aiClient, outputChannel, workspaceRoot);
     
     // Initialize spec provider

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { PromptServiceCore } from './promptServiceCore.js';
+import { PromptServiceCore } from './PromptServiceCore.js';
 
 export class PromptService {
     /**

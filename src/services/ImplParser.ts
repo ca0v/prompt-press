@@ -3,7 +3,7 @@ import * as path from 'path';
 import type * as vscode from 'vscode';
 import { MarkdownParser } from '../parsers/markdownParser.js';
 import { XAIClient } from '../ai/xaiClient.js';
-import { FileStructureParser } from './fileStructureParser.js';
+import { FileStructureParser } from './FileStructureParser.js';
 
 export interface FileInfo {
     path: string;

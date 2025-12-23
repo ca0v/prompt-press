@@ -1,4 +1,3 @@
-import type * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
@@ -12,15 +11,12 @@ export interface Conversation {
     currentFile?: string;
 }
 
-export class ConversationManager {
+export class ConversationManagerCore {
     private conversations: Map<string, Conversation> = new Map();
     private historyDir: string;
 
-    constructor(private context: vscode.ExtensionContext) {
-        this.historyDir = path.join(
-            context.globalStorageUri.fsPath,
-            'conversations'
-        );
+    constructor(historyDir: string) {
+        this.historyDir = historyDir;
         this.ensureHistoryDir();
         this.loadConversations();
     }

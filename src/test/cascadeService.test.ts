@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
-import { CascadeCore, CascadeUI } from '../services/cascadeCore.js';
+import { CascadeCore, CascadeUI } from '../services/CascadeCore.js';
 
 // Mock XAI Client
 class MockXAIClient {

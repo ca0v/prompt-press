@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { MarkdownParser } from '../parsers/markdownParser.js';
-import { SpecFileProcessor } from '../services/specFileProcessor.js';
+import { SpecFileProcessor } from '../services/SpecFileProcessor.js';
 
 export class SpecFileWatcher implements vscode.Disposable {
     private watcher: vscode.FileSystemWatcher | undefined;

@@ -7,9 +7,9 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { XAIClient, ChatMessage } from '../ai/xaiClient.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';
-import { GitHelper } from './gitHelper.js';
+import { GitHelper } from './GitHelper.js';
 import { PromptLogger } from '../utils/PromptLogger.js';
-import { DiffHelper, ChangeDetectionResult } from './diffHelper.js';
+import { DiffHelper, ChangeDetectionResult } from './DiffHelper.js';
 import { __dirname } from '../utils/dirname.js';
 import { TersifyActionParser } from './TersifyActionParser.js';
 

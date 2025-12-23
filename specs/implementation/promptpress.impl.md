@@ -1,3 +1,10 @@
+---
+artifact: promptpress
+phase: implementation
+depends-on: []
+references: []
+last-updated: 2025-12-23
+---
 # Implementation Specification for promptpress
 
 ## Overview
@@ -125,18 +132,22 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **src/parsers/markdownParser.ts** - Parser for markdown spec files.
 - **src/providers/specCompletionProvider.ts** - Provides completion and link support for spec files.
 - **src/services/TersifyActionParser.ts** - Parses tersify actions.
-- **src/services/cascadeCore.ts** - Core logic for cascading operations on specs.
-- **src/services/cascadeService.ts** - Commands for cascading spec operations.
-- **src/services/contextBuilder.ts** - Builds context for AI prompts.
-- **src/services/conversationManager.ts** - Manages conversations with AI.
-- **src/services/diffHelper.ts** - Helper for detecting changes in files.
-- **src/services/fileStructureParser.ts** - Parses file structures.
-- **src/services/gitHelper.ts** - Helper for git operations.
-- **src/services/implParser.ts** - Parses implementation specs to generate code.
-- **src/services/promptService.ts** - Service for executing prompts.
-- **src/services/promptServiceCore.ts** - Core prompt service functionality.
-- **src/services/scaffoldService.ts** - Service for scaffolding new specs.
-- **src/services/specFileProcessor.ts** - Processes and validates spec files.
+- **src/services/CascadeCore.ts** - Core logic for cascading operations on specs.
+- **src/services/CascadeService.ts** - Commands for cascading spec operations.
+- **src/services/ContextBuilderCore.ts** - Core logic for building context for AI prompts.
+- **src/services/ContextBuilder.ts** - Adapter for context building with VS Code dependencies.
+- **src/services/ConversationManagerCore.ts** - Core logic for managing conversations with AI.
+- **src/services/ConversationManager.ts** - Adapter for conversation management with VS Code dependencies.
+- **src/services/DiffHelper.ts** - Helper for detecting changes in files.
+- **src/services/FileStructureParserCore.ts** - Core logic for parsing file structures.
+- **src/services/FileStructureParser.ts** - Adapter for file structure parsing with VS Code dependencies.
+- **src/services/GitHelper.ts** - Helper for git operations.
+- **src/services/ImplParserCore.ts** - Core logic for parsing implementation specs to generate code.
+- **src/services/ImplParser.ts** - Adapter for implementation parsing with VS Code dependencies.
+- **src/services/PromptService.ts** - Service for executing prompts (merged core and adapter).
+- **src/services/ScaffoldServiceCore.ts** - Core logic for scaffolding new specs.
+- **src/services/ScaffoldService.ts** - Adapter for scaffolding with VS Code dependencies.
+- **src/services/SpecFileProcessor.ts** - Processes and validates spec files.
 - **src/spec/SpecReferenceManager.ts** - Manages references between specs.
 - **src/ui/chatPanelProvider.ts** - Provides the chat panel UI.
 - **src/utils/PromptLogger.ts** - Logger utility.
@@ -176,73 +187,97 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/cascadeCore.ts
+### File: src/services/CascadeCore.ts
 - **Purpose**: Core logic for cascading operations on specs.
 - **Classes**: CascadeCore
 - **Interfaces**: CascadeResult, CascadeUI, Logger, ReferencedArtifact
 - **Other Elements**: None
 
-### File: src/services/cascadeService.ts
+### File: src/services/CascadeService.ts
 - **Purpose**: Commands for cascading spec operations.
 - **Classes**: CascadeServiceCommands
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/contextBuilder.ts
-- **Purpose**: Builds context for AI prompts.
-- **Classes**: ContextBuilder
+### File: src/services/ContextBuilderCore.ts
+- **Purpose**: Core logic for building context for AI prompts.
+- **Classes**: ContextBuilderCore
 - **Interfaces**: ContextItem
 - **Other Elements**: None
 
-### File: src/services/conversationManager.ts
-- **Purpose**: Manages conversations with AI.
-- **Classes**: ConversationManager
+### File: src/services/ContextBuilder.ts
+- **Purpose**: Adapter for building context with VS Code dependencies.
+- **Classes**: ContextBuilder
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/services/ConversationManagerCore.ts
+- **Purpose**: Core logic for managing conversations with AI.
+- **Classes**: ConversationManagerCore
 - **Interfaces**: Conversation
 - **Other Elements**: None
 
-### File: src/services/diffHelper.ts
+### File: src/services/ConversationManager.ts
+- **Purpose**: Adapter for managing conversations with VS Code dependencies.
+- **Classes**: ConversationManager
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/services/DiffHelper.ts
 - **Purpose**: Helper for detecting changes in files.
 - **Classes**: DiffHelper
 - **Interfaces**: ChangeDetectionResult
 - **Other Elements**: None
 
-### File: src/services/fileStructureParser.ts
-- **Purpose**: Parses file structures.
+### File: src/services/FileStructureParserCore.ts
+- **Purpose**: Core logic for parsing file structures.
+- **Classes**: FileStructureParserCore
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/services/FileStructureParser.ts
+- **Purpose**: Adapter for parsing file structures with VS Code dependencies.
 - **Classes**: FileStructureParser
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/gitHelper.ts
+### File: src/services/GitHelper.ts
 - **Purpose**: Helper for git operations.
 - **Classes**: GitHelper
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/implParser.ts
-- **Purpose**: Parses implementation specs to generate code.
-- **Classes**: ImplParser
+### File: src/services/ImplParserCore.ts
+- **Purpose**: Core logic for parsing implementation specs to generate code.
+- **Classes**: ImplParserCore
 - **Interfaces**: FileInfo
 - **Other Elements**: None
 
-### File: src/services/promptService.ts
-- **Purpose**: Service for executing prompts.
+### File: src/services/ImplParser.ts
+- **Purpose**: Adapter for parsing implementation specs with VS Code dependencies.
+- **Classes**: ImplParser
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/services/PromptService.ts
+- **Purpose**: Service for executing prompts (merged core and adapter).
 - **Classes**: PromptService
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/promptServiceCore.ts
-- **Purpose**: Core prompt service functionality.
-- **Classes**: PromptServiceCore
+### File: src/services/ScaffoldServiceCore.ts
+- **Purpose**: Core logic for scaffolding new specs.
+- **Classes**: ScaffoldServiceCore
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/scaffoldService.ts
-- **Purpose**: Service for scaffolding new specs.
+### File: src/services/ScaffoldService.ts
+- **Purpose**: Adapter for scaffolding with VS Code dependencies.
 - **Classes**: ScaffoldService
 - **Interfaces**: None
 - **Other Elements**: None
 
-### File: src/services/specFileProcessor.ts
+### File: src/services/SpecFileProcessor.ts
 - **Purpose**: Processes and validates spec files.
 - **Classes**: SpecFileProcessor
 - **Interfaces**: ValidationError
