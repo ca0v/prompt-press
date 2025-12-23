@@ -3,6 +3,122 @@
 ## Overview
 PromptPress is a VS Code extension that facilitates prompt-driven development by managing AI prompts as persistent, versioned specifications. It integrates with AI providers, parses markdown specs, and provides tools for scaffolding, validation, and synchronization of code with specs.
 
+## Design Requirements
+
+### DES-1014: XAIClient
+- IMP-1000: chat
+- IMP-1001: listModels
+- IMP-1002: testConnection
+- IMP-1003: parseResponse
+
+### DES-1015: MarkdownParser
+- IMP-1004: parseFile
+- IMP-1005: parse
+- IMP-1006: validate
+- IMP-1007: getOverview
+- IMP-1008: setOverview
+- IMP-1009: getSection
+- IMP-1010: setSection
+- IMP-1011: parseChangeTable
+- IMP-1012: groupChangesByDocument
+- IMP-1015: parseMarkdownTable
+
+### DES-1016: SpecCompletionProvider
+- IMP-1016: provideDocumentLinks
+
+### DES-1017: TersifyActionParser
+- IMP-1017: isRemoveFromAction
+- IMP-1018: isAddToAction
+- IMP-1019: isNoneAction
+- IMP-1020: isKnownAction
+- IMP-1021: getActionName
+- IMP-1022: getActionTarget
+
+### DES-1018: CascadeCore
+- IMP-1023: refactorSpec
+- IMP-1024: tersifySpec
+- IMP-1025: syncImplementationSpec
+- IMP-1026: syncConOps
+- IMP-1027: syncTOC
+
+### DES-1019: CascadeServiceCommands
+- IMP-1028: refactorSpec
+- IMP-1029: tersifySpec
+
+### DES-1020: ContextBuilder
+- IMP-1030: buildContext
+- IMP-1031: getSpecContent
+- IMP-1032: getReferencedSpecs
+- IMP-1033: resolveSpecPath
+
+### DES-1021: ConversationManager
+- IMP-1034: createConversation
+- IMP-1035: getConversation
+- IMP-1036: addMessage
+- IMP-1037: getMessages
+- IMP-1038: saveConversation
+- IMP-1039: loadConversation
+
+### DES-1022: DiffHelper
+- IMP-1040: compareContent
+- IMP-1041: findModifiedSections
+- IMP-1042: buildSectionMap
+- IMP-1043: generateChangeSummary
+
+### DES-1023: FileStructureParser
+- IMP-1044: parseFileStructure
+- IMP-1045: parseDirectory
+
+### DES-1024: GitHelper
+- IMP-1046: getUnstagedChanges
+- IMP-1047: stageAll
+- IMP-1048: commit
+- IMP-1049: getStatus
+
+### DES-1025: ImplParser
+- IMP-1050: parseAndGenerate
+
+### DES-1026: PromptService
+- IMP-1051: executePrompt
+
+### DES-1027: PromptServiceCore
+- IMP-1052: executePrompt
+
+### DES-1028: ScaffoldService
+- IMP-1053: createRequirementSpec
+- IMP-1054: syncImplementationSpecSpec
+- IMP-1055: syncImplementationSpec
+- IMP-1056: syncConOps
+
+### DES-1029: SpecFileProcessor
+- IMP-1057: processSpecFile
+- IMP-1058: validateSpecFile
+- IMP-1059: extractReferences
+- IMP-1060: updateMetadata
+- IMP-1061: checkCircularReferences
+
+### DES-1030: SpecReferenceManager
+- IMP-1062: getAllSpecRefs
+- IMP-1063: getSpecRefsForFile
+- IMP-1064: addSpecRef
+- IMP-1065: removeSpecRef
+
+### DES-1031: ChatPanelProvider
+- IMP-1066: show
+- IMP-1067: createWebviewPanel
+- IMP-1068: setupWebview
+- IMP-1069: handleMessage
+
+### DES-1032: PromptLogger
+- IMP-1070: logRequest
+- IMP-1071: logResponse
+
+### DES-1033: SpecFileWatcher
+- IMP-1073: toggleMonitoring
+- IMP-1074: validateFile
+- IMP-1075: onFileChange
+- IMP-1076: onFileDelete
+
 ## Files Summary
 - **src/extension.ts** - Main extension activation and command registration.
 - **src/ai/xaiClient.ts** - Client for interacting with XAI API for chat completions.
