@@ -19,50 +19,72 @@ export class SpecFileProcessor {
   }
 
   // PromptPress/IMP-1057
-  async updateMetadata(filePath: string): Promise<void> {
+  async updateMetadata(document: any): Promise<void> {
+    const vscode = await import('vscode');
     try {
-      const content = await fs.readFile(filePath, 'utf-8');
+      const content = document.getText();
       const parsed = this.parser.parse(content);
       if (parsed.metadata) {
         const today = new Date().toISOString().split('T')[0];
         parsed.metadata.lastUpdated = today;
 
         // Enforce correct phase based on file extension
-        if (filePath.endsWith('.req.md')) {
+        if (document.fileName.endsWith('.req.md')) {
           parsed.metadata.phase = 'requirement';
-        } else if (filePath.endsWith('.design.md')) {
+        } else if (document.fileName.endsWith('.design.md')) {
           parsed.metadata.phase = 'design';
-        } else if (filePath.endsWith('.impl.md')) {
+        } else if (document.fileName.endsWith('.impl.md')) {
           parsed.metadata.phase = 'implementation';
         }
 
         // Set artifact from filename if not present
-        const fileName = path.basename(filePath);
+        const fileName = path.basename(document.fileName);
         const artifactName = fileName.replace(/\.(req|design|impl)\.md$/, '');
         if (parsed.metadata.artifact === 'unknown') {
           parsed.metadata.artifact = artifactName;
         }
 
         // Sync references with mentions
-        await this.syncReferencesWithMentions(filePath, parsed);
+        await this.syncReferencesWithMentions(document, parsed);
 
-        // Reconstruct frontmatter with updated metadata
-        const updatedContent = this.updateFrontmatter(content, parsed.metadata);
-        // Only write if changed
-        if (updatedContent !== content) {
-          await fs.writeFile(filePath, updatedContent, 'utf-8');
-          console.log(`PromptPress: Updated last-updated/phase in ${path.basename(filePath)}`);
+        // Find frontmatter range
+        const lines = content.split('\n');
+        let startLine = -1;
+        let endLine = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].trim() === '---') {
+            if (startLine === -1) {
+              startLine = i;
+            } else {
+              endLine = i;
+              break;
+            }
+          }
+        }
+
+        if (startLine !== -1 && endLine !== -1) {
+          // Reconstruct frontmatter with updated metadata
+          const updatedFrontmatter = this.updateFrontmatter('', parsed.metadata).split('\n').slice(0, -1).join('\n'); // remove the empty line at end
+
+          const start = new vscode.Position(startLine, 0);
+          const end = new vscode.Position(endLine, lines[endLine].length);
+          const edit = new vscode.WorkspaceEdit();
+          edit.replace(document.uri, new vscode.Range(start, end), updatedFrontmatter);
+          await vscode.workspace.applyEdit(edit);
+
+          console.log(`PromptPress: Updated last-updated/phase in ${fileName}`);
         }
       }
     } catch (error) {
-      console.warn(`PromptPress: Could not update metadata for ${path.basename(filePath)}: ${error}`);
+      console.warn(`PromptPress: Could not update metadata for ${path.basename(document.fileName)}: ${error}`);
     }
   }
 
   // PromptPress/IMP-1058
-  async syncReferencesWithMentions(filePath: string, parsed?: ParsedSpec): Promise<void> {
+  async syncReferencesWithMentions(document: any, parsed?: ParsedSpec): Promise<void> {
+    const vscode = await import('vscode');
     try {
-      const content = await fs.readFile(filePath, 'utf-8');
+      const content = document.getText();
       const spec = parsed || this.parser.parse(content);
       
       // Get unique mentions (references from content)
@@ -71,14 +93,35 @@ export class SpecFileProcessor {
       // Update metadata references to match mentions
       spec.metadata.references = Array.from(mentions).sort();
       
-      // Reconstruct frontmatter with synced references
-      const updatedContent = this.updateFrontmatter(content, spec.metadata);
-      if (updatedContent !== content) {
-        await fs.writeFile(filePath, updatedContent, 'utf-8');
-        console.log(`PromptPress: Synced references with mentions in ${path.basename(filePath)}`);
+      // Find frontmatter range
+      const lines = content.split('\n');
+      let startLine = -1;
+      let endLine = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() === '---') {
+          if (startLine === -1) {
+            startLine = i;
+          } else {
+            endLine = i;
+            break;
+          }
+        }
+      }
+
+      if (startLine !== -1 && endLine !== -1) {
+        // Reconstruct frontmatter with synced references
+        const updatedFrontmatter = this.updateFrontmatter('', spec.metadata).split('\n').slice(0, -1).join('\n');
+
+        const start = new vscode.Position(startLine, 0);
+        const end = new vscode.Position(endLine, lines[endLine].length);
+        const edit = new vscode.WorkspaceEdit();
+        edit.replace(document.uri, new vscode.Range(start, end), updatedFrontmatter);
+        await vscode.workspace.applyEdit(edit);
+
+        console.log(`PromptPress: Synced references with mentions in ${path.basename(document.fileName)}`);
       }
     } catch (error) {
-      console.warn(`PromptPress: Could not sync references for ${path.basename(filePath)}: ${error}`);
+      console.warn(`PromptPress: Could not sync references for ${path.basename(document.fileName)}: ${error}`);
     }
   }
 

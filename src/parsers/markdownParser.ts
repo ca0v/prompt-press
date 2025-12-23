@@ -159,10 +159,10 @@ export class MarkdownParser {
         while ((match = regex.exec(content)) !== null) {
             if (match[1]) {
                 // @ref
-                references.push(match[2]);
+                references.push(match[2].replace(/[.,;!?]+$/, ''));
             } else if (match[3]) {
                 // ref.md
-                references.push(match[3]);
+                references.push(match[3].replace(/[.,;!?]+$/, ''));
             }
         }
         

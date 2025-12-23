@@ -191,12 +191,85 @@ export function activate(context: vscode.ExtensionContext) {
 
     const promptService = new PromptService();
 
+    // Helper function to extract frontmatter from a markdown document
+    function getFrontmatter(document: vscode.TextDocument): string {
+        const lines = document.getText().split('\n');
+        let start = -1;
+        let end = -1;
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].trim() === '---') {
+                if (start === -1) start = i;
+                else { end = i; break; }
+            }
+        }
+        if (start !== -1 && end !== -1) {
+            return lines.slice(start + 1, end).join('\n');
+        }
+        return '';
+    }
+
+    // Map to store debounced update timeouts per document URI
+    const debouncedUpdates = new Map<string, NodeJS.Timeout>();
+
+    // Map to track if a document is currently being updated to prevent recursion
+    const updatingDocuments = new Map<string, boolean>();
+
     // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
     const specsWatcher = new SpecFileWatcher(
         config.get<boolean>('autoMonitor', true),
         workspaceRoot,
         diagnosticCollection
     );
+
+    // Listen for text document changes to update metadata dynamically
+    // Uses debouncing per document to handle rapid concurrent changes
+    const changeListener = vscode.workspace.onDidChangeTextDocument(async (event) => {
+        const document = event.document;
+        if (document.languageId === 'markdown' && document.getText().startsWith('---')) {
+            // Has YAML frontmatter
+            const uri = document.uri.toString();
+            
+            // Skip if already updating this document to prevent recursion
+            if (updatingDocuments.get(uri)) return;
+            
+            // Clear any existing debounced update for this document
+            const existingTimeout = debouncedUpdates.get(uri);
+            if (existingTimeout) {
+                clearTimeout(existingTimeout);
+            }
+            
+            // Set a new debounced update with 300ms delay
+            const timeout = setTimeout(async () => {
+                debouncedUpdates.delete(uri);
+                
+                // Mark as updating to prevent recursive calls
+                updatingDocuments.set(uri, true);
+                
+                try {
+                    // Capture frontmatter before update
+                    const before = getFrontmatter(document);
+                    
+                    await specsWatcher.processor?.updateMetadata(document);
+                    
+                    // Capture frontmatter after update and check if it changed
+                    const after = getFrontmatter(document);
+                    if (before === after) {
+                        // Metadata did not change, update was unnecessary
+                        outputChannel.appendLine(`[INFO] Metadata update skipped for ${document.uri.fsPath} - no changes`);
+                    } else {
+                        // Metadata was updated
+                        outputChannel.appendLine(`[INFO] Metadata updated for ${document.uri.fsPath}`);
+                    }
+                } finally {
+                    // Clear the updating flag
+                    updatingDocuments.set(uri, false);
+                }
+            }, 300);
+            
+            debouncedUpdates.set(uri, timeout);
+        }
+    });
+    context.subscriptions.push(changeListener);
 
     // Register commands
     context.subscriptions.push(

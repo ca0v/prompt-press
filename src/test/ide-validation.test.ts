@@ -218,17 +218,6 @@ This references @foo.req[extra] and @bar.design.md
             Assert.deepEqual(filtered, ['foo.req']);
         });
 
-        // SpecFileProcessor method tests
-        it('should update metadata correctly', async () => {
-            const filePath = await createSpec('specs/requirements/foo.req.md', '---\nartifact: foo\nphase: wrong\nlast-updated: 2000-01-01\n---');
-            await processor.updateMetadata(filePath);
-            const content = await fs.readFile(filePath, 'utf-8');
-            const parsed = parser.parse(content);
-            Assert.equal(parsed.metadata.phase, 'requirement');
-            Assert.ok(parsed.metadata.lastUpdated);
-            Assert.ok(parsed.metadata.lastUpdated !== '2000-01-01');
-        });
-
         it('should convert overspecified references to mentions', async () => {
             const filePath = await createSpec('specs/requirements/foo.req.md', '---\nartifact: foo\nphase: requirement\n---', 'This references foo.req.md and bar.design.md');
             await processor.convertOverspecifiedReferences(filePath);

@@ -10,7 +10,7 @@ export class SpecFileWatcher implements vscode.Disposable {
     private parser: MarkdownParser;
     private workspaceRoot: string;
     private diagnosticCollection: vscode.DiagnosticCollection;
-    private processor?: SpecFileProcessor;
+    public processor?: SpecFileProcessor;
 
     constructor(
         enabled: boolean = true,
@@ -77,7 +77,8 @@ export class SpecFileWatcher implements vscode.Disposable {
         // On create: update metadata and validate references
         if (changeType === 'created') {
             if (specType) {
-                await this.processor!.updateMetadata(filePath);
+                const document = await vscode.workspace.openTextDocument(filePath);
+                await this.processor!.updateMetadata(document);
             }
             await this.processor!.convertOverspecifiedReferences(filePath);
             const errors = await this.processor!.validateReferences(filePath);
@@ -92,7 +93,8 @@ export class SpecFileWatcher implements vscode.Disposable {
         // On modify: update last-updated and validate references (only for specs, not ConOps)
         if (changeType === 'modified') {
             if (specType) {
-                await this.processor!.updateMetadata(filePath);
+                const document = await vscode.workspace.openTextDocument(filePath);
+                await this.processor!.updateMetadata(document);
             }
             await this.processor!.convertOverspecifiedReferences(filePath);
             const errors = await this.processor!.validateReferences(filePath);
@@ -139,7 +141,8 @@ export class SpecFileWatcher implements vscode.Disposable {
 
     // PromptPress/IMP-1075
     public async updateMetadata(filePath: string): Promise<void> {
-        await this.processor?.updateMetadata(filePath);
+        const document = await vscode.workspace.openTextDocument(filePath);
+        await this.processor?.updateMetadata(document);
     }
 
     // PromptPress/IMP-1076

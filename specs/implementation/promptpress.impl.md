@@ -1043,10 +1043,10 @@ None
 
 ### processSpecFile (IMP-1057)
 - **Belongs to**: SpecFileProcessor
-- **Description**: Processes a spec file
+- **Description**: Write a VS Code extension in TypeScript that listens for workspace.onDidChangeTextDocument events. Whenever a file with YAML frontmatter is edited, extract the metadata from the top section, update it dynamically, then apply the edits via WorkspaceEdit to the in-memory text document only. Don't save to disk automatically; let the user decide that. Keep it lightweight and reactive.
 - **Parameters**: filePath: string
 - **Return Type**: Promise<void>
-- **Algorithm**: Validates and updates metadata.
+- **Algorithm**: Listens for document change events, checks for YAML frontmatter, extracts and updates metadata, applies edits via WorkspaceEdit without saving.
 - **Exceptions**: Throws on errors.
 
 ### validateSpecFile (IMP-1058)
