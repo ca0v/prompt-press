@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveSpecPath } from './resolveSpecPath.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';
 
 export class SpecReferenceManager {
@@ -12,23 +13,9 @@ export class SpecReferenceManager {
     }
 
     // PromptPress/IMP-1062
+    // Now uses the helper from resolveSpecPath.ts
     resolveSpecPath(specRef: string): string {
-        const parts = specRef.split('.');
-        const artifact = parts[0];
-        const phase = parts[1];
-        let subdir = '';
-        if (phase === 'req') {
-            subdir = 'requirements';
-        } else if (phase === 'design') {
-            subdir = 'design';
-        } else if (phase === 'impl') {
-            subdir = 'implementation';
-        }
-        if (subdir) {
-            return path.join(this.workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
-        } else {
-            return path.join(this.workspaceRoot, 'specs', phase ? `${artifact}.${phase}.md` : `${artifact}.md`);
-        }
+        return resolveSpecPath(this.workspaceRoot, specRef);
     }
 
     // PromptPress/IMP-1063

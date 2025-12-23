@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
 import * as fs from 'fs/promises';
 
 export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
@@ -112,24 +113,11 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
         return refs;
     }
 
+    /**
+     * Uses the shared resolveSpecPath helper and checks file existence.
+     */
     private async resolveSpecPath(specRef: string): Promise<string | null> {
-        const parts = specRef.split('.');
-        const artifact = parts[0];
-        const phase = parts[1];
-        let subdir = '';
-        if (phase === 'req') {
-            subdir = 'requirements';
-        } else if (phase === 'design') {
-            subdir = 'design';
-        } else if (phase === 'impl') {
-            subdir = 'implementation';
-        }
-        let filePath: string;
-        if (subdir) {
-            filePath = path.join(this.workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
-        } else {
-            filePath = path.join(this.workspaceRoot, 'specs', phase ? `${artifact}.${phase}.md` : `${artifact}.md`);
-        }
+        const filePath = resolveSpecPathSync(this.workspaceRoot, specRef);
         try {
             await fs.access(filePath);
             return filePath;

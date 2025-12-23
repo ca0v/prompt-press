@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
 import * as fs from 'fs/promises';
 import { MarkdownParser, SpecMetadata, ParsedSpec } from '../parsers/markdownParser.js';
 
@@ -414,21 +415,8 @@ export class SpecFileProcessor {
   }
 
   private resolveSpecPath(specRef: string): string {
-    // specRef format: "artifact-name.phase"
-    const [artifact, phase] = specRef.split('.');
-    let subdir = '';
-    if (phase === 'req') {
-      subdir = 'requirements';
-    } else if (phase === 'design') {
-      subdir = 'design';
-    } else if (phase === 'impl') {
-      subdir = 'implementation';
-    }
-    if (subdir) {
-      return path.join(this.workspaceRoot, 'specs', subdir, `${artifact}.${phase}.md`);
-    } else {
-      return path.join(this.workspaceRoot, 'specs', `${artifact}.${phase}.md`);
-    }
+    // Use the shared helper for path resolution
+    return resolveSpecPathSync(this.workspaceRoot, specRef);
   }
 
   private async fileExists(filePath: string): Promise<boolean> {

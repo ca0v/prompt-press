@@ -10,6 +10,7 @@ import { SpecFileProcessor } from '../services/SpecFileProcessor.js';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
 import { __dirname } from '../utils/dirname.js';
+import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
 const tmpDir = path.join(__dirname, '../../test-output/ide-validation');
 const parser = new MarkdownParser();
 
@@ -33,14 +34,9 @@ function isOverSpecified(ref: string): boolean {
     return !/^[a-zA-Z0-9-]+\.(req|design|impl)$/.test(ref);
 }
 
-// Helper to resolve spec path
+// Helper to resolve spec path using shared helper, but override workspaceRoot to tmpDir
 function resolveSpecPath(specRef: string): string {
-    const [artifact, phase] = specRef.split('.');
-    let subdir = '';
-    if (phase === 'req') subdir = 'requirements';
-    else if (phase === 'design') subdir = 'design';
-    else if (phase === 'impl') subdir = 'implementation';
-    return path.join(tmpDir, 'specs', subdir, `${artifact}.${phase}.md`);
+    return resolveSpecPathSync(tmpDir, specRef);
 }
 
 // Helper to get all dependencies (simplified for test)
