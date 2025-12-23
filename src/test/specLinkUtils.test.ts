@@ -1,4 +1,4 @@
-import { getTargetPhase, getBaseName } from '../utils/specLinkUtils.js';
+import { getTargetFolder, getTargetExt, getBaseName } from '../utils/specLinkUtils.js';
 import { TestRunner, it } from './framework.js';
 import { Assert } from "./Assert.js";
 
@@ -6,29 +6,55 @@ export async function runSpecLinkUtilsTests(): Promise<void> {
     const runner = new TestRunner();
 
     runner.describe('Spec Link Utils', () => {
-        runner.describe('getTargetPhase', () => {
+        runner.describe('getTargetFolder', () => {
             it('should return "requirements" for FR', () => {
-                Assert.equal(getTargetPhase('FR'), 'requirements');
+                Assert.equal(getTargetFolder('FR'), 'requirements');
             });
 
             it('should return "requirements" for NFR', () => {
-                Assert.equal(getTargetPhase('NFR'), 'requirements');
+                Assert.equal(getTargetFolder('NFR'), 'requirements');
             });
 
             it('should return "design" for DES', () => {
-                Assert.equal(getTargetPhase('DES'), 'design');
+                Assert.equal(getTargetFolder('DES'), 'design');
             });
 
             it('should return "implementation" for IMP', () => {
-                Assert.equal(getTargetPhase('IMP'), 'implementation');
+                Assert.equal(getTargetFolder('IMP'), 'implementation');
             });
 
             it('should return null for unknown type', () => {
-                Assert.equal(getTargetPhase('UNKNOWN'), null);
+                Assert.equal(getTargetFolder('UNKNOWN'), null);
             });
 
             it('should return null for empty string', () => {
-                Assert.equal(getTargetPhase(''), null);
+                Assert.equal(getTargetFolder(''), null);
+            });
+        });
+
+        runner.describe('getTargetExt', () => {
+            it('should return "req" for FR', () => {
+                Assert.equal(getTargetExt('FR'), 'req');
+            });
+
+            it('should return "req" for NFR', () => {
+                Assert.equal(getTargetExt('NFR'), 'req');
+            });
+
+            it('should return "design" for DES', () => {
+                Assert.equal(getTargetExt('DES'), 'design');
+            });
+
+            it('should return "impl" for IMP', () => {
+                Assert.equal(getTargetExt('IMP'), 'impl');
+            });
+
+            it('should return null for unknown type', () => {
+                Assert.equal(getTargetExt('UNKNOWN'), null);
+            });
+
+            it('should return null for empty string', () => {
+                Assert.equal(getTargetExt(''), null);
             });
         });
 

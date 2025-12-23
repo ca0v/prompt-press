@@ -5,14 +5,27 @@
 /**
  * Maps ID types to their corresponding phase folders.
  */
-export function getTargetPhase(type: string): string | null {
-    const phaseMap: { [key: string]: string } = {
+export function getTargetFolder(type: string): string | null {
+    const folderMap: { [key: string]: string } = {
         'FR': 'requirements',
         'NFR': 'requirements',
         'DES': 'design',
         'IMP': 'implementation'
     };
-    return phaseMap[type] || null;
+    return folderMap[type] || null;
+}
+
+/**
+ * Maps ID types to their corresponding file extensions.
+ */
+export function getTargetExt(type: string): string | null {
+    const extMap: { [key: string]: string } = {
+        'FR': 'req',
+        'NFR': 'req',
+        'DES': 'design',
+        'IMP': 'impl'
+    };
+    return extMap[type] || null;
 }
 
 /**

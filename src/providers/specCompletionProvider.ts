@@ -3,7 +3,7 @@ import * as path from 'path';
 import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
 import { getAllSpecRefs } from '../spec/getAllSpecRefs.js';
 import * as fs from 'fs/promises';
-import { getTargetPhase, getBaseName } from '../utils/specLinkUtils.js';
+import { getTargetFolder, getTargetExt, getBaseName } from '../utils/specLinkUtils.js';
 
 export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
     private workspaceRoot: string;
@@ -58,11 +58,12 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
             while ((idMatch = idRegex.exec(text)) !== null) {
                 const id = idMatch[0];
                 const type = idMatch[1];
-                const targetPhase = getTargetPhase(type);
-                if (targetPhase) {
+                const targetFolder = getTargetFolder(type);
+                const targetExt = getTargetExt(type);
+                if (targetFolder && targetExt) {
                     const baseName = getBaseName(document.fileName);
-                    const targetFileName = `${baseName}.${targetPhase}.md`;
-                    const targetPath = path.join(this.workspaceRoot, 'specs', targetPhase, targetFileName);
+                    const targetFileName = `${baseName}.${targetExt}.md`;
+                    const targetPath = path.join(this.workspaceRoot, 'specs', targetFolder, targetFileName);
                     try {
                         await fs.access(targetPath);
                         const startPos = document.positionAt(idMatch.index);
