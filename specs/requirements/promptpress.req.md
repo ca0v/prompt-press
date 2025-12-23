@@ -98,7 +98,7 @@ Non-Functional Requirements: NFR-1000 to NFR-1004
 - **Dependencies**: VS Code FileSystemWatcher
 
 ### FR-1018
-- **Description**: The system shall log messages to the VS Code output window.
+- **Description**: The system shall log messages to the console and VS Code output window.
 - **Priority**: Medium
 - **Dependencies**: VS Code OutputChannel
 
