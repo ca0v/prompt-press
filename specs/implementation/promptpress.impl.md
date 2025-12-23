@@ -40,6 +40,10 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 ### DES-1037: SpecImplementationFinder
 - IMP-1078: findAllImplementations
 
+### DES-1038: OutputLogger
+- IMP-1079: log
+- IMP-1080: setOutputChannel
+
 ### DES-1017: TersifyActionParser
 - IMP-1017: isRemoveFromAction
 - IMP-1018: isAddToAction
@@ -160,6 +164,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **src/spec/SpecReferenceManager.ts** - Manages references between specs.
 - **src/ui/chatPanelProvider.ts** - Provides the chat panel UI.
 - **src/utils/PromptLogger.ts** - Logger utility.
+- **src/utils/OutputLogger.ts** - Logger that wraps console or VS Code output channel.
 - **src/utils/dirname.ts** - Provides __dirname for ES modules.
 - **src/utils/impInjector.ts** - Script to inject IMP comments.
 - **src/utils/markdownFormatter.ts** - Formats markdown.
@@ -319,6 +324,12 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 ### File: src/utils/PromptLogger.ts
 - **Purpose**: Logger utility for logging AI prompts and responses.
 - **Classes**: PromptLogger
+- **Interfaces**: None
+- **Other Elements**: None
+
+### File: src/utils/OutputLogger.ts
+- **Purpose**: Logger that wraps console or VS Code output channel for logging messages.
+- **Classes**: OutputLogger
 - **Interfaces**: None
 - **Other Elements**: None
 

@@ -14,6 +14,11 @@ import { SpecReferenceFinder } from './providers/specReferenceFinder.js';
 import { SpecImplementationFinder } from './providers/specImplementationFinder.js';
 import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
 import { PromptService } from './services/PromptService.js';
+import { OutputLogger, logger } from './utils/OutputLogger.js';
+import { DebounceManager } from './utils/debounce.js';
+
+// Global logger instance
+let globalLogger: OutputLogger | undefined;
 
 // PromptPress/IMP-1013
 export function activate(context: vscode.ExtensionContext) {
@@ -23,29 +28,13 @@ export function activate(context: vscode.ExtensionContext) {
     const outputChannel = vscode.window.createOutputChannel('PromptPress');
     context.subscriptions.push(outputChannel);
     
+    // Register output channel with global logger
+    logger.setOutputChannel(outputChannel);
+    globalLogger = logger;
+    
     // Create diagnostic collection for spec validation
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('promptpress');
     context.subscriptions.push(diagnosticCollection);
-    
-    // Redirect console.log to output channel
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    
-    console.log = (...args: any[]) => {
-        outputChannel.appendLine(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
-        originalLog(...args);
-    };
-    
-    console.error = (...args: any[]) => {
-        outputChannel.appendLine('[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
-        originalError(...args);
-    };
-    
-    console.warn = (...args: any[]) => {
-        outputChannel.appendLine('[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
-        originalWarn(...args);
-    };
 
     outputChannel.appendLine('PromptPress extension activated');
     outputChannel.appendLine(`Timestamp: ${new Date().toISOString()}`);
@@ -218,11 +207,14 @@ export function activate(context: vscode.ExtensionContext) {
         return '';
     }
 
-    // Map to store debounced update timeouts per document URI
-    const debouncedUpdates = new Map<string, NodeJS.Timeout>();
-
     // Map to track if a document is currently being updated to prevent recursion
     const updatingDocuments = new Map<string, boolean>();
+
+    // Cache for frontmatter to avoid unnecessary metadata updates
+    const frontmatterCache = new Map<string, string>();
+
+    // Debounce manager for metadata updates
+    const debounceManager = new DebounceManager();
 
     // Initialize file watcher (no auto-chat prompts; updates metadata and validates refs)
     const specsWatcher = new SpecFileWatcher(
@@ -239,44 +231,36 @@ export function activate(context: vscode.ExtensionContext) {
             // Has YAML frontmatter
             const uri = document.uri.toString();
             
-            // Skip if already updating this document to prevent recursion
-            if (updatingDocuments.get(uri)) return;
-            
-            // Clear any existing debounced update for this document
-            const existingTimeout = debouncedUpdates.get(uri);
-            if (existingTimeout) {
-                clearTimeout(existingTimeout);
-            }
-            
-            // Set a new debounced update with 300ms delay
-            const timeout = setTimeout(async () => {
-                debouncedUpdates.delete(uri);
+            debounceManager.debounce(uri, async () => {
+                // Skip if already updating this document to prevent recursion
+                if (updatingDocuments.get(uri)) return;
+                
+                // Get current frontmatter
+                const currentFrontmatter = getFrontmatter(document);
+                
+                // Check if frontmatter has changed since last update
+                const cachedFrontmatter = frontmatterCache.get(uri);
+                if (cachedFrontmatter === currentFrontmatter) {
+                    // Frontmatter hasn't changed, skip update
+                    outputChannel.appendLine(`[INFO] Metadata update skipped for ${document.uri.fsPath} - frontmatter unchanged`);
+                    return;
+                }
                 
                 // Mark as updating to prevent recursive calls
                 updatingDocuments.set(uri, true);
                 
                 try {
-                    // Capture frontmatter before update
-                    const before = getFrontmatter(document);
+                    // Update cache with current frontmatter
+                    frontmatterCache.set(uri, currentFrontmatter);
                     
                     await specsWatcher.processor?.updateMetadata(document);
                     
-                    // Capture frontmatter after update and check if it changed
-                    const after = getFrontmatter(document);
-                    if (before === after) {
-                        // Metadata did not change, update was unnecessary
-                        outputChannel.appendLine(`[INFO] Metadata update skipped for ${document.uri.fsPath} - no changes`);
-                    } else {
-                        // Metadata was updated
-                        outputChannel.appendLine(`[INFO] Metadata updated for ${document.uri.fsPath}`);
-                    }
+                    outputChannel.appendLine(`[INFO] Metadata updated for ${document.uri.fsPath}`);
                 } finally {
                     // Clear the updating flag
                     updatingDocuments.set(uri, false);
                 }
             }, 300);
-            
-            debouncedUpdates.set(uri, timeout);
         }
     });
     context.subscriptions.push(changeListener);
@@ -505,5 +489,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 // PromptPress/IMP-1014
 export function deactivate() {
+    if (globalLogger) {
+        globalLogger.setOutputChannel(null);
+    }
     console.log('PromptPress extension is now deactivated');
 }

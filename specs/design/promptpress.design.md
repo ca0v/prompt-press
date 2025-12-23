@@ -35,6 +35,7 @@ Key design elements:
 - @promptpress.req/FR-1015: DES-1031
 - @promptpress.req/FR-1016: DES-1032
 - @promptpress.req/FR-1017: DES-1033
+- @promptpress.req/FR-1018: DES-1038
 
 ## Data Models
 ### ChatMessage (DES-1000)
@@ -239,6 +240,12 @@ Key design elements:
 - **Type**: Class
 - **Key Methods**: toggleMonitoring, validateFile, onFileChange, onFileDelete
 - **Dependencies**: VS Code FileSystemWatcher
+
+### OutputLogger (DES-1038)
+- **Description**: Logger that wraps console or VS Code output channel for logging messages.
+- **Type**: Class
+- **Key Methods**: log, setOutputChannel
+- **Dependencies**: VS Code OutputChannel or console
 
 ## Dependencies
 - **External Libraries**: VS Code API (DES-1034) - Provides extension framework and UI components; XAI API (DES-1035) - Enables AI chat completions.

@@ -21,6 +21,7 @@ import { runMarkdownParserTest } from './markdownParser.test.js';
 import { runSpecLinkUtilsTests } from './specLinkUtils.test.js';
 import { runSpecCompletionProviderTests } from './specCompletionProvider.test.js';
 import runCascadeCoreTest from './cascadeCore.test.js';
+import { runDebounceTest } from './debounce.test.js';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -96,6 +97,7 @@ async function main() {
             await runImplParserTest();
             await runMarkdownParserTest();
             await runCascadeCoreTest();
+            await runDebounceTest();
             
             console.log('\n💡 Tips:');
             console.log('  - Run "node out/test/runner.js scaffold" for scaffold integration tests');
