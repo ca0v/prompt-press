@@ -1,3 +1,10 @@
+---
+artifact: promptpress
+phase: design
+depends-on: []
+references: ["promptpress.req"]
+last-updated: 2025-12-23
+---
 # Design Specification for promptpress
 
 ## Overview
@@ -9,24 +16,24 @@ Key design elements:
 - Dependencies: VS Code API (DES-1034), XAI API (DES-1035)
 
 ## Requirements
-- promptpress.req.md/FR-1000: DES-1014
-- promptpress.req.md/FR-1001: DES-1015
-- promptpress.req.md/FR-1002: DES-1016
-- promptpress.req.md/FR-1003: DES-1017
-- promptpress.req.md/FR-1004: DES-1018, DES-1019
-- promptpress.req.md/FR-1005: DES-1020
-- promptpress.req.md/FR-1006: DES-1021
-- promptpress.req.md/FR-1007: DES-1022
-- promptpress.req.md/FR-1008: DES-1023
-- promptpress.req.md/FR-1009: DES-1024
-- promptpress.req.md/FR-1010: DES-1025
-- promptpress.req.md/FR-1011: DES-1026, DES-1027
-- promptpress.req.md/FR-1012: DES-1028
-- promptpress.req.md/FR-1013: DES-1029
-- promptpress.req.md/FR-1014: DES-1030
-- promptpress.req.md/FR-1015: DES-1031
-- promptpress.req.md/FR-1016: DES-1032
-- promptpress.req.md/FR-1017: DES-1033
+- @promptpress.req/FR-1000: DES-1014
+- @promptpress.req/FR-1001: DES-1015
+- @promptpress.req/FR-1002: DES-1016
+- @promptpress.req/FR-1003: DES-1017
+- @promptpress.req/FR-1004: DES-1018, DES-1019
+- @promptpress.req/FR-1005: DES-1020
+- @promptpress.req/FR-1006: DES-1021
+- @promptpress.req/FR-1007: DES-1022
+- @promptpress.req/FR-1008: DES-1023
+- @promptpress.req/FR-1009: DES-1024
+- @promptpress.req/FR-1010: DES-1025
+- @promptpress.req/FR-1011: DES-1026, DES-1027
+- @promptpress.req/FR-1012: DES-1028
+- @promptpress.req/FR-1013: DES-1029
+- @promptpress.req/FR-1014: DES-1030
+- @promptpress.req/FR-1015: DES-1031
+- @promptpress.req/FR-1016: DES-1032
+- @promptpress.req/FR-1017: DES-1033
 
 ## Data Models
 ### ChatMessage (DES-1000)

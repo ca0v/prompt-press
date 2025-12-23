@@ -18,6 +18,7 @@ import { runImplParserTest } from './implParser.test.js';
 import { runIdeValidationTests } from './ide-validation.test.js';
 import { runMarkdownFormatterTests } from './markdownFormatter.test.js';
 import { runMarkdownParserTest } from './markdownParser.test.js';
+import { runSpecLinkUtilsTests } from './specLinkUtils.test.js';
 import runCascadeCoreTest from './cascadeCore.test.js';
 
 async function main() {
@@ -53,6 +54,9 @@ async function main() {
             
             console.log('\n8️⃣  IDE Validation Tests\n');
             await runIdeValidationTests();
+            
+            console.log('\n9️⃣  Spec Link Utils Tests\n');
+            await runSpecLinkUtilsTests();
             
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();

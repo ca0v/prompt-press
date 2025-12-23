@@ -3,6 +3,7 @@ import * as path from 'path';
 import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
 import { getAllSpecRefs } from '../spec/getAllSpecRefs.js';
 import * as fs from 'fs/promises';
+import { getTargetPhase, getBaseName } from '../utils/specLinkUtils.js';
 
 export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
     private workspaceRoot: string;
@@ -47,6 +48,30 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
                     if (targetPath) {
                         const uri = vscode.Uri.file(targetPath);
                         links.push(new vscode.DocumentLink(range, uri));
+                    }
+                }
+            }
+
+            // Handle ID references like FR-1000, DES-1014, etc.
+            const idRegex = /\b(FR|NFR|DES|IMP)-(\d{4})\b/g;
+            let idMatch;
+            while ((idMatch = idRegex.exec(text)) !== null) {
+                const id = idMatch[0];
+                const type = idMatch[1];
+                const targetPhase = getTargetPhase(type);
+                if (targetPhase) {
+                    const baseName = getBaseName(document.fileName);
+                    const targetFileName = `${baseName}.${targetPhase}.md`;
+                    const targetPath = path.join(this.workspaceRoot, 'specs', targetPhase, targetFileName);
+                    try {
+                        await fs.access(targetPath);
+                        const startPos = document.positionAt(idMatch.index);
+                        const endPos = document.positionAt(idMatch.index + id.length);
+                        const range = new vscode.Range(startPos, endPos);
+                        const uri = vscode.Uri.parse(`file://${targetPath}#${id.toLowerCase()}`);
+                        links.push(new vscode.DocumentLink(range, uri));
+                    } catch {
+                        // file not found, skip
                     }
                 }
             }
