@@ -242,7 +242,7 @@ Key design elements:
 - **Dependencies**: VS Code FileSystemWatcher
 
 ### OutputLogger (DES-1038)
-- **Description**: Logger that wraps console or VS Code output channel for logging messages.
+- **Description**: Logger that always writes to console and optionally to VS Code output channel.
 - **Type**: Class
 - **Key Methods**: log, setOutputChannel
 - **Dependencies**: VS Code OutputChannel or console

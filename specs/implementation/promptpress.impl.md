@@ -2,7 +2,7 @@
 artifact: promptpress
 phase: implementation
 depends-on: []
-references: []
+references: ["promptpress.design"]
 last-updated: 2025-12-23
 ---
 
@@ -127,7 +127,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - IMP-1068: setupWebview
 - IMP-1069: handleMessage
 
-### DES-1032: PromptLogger
+### @promptpress.design/DES-1032: PromptLogger
 - IMP-1070: logRequest
 - IMP-1071: logResponse
 
@@ -164,7 +164,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **src/spec/SpecReferenceManager.ts** - Manages references between specs.
 - **src/ui/chatPanelProvider.ts** - Provides the chat panel UI.
 - **src/utils/PromptLogger.ts** - Logger utility.
-- **src/utils/OutputLogger.ts** - Logger that wraps console or VS Code output channel.
+- **src/utils/OutputLogger.ts** - Logger that always writes to console and optionally to VS Code output channel.
 - **src/utils/dirname.ts** - Provides __dirname for ES modules.
 - **src/utils/impInjector.ts** - Script to inject IMP comments.
 - **src/utils/markdownFormatter.ts** - Formats markdown.
@@ -331,7 +331,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **Purpose**: Logger that wraps console or VS Code output channel for logging messages.
 - **Classes**: OutputLogger
 - **Interfaces**: None
-- **Other Elements**: None
+- **Other Elements**: Exported logger instance
 
 ### File: src/utils/dirname.ts
 - **Purpose**: Provides __dirname for ES modules.
@@ -410,6 +410,16 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **Methods**: findAllImplementations (IMP-1078)
 - **Fields**: workspaceRoot
 - **Constructors**: constructor(workspaceRoot: string)
+- **Events**: None
+- **Nested Types**: None
+
+### OutputLogger
+- **Description**: Logger that always writes to console and optionally to VS Code output channel.
+- **Inheritance**: None
+- **Properties**: None
+- **Methods**: log (IMP-1079), setOutputChannel (IMP-1080)
+- **Fields**: outputChannel
+- **Constructors**: constructor()
 - **Events**: None
 - **Nested Types**: None
 
@@ -536,10 +546,10 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 ### SpecFileProcessor
 - **Description**: Processes and validates spec files.
 - **Inheritance**: None
-- **Properties**: workspaceRoot: string
-- **Methods**: processSpecFile (IMP-1057), validateSpecFile (IMP-1058), extractReferences (IMP-1059), updateMetadata (IMP-1060), checkCircularReferences (IMP-1061)
-- **Fields**: workspaceRoot
-- **Constructors**: constructor(workspaceRoot: string)
+- **Properties**: parser: MarkdownParser, workspaceRoot: string
+- **Methods**: updateMetadata (IMP-1057), syncReferencesWithMentions (IMP-1058), validateReferences (IMP-1059), getAllDependencies (IMP-1060), convertOverspecifiedReferences (IMP-1061)
+- **Fields**: parser, workspaceRoot
+- **Constructors**: constructor(parser: MarkdownParser, workspaceRoot: string)
 - **Events**: None
 - **Nested Types**: None
 
@@ -1160,29 +1170,45 @@ None
 - **Algorithm**: Checks structure.
 - **Exceptions**: None
 
-### extractReferences (IMP-1059)
+### updateMetadata (IMP-1057)
 - **Belongs to**: SpecFileProcessor
-- **Description**: Extracts references from spec
-- **Parameters**: content: string
-- **Return Type**: string[]
-- **Algorithm**: Parses @refs.
-- **Exceptions**: None
+- **Description**: Updates metadata in a spec document including last-updated date, enforces correct phase based on file extension, sets artifact name from filename if unknown, syncs references with content mentions, and applies the updated frontmatter to the document.
+- **Parameters**: document: any (VS Code TextDocument)
+- **Return Type**: Promise<void>
+- **Algorithm**: Parses document content, updates last-updated to today's date, enforces phase from file extension (.req.md -> requirement, .design.md -> design, .impl.md -> implementation), sets artifact from filename if 'unknown', syncs references with mentions, reconstructs frontmatter, and applies WorkspaceEdit to update the document.
+- **Exceptions**: Logs warnings on errors but doesn't throw.
 
-### updateMetadata (IMP-1060)
+### syncReferencesWithMentions (IMP-1058)
 - **Belongs to**: SpecFileProcessor
-- **Description**: Updates metadata
+- **Description**: Syncs the references metadata field with content mentions found in the document
+- **Parameters**: document: any, parsed?: ParsedSpec
+- **Return Type**: Promise<void>
+- **Algorithm**: Extracts unique references from content, updates metadata.references to match, reconstructs frontmatter, applies WorkspaceEdit.
+- **Exceptions**: Logs warnings on errors but doesn't throw.
+
+### validateReferences (IMP-1059)
+- **Belongs to**: SpecFileProcessor
+- **Description**: Validates references in a spec file including dependencies, circular references, and mention consistency
+- **Parameters**: filePath: string
+- **Return Type**: Promise<ValidationError[]>
+- **Algorithm**: Parses content, checks depends-on and references for existence, circular dependencies, over-specification, self-references, and ensures references match content mentions.
+- **Exceptions**: Returns empty array on parsing errors.
+
+### getAllDependencies (IMP-1060)
+- **Belongs to**: SpecFileProcessor
+- **Description**: Recursively gets all dependencies of a spec reference
+- **Parameters**: specRef: string, visited?: Set<string>
+- **Return Type**: Promise<Set<string>>
+- **Algorithm**: Traverses dependency graph, collects all transitive dependencies, detects cycles.
+- **Exceptions**: Returns empty set on errors.
+
+### convertOverspecifiedReferences (IMP-1061)
+- **Belongs to**: SpecFileProcessor
+- **Description**: Converts overspecified references (artifact.phase.md) to standard format (@artifact.phase)
 - **Parameters**: filePath: string
 - **Return Type**: Promise<void>
-- **Algorithm**: Updates lastUpdated.
-- **Exceptions**: Throws on error.
-
-### checkCircularReferences (IMP-1061)
-- **Belongs to**: SpecFileProcessor
-- **Description**: Checks for circular references
-- **Parameters**: filePath: string, references: string[]
-- **Return Type**: Promise<boolean>
-- **Algorithm**: Detects cycles.
-- **Exceptions**: None
+- **Algorithm**: Uses regex to find and replace overspecified references in file content.
+- **Exceptions**: Logs errors but doesn't throw.
 
 ### getAllSpecRefs (IMP-1062)
 - **Belongs to**: SpecReferenceManager
@@ -1294,6 +1320,22 @@ None
 - **Parameters**: uri: vscode.Uri
 - **Return Type**: void
 - **Algorithm**: Removes diagnostics.
+- **Exceptions**: None
+
+### log (IMP-1079)
+- **Belongs to**: OutputLogger
+- **Description**: Logs a message to console and optionally to the configured output channel.
+- **Parameters**: message: string
+- **Return Type**: void
+- **Algorithm**: Always writes to console.log, and also to outputChannel.appendLine if channel is set.
+- **Exceptions**: None
+
+### setOutputChannel (IMP-1080)
+- **Belongs to**: OutputLogger
+- **Description**: Sets the output channel to use for logging.
+- **Parameters**: channel: vscode.OutputChannel | null
+- **Return Type**: void
+- **Algorithm**: Stores the channel reference for future logging.
 - **Exceptions**: None
 
 ## Data Structures
