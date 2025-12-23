@@ -19,6 +19,7 @@ import { runIdeValidationTests } from './ide-validation.test.js';
 import { runMarkdownFormatterTests } from './markdownFormatter.test.js';
 import { runMarkdownParserTest } from './markdownParser.test.js';
 import { runSpecLinkUtilsTests } from './specLinkUtils.test.js';
+import { runSpecCompletionProviderTests } from './specCompletionProvider.test.js';
 import runCascadeCoreTest from './cascadeCore.test.js';
 
 async function main() {
@@ -54,6 +55,9 @@ async function main() {
             
             console.log('\n8️⃣  IDE Validation Tests\n');
             await runIdeValidationTests();
+            
+            console.log('\n9️⃣  SpecCompletionProvider Tests\n');
+            await runSpecCompletionProviderTests();
             
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();

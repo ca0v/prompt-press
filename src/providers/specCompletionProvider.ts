@@ -24,11 +24,86 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
         const filePath = document.uri.fsPath;
         const relativePath = path.relative(this.workspaceRoot, filePath);
 
-        // Only provide links for files in specs/
-        if (!relativePath.startsWith('specs/')) {
+        // Only provide links for files in specs/ or .ts files
+        if (!relativePath.startsWith('specs/') && !filePath.endsWith('.ts')) {
             return [];
         }
 
+        // For .ts files, only handle IMP- references
+        if (filePath.endsWith('.ts')) {
+            return this.getLinksForTsFile(document);
+        }
+
+        return this.getLinksForSpecFiles(document);
+    }
+
+    private static extractImpMatches(text: string): Array<{index: number, specName: string, impId: string}> {
+        const matches: Array<{index: number, specName: string, impId: string}> = [];
+        const impRegex = /\/\/\s*([a-zA-Z0-9_-]+)\/IMP-(\d{4})\b/g;
+        let match;
+        while ((match = impRegex.exec(text)) !== null) {
+            matches.push({
+                index: match.index,
+                specName: match[1],
+                impId: `IMP-${match[2]}`
+            });
+        }
+        return matches;
+    }
+
+    private static computeTargetPath(specName: string): string {
+        return path.join('.', 'specs', 'implementation', `${specName}.impl.md`);
+    }
+
+    private async getLinksForTsFile(document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
+        const links: vscode.DocumentLink[] = [];
+        const text = document.getText();
+        
+        const impMatches = SpecCompletionProvider.extractImpMatches(text);
+        for (const match of impMatches) {
+            const targetPath = path.join(this.workspaceRoot, SpecCompletionProvider.computeTargetPath(match.specName));
+            
+            console.log(`[SpecLink] Found IMP reference: ${match.impId} in spec: ${match.specName}, targeting: ${targetPath}`);
+            
+            try {
+                await fs.access(targetPath);
+                const startPos = document.positionAt(match.index + text.substring(match.index).indexOf(match.impId));
+                const endPos = document.positionAt(match.index + text.substring(match.index).indexOf(match.impId) + match.impId.length);
+                const range = new vscode.Range(startPos, endPos);
+                
+                // Read target file to find the first instance of IMP-xxxx
+                const targetContent = await fs.readFile(targetPath, 'utf8');
+                const lines = targetContent.split('\n');
+                let targetLine = -1;
+                let targetCol = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const index = line.indexOf(match.impId);
+                    if (index !== -1) {
+                        targetLine = i;
+                        targetCol = index;
+                        break;
+                    }
+                }
+                
+                let uri: vscode.Uri;
+                if (targetLine !== -1) {
+                    uri = vscode.Uri.parse(`file://${targetPath}#L${targetLine + 1}:${targetCol + 1}`);
+                    console.log(`[SpecLink] Linking to ${targetPath} at line ${targetLine + 1}, col ${targetCol + 1}`);
+                } else {
+                    uri = vscode.Uri.file(targetPath);
+                    console.log(`[SpecLink] IMP-${match.impId} not found in target file, linking to file`);
+                }
+                links.push(new vscode.DocumentLink(range, uri));
+            } catch (error) {
+                console.log(`[SpecLink] Target file not accessible: ${targetPath}`, error);
+                // file not found, skip
+            }
+        }
+        return links;
+    }
+
+    private async getLinksForSpecFiles(document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
         return this.getAllSpecRefs(document).then(async specRefs => {
             const links: vscode.DocumentLink[] = [];
             const text = document.getText();

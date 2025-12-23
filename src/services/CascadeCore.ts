@@ -249,6 +249,8 @@ export class CascadeCore {
 
             result.success = result.errors.length === 0;
             if (result.success) {
+                // Update baseline cache with current content
+                await this.updateBaselineCache(filePath, currentContent);
                 ui.notifyInfo(`Successfully cascaded changes to ${result.updatedFiles.length} file(s)`);
             }
 
@@ -522,18 +524,42 @@ export class CascadeCore {
             oldContent = await GitHelper.getStagedContent(this.workspaceRoot, filePath);
         }
         
+        // If still no content, try to get baseline from cache
+        if (!oldContent) {
+            const cacheDir = path.join(this.workspaceRoot, '.promptpress', 'cache');
+            const baselineFile = path.join(cacheDir, path.basename(filePath) + '.baseline');
+            try {
+                oldContent = await fs.readFile(baselineFile, 'utf-8');
+                this.logger.log('[Cascade] Using baseline from cache for change detection');
+            } catch {
+                // No baseline either
+            }
+        }
+        
         if (oldContent) {
             return DiffHelper.compareContent(oldContent, currentContent);
         } else {
-            // No git history or staged content, treat as no changes (since we can't determine what changed)
-            this.logger.log('[Cascade] No git history or staged content found; cannot detect changes');
+            // No git history, staged content, or baseline, treat as no changes (since we can't determine what changed)
+            this.logger.log('[Cascade] No git history, staged content, or baseline found; cannot detect changes');
             return {
                 hasChanges: false,
                 modifiedSections: [],
-                summary: 'No git history or staged content available for change detection',
+                summary: 'No git history, staged content, or baseline available for change detection',
                 oldContent: '',
                 newContent: currentContent
             };
+        }
+    }
+
+    private async updateBaselineCache(filePath: string, content: string): Promise<void> {
+        try {
+            const cacheDir = path.join(this.workspaceRoot, '.promptpress', 'cache');
+            await fs.mkdir(cacheDir, { recursive: true });
+            const baselineFile = path.join(cacheDir, path.basename(filePath) + '.baseline');
+            await fs.writeFile(baselineFile, content, 'utf-8');
+            this.logger.log(`[Cascade] Updated baseline cache for ${path.basename(filePath)}`);
+        } catch (error) {
+            this.logger.log(`[Cascade] Warning: Failed to update baseline cache: ${error}`);
         }
     }
 

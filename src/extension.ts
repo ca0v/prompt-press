@@ -80,7 +80,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register spec completion and link providers
     context.subscriptions.push(
         vscode.languages.registerDocumentLinkProvider(
-            { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md,md}' },
+            { scheme: 'file' },
             specProvider
         )
     );

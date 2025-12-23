@@ -238,6 +238,14 @@ Old architecture.`;
 
             await fs.writeFile(designFile, oldDesignContent, 'utf-8');
 
+            // Set up baseline with empty content to simulate new file
+            const cacheDir = path.join(testDir, '.promptpress', 'cache');
+            await fs.writeFile(
+                path.join(cacheDir, 'test-artifact.req.md.baseline'),
+                '',
+                'utf-8'
+            );
+
             // No baseline exists, so entire file treated as changes
             const result = await cascadeService.refactorSpec(reqFile, testUi);
 
@@ -277,6 +285,14 @@ Complete system specification.
 - FR-2: Advanced features`;
 
             await fs.writeFile(reqFile, reqContent, 'utf-8');
+
+            // Set up baseline with empty content
+            const cacheDir = path.join(testDir, '.promptpress', 'cache');
+            await fs.writeFile(
+                path.join(cacheDir, 'test-artifact.req.md.baseline'),
+                '',
+                'utf-8'
+            );
 
             // Create existing design and implementation files
             await fs.writeFile(designFile, `---
@@ -448,10 +464,18 @@ version: 1.0.0
 ## Architecture Overview
 Design without requirement.`, 'utf-8');
 
+            // Set up baseline with empty to detect changes
+            const cacheDir = path.join(testDir, '.promptpress', 'cache');
+            await fs.writeFile(
+                path.join(cacheDir, 'test-artifact.design.md.baseline'),
+                '',
+                'utf-8'
+            );
+
             const result = await cascadeService.refactorSpec(designFile, testUi);
 
             Assert.equal(result.success, false);
-            Assert.ok(result.errors.some(err => 
+            Assert.ok(result.errors.some((err: string) => 
                 err.includes('Cannot cascade from design without requirement')
             ));
         });
