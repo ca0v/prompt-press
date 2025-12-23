@@ -89,7 +89,8 @@ export function activate(context: vscode.ExtensionContext) {
     const completionProvider = vscode.languages.registerCompletionItemProvider(
         { scheme: 'file', pattern: '**/specs/**/*.{req.md,design.md,impl.md,md}' },
         {
-            provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] {
+            provideCompletionItems(document: vscode.TextDocument, position: vscode.Position): Promise<vscode.CompletionItem[]> {
+                return (async () => {
                 const filePath = document.uri.fsPath;
                 const fileName = filePath.split('/').pop() || filePath;
                 const isConOps = fileName === 'ConOps.md';
@@ -105,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
                     const atIndex = line.lastIndexOf('@');
                     const afterAt = line.substr(atIndex + 1, position.character - atIndex - 1);
                     
-                    const allRefs = specRefManager.getAllSpecRefs();
+                    const allRefs = await specRefManager.getAllSpecRefs();
                     const allowedRefs = allRefs.filter(ref => {
                         if (ref === currentRef) return false; // don't show current
                         if (ref.endsWith('.impl')) return false; // don't show .impl
@@ -156,7 +157,7 @@ export function activate(context: vscode.ExtensionContext) {
                         return [];
                     }
                     
-                    const allRefs = specRefManager.getAllSpecRefs();
+                    const allRefs = await specRefManager.getAllSpecRefs();
                     const allowedRefs = allRefs.filter(ref => {
                         if (ref === currentRef) return false; // don't show current
                         if (ref.endsWith('.impl')) return false; // don't show .impl
@@ -175,6 +176,7 @@ export function activate(context: vscode.ExtensionContext) {
                 }
 
                 return [];
+                })();
             }
         },
         '@' // trigger character

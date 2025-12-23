@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
+import { getAllSpecRefs } from '../spec/getAllSpecRefs.js';
 import * as fs from 'fs/promises';
 
 export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
@@ -27,7 +28,7 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
             return [];
         }
 
-        return this.getAllSpecRefs().then(async specRefs => {
+        return this.getAllSpecRefs(document).then(async specRefs => {
             const links: vscode.DocumentLink[] = [];
             const text = document.getText();
             const regex = /@([a-zA-Z0-9_.-]+)/g;
@@ -89,28 +90,28 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
         });
     }
 
-    private async getAllSpecRefs(): Promise<string[]> {
-        const refs: string[] = [];
-        const specsDir = path.join(this.workspaceRoot, 'specs');
+    private async getAllSpecRefs(document: vscode.TextDocument): Promise<string[]> {
+        const fileName = path.basename(document.fileName);
+        let allowedPhases: string[];
 
-        const collectMdFiles = async (dir: string): Promise<void> => {
-            try {
-                const entries = await fs.readdir(dir, { withFileTypes: true });
-                for (const entry of entries) {
-                    if (entry.isDirectory()) {
-                        await collectMdFiles(path.join(dir, entry.name));
-                    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-                        const ref = entry.name.replace(/\.md$/, '');
-                        refs.push(ref);
-                    }
-                }
-            } catch (error) {
-                // Ignore errors
-            }
-        };
+        if (fileName.endsWith('.req.md')) {
+            // Req docs can only see requirements
+            allowedPhases = ['requirements'];
+        } else if (fileName.endsWith('.design.md')) {
+            // Design docs can see requirements and design
+            allowedPhases = ['requirements', 'design'];
+        } else if (fileName.endsWith('.impl.md')) {
+            // Impl docs can see all phases
+            allowedPhases = ['requirements', 'design', 'implementation'];
+        } else if (fileName === 'ConOps.md') {
+            // ConOps can reference requirements
+            allowedPhases = ['requirements'];
+        } else {
+            // Fallback for other files
+            allowedPhases = ['requirements', 'design', 'implementation'];
+        }
 
-        await collectMdFiles(specsDir);
-        return refs;
+        return getAllSpecRefs(this.workspaceRoot, allowedPhases);
     }
 
     /**

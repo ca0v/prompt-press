@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveSpecPath } from './resolveSpecPath.js';
+import { getAllSpecRefs } from './getAllSpecRefs.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';
 
 export class SpecReferenceManager {
@@ -19,28 +20,8 @@ export class SpecReferenceManager {
     }
 
     // PromptPress/IMP-1063
-    getAllSpecRefs(): string[] {
-        const refs: string[] = [];
-        const specsDir = path.join(this.workspaceRoot, 'specs');
-        if (!fs.existsSync(specsDir)) return refs;
-        const subdirs = ['requirements', 'design', 'implementation'];
-        for (const subdir of subdirs) {
-            const dir = path.join(specsDir, subdir);
-            if (fs.existsSync(dir)) {
-                const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
-                for (const file of files) {
-                    const match = file.match(/^([a-zA-Z0-9-]+)\.(req|design|impl)\.md$/);
-                    if (match) {
-                        refs.push(`${match[1]}.${match[2]}`);
-                    }
-                }
-            }
-        }
-        // Add ConOps
-        if (fs.existsSync(path.join(specsDir, 'ConOps.md'))) {
-            refs.push('ConOps');
-        }
-        return refs;
+    async getAllSpecRefs(): Promise<string[]> {
+        return getAllSpecRefs(this.workspaceRoot);
     }
 
     // PromptPress/IMP-1064
