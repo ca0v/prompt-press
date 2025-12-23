@@ -889,7 +889,7 @@ ${aiResponse}
         await fs.mkdir(path.dirname(conopsPath), { recursive: true });
 
         // Include the full AI response content, which contains valuable analysis
-        let finalContent = aiResponse;
+        const finalContent = aiResponse;
         
         if (!conopsExists) {
             // For new ConOps, use the AI-generated content directly
@@ -910,7 +910,7 @@ ${aiResponse}
         reqUpdates.push(...expectedMatches);
         
         // Also try to parse the actual AI format: 1. **Update filename.req.md:**\n   - **Expanded Overview:** content
-        const aiFormatMatches = Array.from(aiResponse.matchAll(/^\d+\. \*\*Update ([^\*]+)\*\*:\s*\n(?:[\s\S]*?)- \*\*Expanded Overview:\*\* ([\s\S]*?)(?=\n\d+\. \*\*Update|\n### |\n$)/gm));
+        const aiFormatMatches = Array.from(aiResponse.matchAll(/^\d+\. [**]{2}Update ([^*]+)[**]{2}:\s*\n(?:[\s\S]*?)- [**]{2}Expanded Overview:[**]{2} ([\s\S]*?)(?=\n\d+\. [**]{2}Update|\n### |\n$)/gm));
         for (const match of aiFormatMatches) {
             const fileName = match[1].trim();
             const updatedOverview = match[2].trim();

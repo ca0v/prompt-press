@@ -147,12 +147,16 @@ export class CascadeCore {
                 try {
                     ref.requirement = await fs.readFile(reqPath, 'utf-8');
                     hasReq = true;
-                } catch {}
+                } catch {
+                    // Ignore errors when file doesn't exist
+                }
 
                 try {
                     ref.design = await fs.readFile(designPath, 'utf-8');
                     hasDesign = true;
-                } catch {}
+                } catch {
+                    // Ignore errors when file doesn't exist
+                }
 
                 if (!hasReq && !hasDesign) {
                     throw new Error(`No requirement or design files found for artifact: ${baseName}`);

@@ -124,7 +124,9 @@ export async function runCascadeServiceTest(): Promise<void> {
         // Clean test directory
         try {
             await fs.rm(testDir, { recursive: true, force: true });
-        } catch { }
+        } catch {
+            // Ignore errors if directory doesn't exist
+        }
         await fs.mkdir(testDir, { recursive: true });
 
         // Create cache directory

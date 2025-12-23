@@ -96,7 +96,7 @@ export class FileStructureParserCore {
             const trimmed = line.trimEnd();
             if (!trimmed) continue;
 
-            const noPrefix = trimmed.replace(/^[\└├│──┬─ ]+/, '');
+            const noPrefix = trimmed.replace(/^[└├│──┬─ ]+/, '');
             const isLast = trimmed.includes('└');
             const isDir = noPrefix.endsWith('/');
 

@@ -110,7 +110,7 @@ async function injectImpComments(): Promise<void> {
     let currentId = maxId + 1;
 
     for (const file of files) {
-        let content = await fs.readFile(file, 'utf-8');
+        const content = await fs.readFile(file, 'utf-8');
         
         const methods = findPublicMethods(content);
 

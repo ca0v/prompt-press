@@ -103,7 +103,9 @@ export async function runImplParserTest(): Promise<void> {
             // Clean up any existing output
             try {
                 await fs.rm(outputDir, { recursive: true, force: true });
-            } catch {}
+            } catch {
+                // Ignore errors if directory doesn't exist
+            }
 
             // Run the parser
             await implParser.parseAndGenerate(implPath);
