@@ -68,7 +68,30 @@ export class SpecCompletionProvider implements vscode.DocumentLinkProvider {
                         const startPos = document.positionAt(idMatch.index);
                         const endPos = document.positionAt(idMatch.index + id.length);
                         const range = new vscode.Range(startPos, endPos);
-                        const uri = vscode.Uri.parse(`file://${targetPath}#${id.toLowerCase()}`);
+                        
+                        // Read target file to find the header position
+                        const targetContent = await fs.readFile(targetPath, 'utf8');
+                        const lines = targetContent.split('\n');
+                        let headerLine = -1;
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i].trim().startsWith('###') && lines[i].includes(id)) {
+                                headerLine = i;
+                                break;
+                            }
+                        }
+                        
+                        let uri: vscode.Uri;
+                        if (headerLine !== -1) {
+                            const line = lines[headerLine];
+                            const idIndex = line.indexOf(id);
+                            if (idIndex !== -1) {
+                                uri = vscode.Uri.parse(`file://${targetPath}#L${headerLine + 1}:${idIndex + 1}`);
+                            } else {
+                                uri = vscode.Uri.parse(`file://${targetPath}#L${headerLine + 1}`);
+                            }
+                        } else {
+                            uri = vscode.Uri.file(targetPath);
+                        }
                         links.push(new vscode.DocumentLink(range, uri));
                     } catch {
                         // file not found, skip

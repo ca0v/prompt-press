@@ -55,9 +55,6 @@ async function main() {
             console.log('\n8️⃣  IDE Validation Tests\n');
             await runIdeValidationTests();
             
-            console.log('\n9️⃣  Spec Link Utils Tests\n');
-            await runSpecLinkUtilsTests();
-            
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();
             
@@ -83,6 +80,9 @@ async function main() {
             
             console.log('\n3️⃣  MarkdownFormatter Tests\n');
             await runMarkdownFormatterTests();
+            
+            console.log('\n4️⃣  Spec Link Utils Tests\n');
+            await runSpecLinkUtilsTests();
         } else if (runIdeTest) {
             console.log('📦 Running IDE Validation Tests\n');
             await runIdeValidationTests();
