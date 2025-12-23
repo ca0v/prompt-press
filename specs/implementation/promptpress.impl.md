@@ -2,7 +2,7 @@
 artifact: promptpress
 phase: implementation
 depends-on: []
-references: ["Attacks.req"]
+references: []
 last-updated: 2025-12-23
 ---
 
@@ -799,7 +799,7 @@ None
 
 ### findAllReferences (IMP-1077)
 - **Belongs to**: SpecReferenceFinder
-- **Description**: Finds all references to the given REFID across the workspace. If the REFID is qualified (contains '/'), uses it directly. If unqualified, prepends the artifact name from the current spec document (e.g., in @Attacks.req, FR-1005 becomes Attacks/FR-1005).
+- **Description**: Finds all references to the given REFID across the workspace. If the REFID is qualified (contains '/'), uses it directly. If unqualified, prepends the artifact name from the current spec document (e.g., in Attacks.req, FR-1005 becomes Attacks/FR-1005).
 - **Parameters**: refId: string
 - **Return Type**: Promise<vscode.Location[]>
 - **Algorithm**: Resolves the full REFID by checking if it contains '/' (qualified) or prepending the current artifact name. Uses workspace search to find occurrences of the resolved REFID.
