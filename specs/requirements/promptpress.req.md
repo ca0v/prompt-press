@@ -1,9 +1,17 @@
+---
+artifact: promptpress
+phase: requirement
+depends-on: []
+references: []
+last-updated: 2025-12-24
+---
+
 # Requirements Specification for promptpress
 
 ## Overview
 PromptPress is a VS Code extension designed to facilitate prompt-driven development by managing AI prompts as persistent, versioned specifications. It integrates with AI providers, parses markdown specifications, and offers tools for scaffolding, validation, and synchronization of code with specifications.
 
-Functional Requirements: FR-1000 to FR-1017
+Functional Requirements: FR-1000 to FR-1019
 Non-Functional Requirements: NFR-1000 to NFR-1004
 
 ## Functional Requirements
@@ -101,6 +109,11 @@ Non-Functional Requirements: NFR-1000 to NFR-1004
 - **Description**: The system shall log messages to the console and VS Code output window.
 - **Priority**: Medium
 - **Dependencies**: VS Code OutputChannel
+
+### FR-1019
+- **Description**: The system shall display feature descriptions in tooltips when users hover over feature links.
+- **Priority**: Medium
+- **Dependencies**: VS Code HoverProvider, spec parsing
 
 ## Non-Functional Requirements
 ### NFR-1000

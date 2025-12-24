@@ -3,7 +3,7 @@ artifact: promptpress
 phase: design
 depends-on: []
 references: ["promptpress.req"]
-last-updated: 2025-12-23
+last-updated: 2025-12-24
 ---
 
 # Design Specification for promptpress
@@ -13,7 +13,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 
 Key design elements:
 - Data Models: ChatMessage (DES-1000), ChatCompletionRequest (DES-1001), ChatCompletionResponse (DES-1002), SpecMetadata (DES-1003), ParsedSpec (DES-1004), CascadeResult (DES-1005), CascadeUI (DES-1006), Logger (DES-1007), ReferencedArtifact (DES-1008), ContextItem (DES-1009), Conversation (DES-1010), ChangeDetectionResult (DES-1011), FileInfo (DES-1012), ValidationError (DES-1013)
-- Components: XAIClient (DES-1014), MarkdownParser (DES-1015), SpecCompletionProvider (DES-1016), SpecReferenceFinder (DES-1036), SpecImplementationFinder (DES-1037), TersifyActionParser (DES-1017), CascadeCore (DES-1018), CascadeServiceCommands (DES-1019), ContextBuilder (DES-1020), ConversationManager (DES-1021), DiffHelper (DES-1022), FileStructureParser (DES-1023), GitHelper (DES-1024), ImplParser (DES-1025), PromptService (DES-1026), PromptServiceCore (DES-1027), ScaffoldService (DES-1028), SpecFileProcessor (DES-1029), SpecReferenceManager (DES-1030), ChatPanelProvider (DES-1031), PromptLogger (DES-1032), SpecFileWatcher (DES-1033)
+- Components: XAIClient (DES-1014), MarkdownParser (DES-1015), SpecCompletionProvider (DES-1016), SpecReferenceFinder (DES-1036), SpecImplementationFinder (DES-1037), TersifyActionParser (DES-1017), CascadeCore (DES-1018), CascadeServiceCommands (DES-1019), ContextBuilder (DES-1020), ConversationManager (DES-1021), DiffHelper (DES-1022), FileStructureParser (DES-1023), GitHelper (DES-1024), ImplParser (DES-1025), PromptService (DES-1026), PromptServiceCore (DES-1027), ScaffoldService (DES-1028), SpecFileProcessor (DES-1029), SpecReferenceManager (DES-1030), ChatPanelProvider (DES-1031), PromptLogger (DES-1032), SpecFileWatcher (DES-1033), OutputLogger (DES-1038), SpecHoverProvider (DES-1039)
 - Dependencies: VS Code API (DES-1034), XAI API (DES-1035)
 
 ## Requirements
@@ -36,6 +36,7 @@ Key design elements:
 - @promptpress.req/FR-1016: DES-1032
 - @promptpress.req/FR-1017: DES-1033
 - @promptpress.req/FR-1018: DES-1038
+- @promptpress.req/FR-1019: DES-1039
 
 ## Data Models
 ### ChatMessage (DES-1000)
@@ -246,6 +247,12 @@ Key design elements:
 - **Type**: Class
 - **Key Methods**: log, setOutputChannel
 - **Dependencies**: VS Code OutputChannel or console
+
+### SpecHoverProvider (DES-1039)
+- **Description**: Provides hover tooltips displaying feature descriptions for spec references in documents.
+- **Type**: Class
+- **Key Methods**: provideHover
+- **Dependencies**: VS Code HoverProvider, MarkdownParser
 
 ## Dependencies
 - **External Libraries**: VS Code API (DES-1034) - Provides extension framework and UI components; XAI API (DES-1035) - Enables AI chat completions.

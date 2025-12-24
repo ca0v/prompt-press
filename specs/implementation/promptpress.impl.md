@@ -3,7 +3,7 @@ artifact: promptpress
 phase: implementation
 depends-on: []
 references: ["promptpress.design"]
-last-updated: 2025-12-23
+last-updated: 2025-12-24
 ---
 
 # Implementation Specification for promptpress
@@ -43,6 +43,9 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 ### DES-1038: OutputLogger
 - IMP-1079: log
 - IMP-1080: setOutputChannel
+
+### DES-1039: SpecHoverProvider
+- IMP-1081: provideHover
 
 ### DES-1017: TersifyActionParser
 - IMP-1017: isRemoveFromAction
@@ -165,6 +168,7 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **src/ui/chatPanelProvider.ts** - Provides the chat panel UI.
 - **src/utils/PromptLogger.ts** - Logger utility.
 - **src/utils/OutputLogger.ts** - Logger that always writes to console and optionally to VS Code output channel.
+- **src/providers/specHoverProvider.ts** - Provides hover tooltips for spec references in documents.
 - **src/utils/dirname.ts** - Provides __dirname for ES modules.
 - **src/utils/impInjector.ts** - Script to inject IMP comments.
 - **src/utils/markdownFormatter.ts** - Formats markdown.
@@ -333,6 +337,12 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **Interfaces**: None
 - **Other Elements**: Exported logger instance
 
+### File: src/providers/specHoverProvider.ts
+- **Purpose**: Provides hover tooltips for spec references in documents.
+- **Classes**: SpecHoverProvider
+- **Interfaces**: None
+- **Other Elements**: None
+
 ### File: src/utils/dirname.ts
 - **Purpose**: Provides __dirname for ES modules.
 - **Classes**: None
@@ -420,6 +430,16 @@ PromptPress is a VS Code extension that facilitates prompt-driven development by
 - **Methods**: log (IMP-1079), setOutputChannel (IMP-1080)
 - **Fields**: outputChannel
 - **Constructors**: constructor()
+- **Events**: None
+- **Nested Types**: None
+
+### SpecHoverProvider
+- **Description**: Provides hover tooltips displaying feature descriptions for spec references in documents.
+- **Inheritance**: implements vscode.HoverProvider
+- **Properties**: workspaceRoot: string, parser: MarkdownParser
+- **Methods**: provideHover (IMP-1081)
+- **Fields**: workspaceRoot, parser
+- **Constructors**: constructor(workspaceRoot: string, parser: MarkdownParser)
 - **Events**: None
 - **Nested Types**: None
 
@@ -1337,6 +1357,14 @@ None
 - **Return Type**: void
 - **Algorithm**: Stores the channel reference for future logging.
 - **Exceptions**: None
+
+### provideHover (IMP-1081)
+- **Belongs to**: SpecHoverProvider
+- **Description**: Provides hover tooltips for spec references by finding the source document and extracting descriptions.
+- **Parameters**: document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken
+- **Return Type**: vscode.ProviderResult<vscode.Hover>
+- **Algorithm**: 1. Extract the word at position to get the SPEC_ID. 2. Determine the spec type (FR, DES, IMP) and find the source document path. 3. Parse the source document to find the section starting with "### SPEC_ID". 4. Extract the entire specification block (from "### SPEC_ID" to the next "###" or end of section). 5. Return a Hover with the extracted content.
+- **Exceptions**: Returns null if no hover content found.
 
 ## Data Structures
 - ChatMessage: Interface for chat messages.
