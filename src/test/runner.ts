@@ -22,6 +22,7 @@ import { runSpecLinkUtilsTests } from './specLinkUtils.test.js';
 import { runSpecCompletionProviderTests } from './specCompletionProvider.test.js';
 import runCascadeCoreTest from './cascadeCore.test.js';
 import { runDebounceTest } from './debounce.test.js';
+import { runSpecHoverProviderTests } from './specHoverProvider.test.js';
 
 async function main() {
     const args = process.argv.slice(2);
@@ -59,6 +60,9 @@ async function main() {
             
             console.log('\n9️⃣  SpecCompletionProvider Tests\n');
             await runSpecCompletionProviderTests();
+            
+            console.log('\n🔟  SpecHoverProvider Tests\n');
+            await runSpecHoverProviderTests();
             
             console.log('\n3️⃣  Scaffold Integration Tests\n');
             await runScaffoldIntegrationTest();

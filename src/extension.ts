@@ -12,6 +12,7 @@ import { MarkdownParser } from './parsers/markdownParser.js';
 import { SpecCompletionProvider } from './providers/specCompletionProvider.js';
 import { SpecReferenceFinder } from './providers/specReferenceFinder.js';
 import { SpecImplementationFinder } from './providers/specImplementationFinder.js';
+import { SpecHoverProvider } from './providers/specHoverProvider.js';
 import { SpecReferenceManager } from './spec/SpecReferenceManager.js';
 import { PromptService } from './services/PromptService.js';
 import { OutputLogger, logger } from './utils/OutputLogger.js';
@@ -68,6 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
     const specProvider = new SpecCompletionProvider(workspaceRoot);
     const specReferenceFinder = new SpecReferenceFinder(workspaceRoot);
     const specImplementationFinder = new SpecImplementationFinder(workspaceRoot);
+    const specHoverProvider = new SpecHoverProvider(workspaceRoot, markdownParser);
     const specRefManager = new SpecReferenceManager(workspaceRoot);
     
     // Register spec completion and link providers
@@ -79,6 +81,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.languages.registerReferenceProvider(
             { scheme: 'file', pattern: '**/specs/**/*.md' },
             specReferenceFinder
+        ),
+        vscode.languages.registerHoverProvider(
+            { scheme: 'file' },
+            specHoverProvider
         )
     );
 
