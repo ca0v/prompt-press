@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { MarkdownParser } from '../parsers/markdownParser.js';
+import { getBaseName, getTargetFolder, getTargetExt, resolveSpecFilePath, extractSpecBlock } from '../utils/specLinkUtils.js';
 
 export class SpecHoverProvider implements vscode.HoverProvider {
     constructor(private workspaceRoot: string, private parser: MarkdownParser) {}
@@ -22,44 +23,24 @@ export class SpecHoverProvider implements vscode.HoverProvider {
 
         const specId = document.getText(wordRange);
 
-        // Determine the spec type (FR, DES, IMP)
-        const type = specId.split('-')[0];
-        const phaseMap: { [key: string]: 'requirement' | 'design' | 'implementation' } = {
-            'FR': 'requirement',
-            'DES': 'design',
-            'IMP': 'implementation'
-        };
-        const phase = phaseMap[type];
-        if (!phase) {
+        // Resolve the spec file path
+        const line = document.lineAt(position.line).text;
+        const filePath = resolveSpecFilePath(specId, line, document.fileName, this.workspaceRoot);
+        if (!filePath) {
             return null;
         }
 
-        // Assume artifact is 'promptpress' for now
-        const artifact = 'promptpress';
-
-        // Find the source document path
-        const extMap: { [key in 'requirement' | 'design' | 'implementation']: string } = { requirement: 'req', design: 'design', implementation: 'impl' };
-        const ext = extMap[phase];
-        const filePath = path.join(this.workspaceRoot, 'specs', phase, `${artifact}.${ext}.md`);
-
         try {
             // Parse the source document
-            const parsed = await this.parser.parseFile(filePath);
-            const content = parsed.content;
+            const uri = vscode.Uri.file(filePath);
+            const sourceDocument = await vscode.workspace.openTextDocument(uri);
+            const content = sourceDocument.getText();
 
-            // Find the section starting with "### SPEC_ID"
-            const regex = new RegExp(`^### ${specId}$`, 'm');
-            const match = content.match(regex);
-            if (!match) {
+            // Extract the spec block
+            const block = extractSpecBlock(content, specId);
+            if (!block) {
                 return null;
             }
-
-            const startIndex = match.index! + match[0].length;
-
-            // Extract the entire specification block (from "### SPEC_ID" to the next "###" or end of section)
-            const nextMatch = content.substring(startIndex).match(/^### /m);
-            const endIndex = nextMatch ? startIndex + nextMatch.index! : content.length;
-            const block = content.substring(startIndex, endIndex).trim();
 
             // Return a Hover with the extracted content
             return new vscode.Hover(new vscode.MarkdownString(block));
