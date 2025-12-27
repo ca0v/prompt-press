@@ -18,9 +18,6 @@
   "activationEvents": [
     "workspaceContains:**/specs/**/*.md"
   ],
-  "enabledApiProposals": [
-    "findTextInFiles"
-  ],
   "type": "module",
   "main": "./out/extension.js",
   "contributes": {

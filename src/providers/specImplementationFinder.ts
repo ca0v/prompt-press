@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
-import { logger } from '../utils/OutputLogger';
+import * as path from 'path';
+import { findTextInFiles } from '../utils/textSearch.js';
+import { logger } from '../utils/OutputLogger.js';
 
 export class SpecImplementationFinder {
     private workspaceRoot: string;
@@ -40,9 +42,7 @@ export class SpecImplementationFinder {
 
         try {
             const locations: vscode.Location[] = [];
-            const searchQuery = { pattern: query };
-            const searchOptions = { include, exclude };
-            await vscode.workspace.findTextInFiles(searchQuery, searchOptions, (result) => {
+            await findTextInFiles({ pattern: query }, {}, (result) => {
                 for (const range of result.ranges) {
                     locations.push(new vscode.Location(result.uri, range));
                 }

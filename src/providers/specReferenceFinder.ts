@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { findTextInFiles } from '../utils/textSearch.js';
 
 export class SpecReferenceFinder implements vscode.ReferenceProvider {
     private workspaceRoot: string;
@@ -34,10 +35,8 @@ export class SpecReferenceFinder implements vscode.ReferenceProvider {
     // promptpress/IMP-1077
     async findAllReferences(refId: string): Promise<vscode.Location[]> {
         const locations: vscode.Location[] = [];
-        const searchQuery = { pattern: refId };
-        const searchOptions = { include: '**/*', exclude: 'node_modules/**' };
         try {
-            await vscode.workspace.findTextInFiles(searchQuery, searchOptions, (result) => {
+            await findTextInFiles({ pattern: refId }, {}, (result) => {
                 for (const range of result.ranges) {
                     locations.push(new vscode.Location(result.uri, range));
                 }
