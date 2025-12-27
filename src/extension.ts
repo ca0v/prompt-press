@@ -37,8 +37,8 @@ export function activate(context: vscode.ExtensionContext) {
     const diagnosticCollection = vscode.languages.createDiagnosticCollection('promptpress');
     context.subscriptions.push(diagnosticCollection);
 
-    outputChannel.appendLine('PromptPress extension activated');
-    outputChannel.appendLine(`Timestamp: ${new Date().toISOString()}`);
+    logger.log('PromptPress extension activated');
+    logger.log(`Timestamp: ${new Date().toISOString()}`);
 
     // Get configuration
     const config = vscode.workspace.getConfiguration('promptpress');
@@ -46,10 +46,10 @@ export function activate(context: vscode.ExtensionContext) {
     
     if (!apiKey) {
         const message = 'PromptPress: No API key configured. Set PROMPT_PRESS_XAI_API_KEY or configure in settings.';
-        outputChannel.appendLine(`[WARN] ${message}`);
+        logger.log(`[WARN] ${message}`);
         vscode.window.showWarningMessage(message);
     } else {
-        outputChannel.appendLine('[INFO] API key configured');
+        logger.log('[INFO] API key configured');
     }
 
     // Get workspace root for cascade service
@@ -248,7 +248,7 @@ export function activate(context: vscode.ExtensionContext) {
                 const cachedFrontmatter = frontmatterCache.get(uri);
                 if (cachedFrontmatter === currentFrontmatter) {
                     // Frontmatter hasn't changed, skip update
-                    outputChannel.appendLine(`[INFO] Metadata update skipped for ${document.uri.fsPath} - frontmatter unchanged`);
+                    logger.log(`[INFO] Metadata update skipped for ${document.uri.fsPath} - frontmatter unchanged`);
                     return;
                 }
                 
@@ -261,7 +261,7 @@ export function activate(context: vscode.ExtensionContext) {
                     
                     await specsWatcher.processor?.updateMetadata(document);
                     
-                    outputChannel.appendLine(`[INFO] Metadata updated for ${document.uri.fsPath}`);
+                    logger.log(`[INFO] Metadata updated for ${document.uri.fsPath}`);
                 } finally {
                     // Clear the updating flag
                     updatingDocuments.set(uri, false);
@@ -307,7 +307,7 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'Unknown error occurred';
                 vscode.window.showErrorMessage(`Code generation failed: ${message}`);
-                outputChannel.appendLine(`[ERROR] Code generation failed: ${message}`);
+                logger.log(`[ERROR] Code generation failed: ${message}`);
             }
         })
     );
@@ -358,7 +358,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            outputChannel.appendLine(`[Command] Apply Changes triggered for ${filePath}`);
+            logger.log(`[Command] Apply Changes triggered for ${filePath}`);
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -386,7 +386,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            outputChannel.appendLine(`[Command] Tersify Spec triggered for ${filePath}`);
+            logger.log(`[Command] Tersify Spec triggered for ${filePath}`);
             await vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,

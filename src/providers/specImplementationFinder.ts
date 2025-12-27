@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { logger } from '../utils/OutputLogger';
 
 export class SpecImplementationFinder {
     private workspaceRoot: string;
@@ -31,8 +32,11 @@ export class SpecImplementationFinder {
                 query = `// ${artifact}/${refId}`;
                 break;
             default:
+                logger.log(`Unexpected fileType: ${fileType}, no search performed`);
                 return [];
         }
+
+        logger.log(`Finding implementations for ${fileType} ${artifact}/${refId} with query: ${query}`);
 
         try {
             const locations: vscode.Location[] = [];
@@ -43,8 +47,13 @@ export class SpecImplementationFinder {
                     locations.push(new vscode.Location(result.uri, range));
                 }
             });
+            logger.log(`Found ${locations.length} implementations`);
+            if (locations.length === 0) {
+                logger.log(`No implementations found for query: ${query} in ${include}${exclude ? ` (excluding ${exclude})` : ''}`);
+            }
             return locations;
         } catch (error) {
+            logger.log(`Search failed: ${error}`);
             console.error('Search failed:', error);
             return [];
         }
