@@ -51,24 +51,30 @@ export function getBaseName(fileName: string): string {
 export function resolveSpecFilePath(specId: string, lineText: string, fileName: string, workspaceRoot: string): string | null {
     // Determine the spec type (FR, DES, IMP)
     const type = specId.split('-')[0];
+    if (type !== type.toUpperCase()) {
+        throw new Error(`Spec ID type '${type}' must be uppercase`);
+    }
     const folder = getTargetFolder(type);
     const ext = getTargetExt(type);
     if (!folder || !ext) {
         return null;
     }
 
-    // Determine artifact: first try from the line containing the specId (e.g., // PromptPress/IMP-1081)
-    let artifact = 'promptpress';
+    let artifact: string | null = null;
     const commentRegex = new RegExp(`\\/\\/\\s*([a-zA-Z0-9_-]+)\\/\\s*${specId}\\b`);
     const commentMatch = lineText.match(commentRegex);
     if (commentMatch) {
-        artifact = commentMatch[1].toLowerCase();
+        artifact = commentMatch[1];
     } else {
         // Fall back to fileName if it's a spec file
         const baseFileName = path.basename(fileName);
         if (baseFileName.match(/^[a-zA-Z0-9_-]+\.(req|design|impl)\.md$/)) {
             artifact = getBaseName(baseFileName);
         }
+    }
+
+    if (!artifact) {
+        throw new Error('Artifact was not explicitly defined in the comment and could not be inferred from the current document name');
     }
 
     // Construct the file path

@@ -1,3 +1,7 @@
+/**
+ * UNTESTABLE: The SpecCompletionProvider depends on VS Code APIs and cannot be fully tested without mocking.
+ * These tests only cover static utility methods.
+ */
 import { TestRunner, it } from './framework.js';
 import { SpecCompletionProvider } from '../providers/specCompletionProvider.js';
 

@@ -3,7 +3,7 @@ artifact: promptpress
 phase: implementation
 depends-on: []
 references: ["promptpress.design"]
-last-updated: 2025-12-24
+last-updated: 2025-12-27
 ---
 
 # Implementation Specification for promptpress
@@ -1363,7 +1363,17 @@ None
 - **Description**: Provides hover tooltips for spec references by finding the source document and extracting descriptions.
 - **Parameters**: document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken
 - **Return Type**: vscode.ProviderResult<vscode.Hover>
-- **Algorithm**: 1. Extract the word at position to get the SPEC_ID. 2. Determine the spec type (FR, DES, IMP) and find the source document path. 3. Parse the source document to find the section starting with "### SPEC_ID". 4. Extract the entire specification block (from "### SPEC_ID" to the next "###" or end of section). 5. Return a Hover with the extracted content.
+- **Algorithm**: 
+- Extract the SPEC_ID from the hover position (FR_nnnn, DES_nnnn, IMP_nnnn). 
+- Determine the spec type (FR, DES, IMP) 
+- Determine the source document path. 
+- Parse the source document to find the section starting with "### SPEC_ID". 
+- Extract the entire specification block (from "### SPEC_ID" to the next "###" or end of section). 
+- Return a Hover with the extracted content.
+- **Test Cases**:
+- When `// PromptPress/IMP-1081`, SPEC_ID is `IMP-1081`
+- When `// PromptPress/IMP-1081`, SPEC_ID is spec type is `IMP`
+- When `// PromptPress/IMP-1081`, source path is `[root]/specs/implementation/PromptPress.impl.md`
 - **Exceptions**: Returns null if no hover content found.
 
 ## Data Structures

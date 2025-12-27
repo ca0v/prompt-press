@@ -3,7 +3,7 @@ artifact: promptpress
 phase: design
 depends-on: []
 references: ["promptpress.req"]
-last-updated: 2025-12-24
+last-updated: 2025-12-27
 ---
 
 # Design Specification for promptpress

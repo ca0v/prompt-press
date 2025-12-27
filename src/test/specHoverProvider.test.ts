@@ -1,3 +1,7 @@
+/**
+ * UNTESTABLE: The SpecHoverProvider depends on VS Code APIs and cannot be fully tested without mocking.
+ * These tests are minimal and only cover instantiation.
+ */
 import { TestRunner, it } from './framework.js';
 import { SpecHoverProvider } from '../providers/specHoverProvider.js';
 import { MarkdownParser } from '../parsers/markdownParser.js';

@@ -91,12 +91,12 @@ export async function runSpecLinkUtilsTests(): Promise<void> {
         runner.describe('resolveSpecFilePath', () => {
             it('should resolve FR spec from comment', () => {
                 const result = resolveSpecFilePath('FR-1019', '// PromptPress/FR-1019', '/some/file.ts', '/workspace');
-                Assert.equal(result, '/workspace/specs/requirements/promptpress.req.md');
+                Assert.equal(result, '/workspace/specs/requirements/PromptPress.req.md');
             });
 
             it('should resolve IMP spec from comment', () => {
                 const result = resolveSpecFilePath('IMP-1081', '// MyProject/IMP-1081', '/some/file.ts', '/workspace');
-                Assert.equal(result, '/workspace/specs/implementation/myproject.impl.md');
+                Assert.equal(result, '/workspace/specs/implementation/MyProject.impl.md');
             });
 
             it('should resolve DES spec from spec file', () => {
@@ -104,14 +104,21 @@ export async function runSpecLinkUtilsTests(): Promise<void> {
                 Assert.equal(result, '/workspace/specs/design/promptpress.design.md');
             });
 
-            it('should fall back to default artifact', () => {
-                const result = resolveSpecFilePath('IMP-1000', 'no comment', '/some/file.ts', '/workspace');
-                Assert.equal(result, '/workspace/specs/implementation/promptpress.impl.md');
+            it('should throw error for unknown artifact', () => {
+                Assert.throws(() => {
+                    resolveSpecFilePath('IMP-1000', 'no comment', '/some/file.ts', '/workspace');
+                }, 'Artifact was not explicitly defined in the comment and could not be inferred from the current document name');
             });
 
             it('should return null for unknown type', () => {
                 const result = resolveSpecFilePath('UNK-1000', 'line', '/file.ts', '/workspace');
                 Assert.equal(result, null);
+            });
+
+            it('should throw error for lowercase type', () => {
+                Assert.throws(() => {
+                    resolveSpecFilePath('fr-1019', '// PromptPress/fr-1019', '/some/file.ts', '/workspace');
+                }, "Spec ID type 'fr' must be uppercase");
             });
         });
 

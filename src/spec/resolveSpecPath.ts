@@ -9,7 +9,7 @@ import * as path from 'path';
 export function resolveSpecPath(workspaceRoot: string, specRef: string): string {
     const parts = specRef.split('.');
     const artifact = parts[0];
-    const phase = parts[1];
+    const phase = parts[1].toLowerCase();
     let subdir = '';
     if (phase === 'req') {
         subdir = 'requirements';

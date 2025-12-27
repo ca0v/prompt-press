@@ -1,3 +1,7 @@
+/**
+ * UNTESTABLE: This provider depends on VS Code APIs and cannot be unit tested without extensive mocking.
+ * It should be refactored to build upon a testable core that handles the business logic.
+ */
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { resolveSpecPath as resolveSpecPathSync } from '../spec/resolveSpecPath.js';
