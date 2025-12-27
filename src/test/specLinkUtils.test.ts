@@ -170,32 +170,29 @@ content`;
                 Assert.equal(result, '- **Description**: Last spec\n- **Priority**: Low');
             });
 
-            it('should return null for content without matching spec header', () => {
-                const content = `# Implementation Specification for Attacks
+            it('should extract until next higher level section', () => {
+                const content = `### FR-1001
+- **Description**: Test description
+- **Priority**: High
 
-## Overview
-- The Attacks module implements various enemy attack behaviors and sensor mechanisms for triggering attacks in the game, including charge, explode, leap, smash, slide, and spirit attacks, along with sensors for death, jump, proximity, and time-based triggers.
-- **chargeAttack.ts** - Implements charge attack behavior.
-- **deathAttackSensor.ts** - Sensor for triggering attacks on enemy death.
-- **explodeAttack.ts** - Implements explode attac…Libraries**: None
-- **Internal Dependencies**: models, fun utilities, games assets, IAttackState
-- **System Requirements**: ES6+ async/await support
+## Next Section
+Some content`;
+                const result = extractSpecBlock(content, 'FR-1001');
+                Assert.equal(result, '- **Description**: Test description\n- **Priority**: High');
+            });
 
-## Error Handling
-- Checks for enemy death before actions.
-- Graceful returns if conditions not met.
+            it('should include sub-sections in the block', () => {
+                const content = `### FR-1001
+- **Description**: Test description
+- **Priority**: High
 
-## Performance Considerations
-- Async delays use sleep utility.
-- Physics cloning for state preservation.
+#### Sub-section
+- **Details**: Sub details
 
-## Security Considerations
-- No user input; internal game logic.
-
-## Notes
-- Attacks are modular, triggered by sensors based on game state.`;
-                const result = extractSpecBlock(content, 'IMP-1003');
-                Assert.equal(result, null);
+### FR-1002
+- **Description**: Another`;
+                const result = extractSpecBlock(content, 'FR-1001');
+                Assert.equal(result, '- **Description**: Test description\n- **Priority**: High\n\n#### Sub-section\n- **Details**: Sub details');
             });
         });
     });

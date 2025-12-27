@@ -83,7 +83,7 @@ export function resolveSpecFilePath(specId: string, lineText: string, fileName: 
 
 /**
  * Extracts the specification block for a given spec ID from the content.
- * Finds the section header containing the spec ID and extracts the content until the next section.
+ * Finds the section header containing the spec ID and extracts the content until the next section header.
  */
 export function extractSpecBlock(content: string, specId: string): string | null {
     // Find the section starting with "### " and containing the SPEC_ID
@@ -95,8 +95,8 @@ export function extractSpecBlock(content: string, specId: string): string | null
 
     const startIndex = match.index! + match[0].length;
 
-    // Extract the entire specification block (from "### SPEC_ID" to the next "###" or end of section)
-    const nextMatch = content.substring(startIndex).match(/^### /m);
+    // Extract the entire specification block (from "### SPEC_ID" to the next section header or end of content)
+    const nextMatch = content.substring(startIndex).match(/^#{1,3} /m);
     const endIndex = nextMatch ? startIndex + nextMatch.index! : content.length;
     const block = content.substring(startIndex, endIndex).trim();
 

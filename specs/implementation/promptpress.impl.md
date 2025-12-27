@@ -1368,7 +1368,7 @@ None
 - Determine the spec type (FR, DES, IMP) 
 - Determine the source document path. 
 - Parse the source document to find the section starting with "### SPEC_ID". 
-- Extract the entire specification block (from "### SPEC_ID" to the next "###" or end of section). 
+- Extract the entire specification block (from "### SPEC_ID" to the end of that section). 
 - Return a Hover with the extracted content.
 - **Test Cases**:
 - When `// PromptPress/IMP-1081`, SPEC_ID is `IMP-1081`
