@@ -21,7 +21,7 @@ import { DebounceManager } from './utils/debounce.js';
 // Global logger instance
 let globalLogger: OutputLogger | undefined;
 
-// PromptPress/IMP-1013
+// promptpress/IMP-1013
 export function activate(context: vscode.ExtensionContext) {
     console.log('PromptPress extension is now active');
 
@@ -493,7 +493,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(statusBarItem);
 }
 
-// PromptPress/IMP-1014
+// promptpress/IMP-1014
 export function deactivate() {
     if (globalLogger) {
         globalLogger.setOutputChannel(null);

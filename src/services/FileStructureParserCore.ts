@@ -9,7 +9,7 @@ export class FileStructureParserCore {
      * Parse file descriptions from a File Structure section
      * Supports both original format (- `file`: desc) and tree format
      */
-    // PromptPress/IMP-1044
+    // promptpress/IMP-1044
     parseFileDescriptions(section: string): Map<string, string> {
         const descriptions = new Map<string, string>();
         // this.parseTreeFormat(section, descriptions);
@@ -85,7 +85,7 @@ export class FileStructureParserCore {
 
     The result is a dictionary mapping full file paths to their descriptions.
      */
-    // PromptPress/IMP-1045
+    // promptpress/IMP-1045
     parseTreeToDict(input: string): Record<string, string> {
         const lines = input.trim().split('\n');
         const result: Record<string, string> = {};

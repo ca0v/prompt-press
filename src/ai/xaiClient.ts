@@ -49,7 +49,7 @@ export class XAIClient {
         };
     }
 
-    // PromptPress/IMP-1000
+    // promptpress/IMP-1000
     /**
      * Send a chat completion request
      */
@@ -145,7 +145,7 @@ export class XAIClient {
         }
     }
 
-    // PromptPress/IMP-1001
+    // promptpress/IMP-1001
     /**
      * List available models
      */
@@ -175,7 +175,7 @@ export class XAIClient {
         }
     }
 
-    // PromptPress/IMP-1002
+    // promptpress/IMP-1002
     /**
      * Test API connectivity
      */
@@ -191,7 +191,7 @@ export class XAIClient {
         }
     }
 
-    // PromptPress/IMP-1003
+    // promptpress/IMP-1003
     /**
      * Parse AI response for structured markers
      */

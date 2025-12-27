@@ -13,18 +13,18 @@ export class SpecReferenceManager {
         this.markdownParser = new MarkdownParser();
     }
 
-    // PromptPress/IMP-1062
+    // promptpress/IMP-1062
     // Now uses the helper from resolveSpecPath.ts
     resolveSpecPath(specRef: string): string {
         return resolveSpecPath(this.workspaceRoot, specRef);
     }
 
-    // PromptPress/IMP-1063
+    // promptpress/IMP-1063
     async getAllSpecRefs(): Promise<string[]> {
         return getAllSpecRefs(this.workspaceRoot);
     }
 
-    // PromptPress/IMP-1064
+    // promptpress/IMP-1064
     getAllDependencies(specRef: string, visited: Set<string> = new Set()): Set<string> {
         if (visited.has(specRef)) {
             return new Set();
@@ -53,7 +53,7 @@ export class SpecReferenceManager {
         return deps;
     }
 
-    // PromptPress/IMP-1065
+    // promptpress/IMP-1065
     wouldCreateCycle(dep: string, currentRef: string): boolean {
         const allDeps = this.getAllDependencies(dep);
         return allDeps.has(currentRef);

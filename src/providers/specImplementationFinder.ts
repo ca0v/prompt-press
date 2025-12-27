@@ -10,7 +10,7 @@ export class SpecImplementationFinder {
     /**
      * Finds all implementations based on file type and REFID following specific rules.
      */
-    // PromptPress/IMP-1078
+    // promptpress/IMP-1078
     async findAllImplementations(fileType: 'req' | 'design' | 'impl', refId: string, artifact: string): Promise<vscode.Location[]> {
         let query: string;
         let include: string;

@@ -13,7 +13,7 @@ export class SpecHoverProvider implements vscode.HoverProvider {
     /**
      * Provides hover tooltips for spec references by finding the source document and extracting descriptions.
      */
-    // PromptPress/IMP-1081
+    // promptpress/IMP-1081
     async provideHover(
         document: vscode.TextDocument,
         position: vscode.Position,

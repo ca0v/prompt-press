@@ -43,7 +43,7 @@ export class MarkdownParser {
         }
         return obj;
     }
-    // PromptPress/IMP-1004
+    // promptpress/IMP-1004
     /**
      * Parse a markdown spec file
      */
@@ -52,7 +52,7 @@ export class MarkdownParser {
         return this.parse(content);
     }
 
-    // PromptPress/IMP-1005
+    // promptpress/IMP-1005
     /**
      * Parse markdown content
      */
@@ -169,7 +169,7 @@ export class MarkdownParser {
         return references;
     }
 
-    // PromptPress/IMP-1006
+    // promptpress/IMP-1006
     /**
      * Validate spec structure
      */
@@ -194,7 +194,7 @@ export class MarkdownParser {
         };
     }
 
-    // PromptPress/IMP-1007
+    // promptpress/IMP-1007
     /**
      * Get the Overview section content
      */
@@ -203,7 +203,7 @@ export class MarkdownParser {
         return match ? match[1].trim() : "";
     }
 
-    // PromptPress/IMP-1008
+    // promptpress/IMP-1008
     /**
      * Set the Overview section content
      */
@@ -222,7 +222,7 @@ export class MarkdownParser {
         }
     }
 
-    // PromptPress/IMP-1009
+    // promptpress/IMP-1009
     /**
      * Get a section content, optionally with a secondary subsection
      */
@@ -240,7 +240,7 @@ export class MarkdownParser {
         return itemMatch ? itemMatch[1].trim() : "";
     }
 
-    // PromptPress/IMP-1010
+    // promptpress/IMP-1010
     /**
      * Set a section content, optionally with a secondary subsection
      */
@@ -295,7 +295,7 @@ export class MarkdownParser {
         return -1;
     }
 
-    // PromptPress/IMP-1011
+    // promptpress/IMP-1011
     /**
      * Parse a Markdown table of changes for tersify
      */
@@ -309,7 +309,7 @@ export class MarkdownParser {
         }));
     }
 
-    // PromptPress/IMP-1012
+    // promptpress/IMP-1012
     /**
      * Group changes by document, filtering out 'None' and unknown actions
      */
@@ -339,7 +339,7 @@ export class MarkdownParser {
      * Generalized Markdown table parser
      * Returns an array of objects where keys are header names and values are cell content
      */
-    // PromptPress/IMP-1015
+    // promptpress/IMP-1015
     public parseMarkdownTable(content: string): Record<string, string>[] {
         const lines = content.split('\n');
         const tableStart = lines.findIndex(line => line.trim().startsWith('|') && !line.includes('|---'));

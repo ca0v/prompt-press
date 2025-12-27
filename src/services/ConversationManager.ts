@@ -18,7 +18,7 @@ export class ConversationManager {
     /**
      * Get or create conversation for an artifact
      */
-    // PromptPress/IMP-1034
+    // promptpress/IMP-1034
     public getConversation(artifact: string): Conversation {
         return this.core.getConversation(artifact);
     }
@@ -26,7 +26,7 @@ export class ConversationManager {
     /**
      * Add message to conversation
      */
-    // PromptPress/IMP-1035
+    // promptpress/IMP-1035
     public addMessage(
         artifact: string,
         role: 'user' | 'assistant',
@@ -38,7 +38,7 @@ export class ConversationManager {
     /**
      * Get conversation history formatted for AI
      */
-    // PromptPress/IMP-1036
+    // promptpress/IMP-1036
     public getHistory(artifact: string, lastN?: number): Array<{ role: string; content: string }> {
         return this.core.getHistory(artifact, lastN);
     }
@@ -46,7 +46,7 @@ export class ConversationManager {
     /**
      * Clear conversation history
      */
-    // PromptPress/IMP-1037
+    // promptpress/IMP-1037
     public clearConversation(artifact: string): void {
         this.core.clearConversation(artifact);
     }
@@ -54,7 +54,7 @@ export class ConversationManager {
     /**
      * List all artifacts with conversations
      */
-    // PromptPress/IMP-1038
+    // promptpress/IMP-1038
     public listArtifacts(): string[] {
         return this.core.listArtifacts();
     }
@@ -62,7 +62,7 @@ export class ConversationManager {
     /**
      * Get conversation count
      */
-    // PromptPress/IMP-1039
+    // promptpress/IMP-1039
     public getMessageCount(artifact: string): number {
         return this.core.getMessageCount(artifact);
     }

@@ -28,7 +28,7 @@ export class CascadeServiceCommands {
      * Main entry point for applying changes
      * Detects changes in the current file and cascades through dependent phases
      */
-    // PromptPress/IMP-1028
+    // promptpress/IMP-1028
     async refactorSpec(filePath: string) {
         const ui: CascadeUI = {
             confirmGitStatus: async (hasUnstaged: boolean) => {
@@ -66,7 +66,7 @@ export class CascadeServiceCommands {
         return await this.core.refactorSpec(filePath, ui);
     }
 
-    // PromptPress/IMP-1029
+    // promptpress/IMP-1029
     async tersifySpec(filePath: string) {
         const ui: CascadeUI = {
             confirmGitStatus: async (hasUnstaged: boolean) => {

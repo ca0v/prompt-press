@@ -6,7 +6,7 @@ export class MarkdownFormatter {
     /**
      * Format markdown content from first principles
      */
-    // PromptPress/IMP-1072
+    // promptpress/IMP-1072
     static format(content: string): string {
         if (!content || typeof content !== 'string') {
             return content;

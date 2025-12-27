@@ -20,7 +20,7 @@ export class ChatPanelProvider implements vscode.Disposable {
     /**
      * Show the chat panel
      */
-    // PromptPress/IMP-1066
+    // promptpress/IMP-1066
     public show(): void {
         if (this.panel) {
             this.panel.reveal(vscode.ViewColumn.Beside);
@@ -62,7 +62,7 @@ export class ChatPanelProvider implements vscode.Disposable {
     /**
      * Send a message to the chat
      */
-    // PromptPress/IMP-1067
+    // promptpress/IMP-1067
     public async sendMessage(text: string): Promise<void> {
         this.show();
         await this.handleUserMessage(text);
@@ -71,7 +71,7 @@ export class ChatPanelProvider implements vscode.Disposable {
     /**
      * Notify about file changes
      */
-    // PromptPress/IMP-1068
+    // promptpress/IMP-1068
     public notifyFileChange(
         uri: vscode.Uri,
         changeType: string,
@@ -666,7 +666,7 @@ When responding:
 </html>`;
     }
 
-    // PromptPress/IMP-1069
+    // promptpress/IMP-1069
     public dispose(): void {
         this.panel?.dispose();
         this.disposables.forEach(d => d.dispose());

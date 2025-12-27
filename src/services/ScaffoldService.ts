@@ -119,7 +119,7 @@ export class ScaffoldService {
     /**
      * Scaffold a new PromptPress artifact
      */
-    // PromptPress/IMP-1053
+    // promptpress/IMP-1053
     public async createRequirementSpec(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -359,7 +359,7 @@ export class ScaffoldService {
     /**
      * Generate implementation spec from existing requirement and design specs
      */
-    // PromptPress/IMP-1054
+    // promptpress/IMP-1054
     public async syncImplementationSpecSpec(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -656,7 +656,7 @@ export class ScaffoldService {
     /**
      * Update ConOps based on requirement overviews
      */
-    // PromptPress/IMP-1055
+    // promptpress/IMP-1055
     public async syncConOps(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
@@ -946,7 +946,7 @@ ${aiResponse}
     /**
      * Sync TOC with ConOps document
      */
-    // PromptPress/IMP-1056
+    // promptpress/IMP-1056
     public async syncTOC(): Promise<void> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {

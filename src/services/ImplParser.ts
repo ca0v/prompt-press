@@ -19,7 +19,7 @@ export class ImplParser {
         this.core = new ImplParserCore(parser, xaiClient, logger, fileStructureParser);
     }
 
-    // PromptPress/IMP-1050
+    // promptpress/IMP-1050
     async parseAndGenerate(implPath: string): Promise<void> {
         return this.core.parseAndGenerate(implPath);
     }

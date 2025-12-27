@@ -13,7 +13,7 @@ export interface FileInfo {
 export class ImplParserCore {
     constructor(private parser: MarkdownParser, private xaiClient: XAIClient, private logger: Logger, private fileStructureParser: FileStructureParser) {}
 
-    // PromptPress/IMP-1050
+    // promptpress/IMP-1050
     async parseAndGenerate(implPath: string): Promise<void> {
         this.logger.log(`[ImplParser] Starting code generation for ${implPath}`);
         

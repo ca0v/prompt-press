@@ -88,7 +88,7 @@ function isDecorated(content: string, start: number): boolean {
     for (let i = lines.length - 1; i >= 0; i--) {
         const line = lines[i].trim();
         if (line === '') continue;
-        if (line.startsWith('// PromptPress/IMP-')) return true;
+        if (line.startsWith('// promptpress/IMP-')) return true;
         // Continue past comment lines: //, /**, *, */
         if (!line.startsWith('//') && !line.startsWith('/**') && !line.startsWith('*') && !line.startsWith('*/')) break;
     }

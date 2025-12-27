@@ -11,7 +11,7 @@ export class SpecReferenceFinder implements vscode.ReferenceProvider {
     /**
      * Provides references for the symbol at the given position.
      */
-    // PromptPress/IMP-1077
+    // promptpress/IMP-1077
     provideReferences(
         document: vscode.TextDocument,
         position: vscode.Position,
@@ -31,7 +31,7 @@ export class SpecReferenceFinder implements vscode.ReferenceProvider {
     /**
      * Finds all references to the given REFID across the workspace.
      */
-    // PromptPress/IMP-1077
+    // promptpress/IMP-1077
     async findAllReferences(refId: string): Promise<vscode.Location[]> {
         const locations: vscode.Location[] = [];
         const searchQuery = { pattern: refId };
