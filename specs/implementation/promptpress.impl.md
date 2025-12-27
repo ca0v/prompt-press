@@ -2,7 +2,7 @@
 artifact: promptpress
 phase: implementation
 depends-on: []
-references: ["promptpress.design"]
+references: ["PromptPress.impl", "promptpress.design"]
 last-updated: 2025-12-27
 ---
 
@@ -848,10 +848,24 @@ None
 
 ### findAllImplementations (IMP-1078)
 - **Belongs to**: SpecImplementationFinder
-- **Description**: Finds all implementations based on file type, REFID, and artifact following specific scanning rules.
+- **Description**: Finds all implementations for a SPECID based on artifact and SPECID using specific scanning rules.
 - **Parameters**: fileType: 'req' | 'design' | 'impl', refId: string, artifact: string
 - **Return Type**: Promise<vscode.Location[]>
-- **Algorithm**: Scans files according to rules: for req scan design files for artifact.req/REFID, for design scan impl files for artifact.design/REFID, for impl scan all the source files for artifact/REFID and not the specs.
+- **Algorithm**:
+  - If fileType == 'req':
+    - Set include = 'specs/design/**/*'
+    - Set query = `${artifact}.req/${refId}`
+  - Else if fileType == 'design':
+    - Set include = 'specs/implementation/**/*'
+    - Set query = `${artifact}.design/${refId}`
+  - Else if fileType == 'impl':
+    - Set include = '**/*'
+    - Set exclude = 'specs/**/*'
+    - Set query = `// ${artifact}/${refId}`
+  - Else:
+    - Return []
+  - Perform workspace search with query, include, exclude
+  - Collect and return all matching locations
 - **Exceptions**: None
 
 ### isRemoveFromAction (IMP-1017)

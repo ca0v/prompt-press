@@ -28,7 +28,7 @@ export class SpecImplementationFinder {
             case 'impl':
                 include = '**/*';
                 exclude = 'specs/**/*';
-                query = `${artifact}/${refId}`;
+                query = `// ${artifact}/${refId}`;
                 break;
             default:
                 return [];
